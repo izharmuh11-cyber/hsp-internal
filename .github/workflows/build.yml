@@ -1,0 +1,88 @@
+name: Build Haispace Booth
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-camera:
+    name: Build HaispaceCamera (iPhone)
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Build Archive (No Signing)
+        run: |
+          xcodebuild archive \
+            -project HaispaceCamera/HaispaceCamera.xcodeproj \
+            -scheme HaispaceCamera \
+            -configuration Release \
+            -destination "generic/platform=iOS" \
+            -archivePath ${{ runner.temp }}/HaispaceCamera.xcarchive \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES \
+            | xcpretty || true
+
+      - name: Package IPA (Unsigned)
+        run: |
+          mkdir -p ${{ runner.temp }}/Payload
+          APP_PATH=$(find ${{ runner.temp }}/HaispaceCamera.xcarchive/Products -name "*.app" | head -1)
+          cp -r "$APP_PATH" ${{ runner.temp }}/Payload/
+          cd ${{ runner.temp }}
+          zip -r HaispaceCamera.ipa Payload/
+          echo "✅ IPA created: $(du -sh HaispaceCamera.ipa)"
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: HaispaceCamera-IPA
+          path: ${{ runner.temp }}/HaispaceCamera.ipa
+          retention-days: 7
+
+  build-booths:
+    name: Build HaispaceBooths (iPad)
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+
+      - name: Build Archive (No Signing)
+        run: |
+          xcodebuild archive \
+            -project HaispaceBooths/HaispaceBooths.xcodeproj \
+            -scheme HaispaceBooths \
+            -configuration Release \
+            -destination "generic/platform=iOS" \
+            -archivePath ${{ runner.temp }}/HaispaceBooths.xcarchive \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES \
+            | xcpretty || true
+
+      - name: Package IPA (Unsigned)
+        run: |
+          mkdir -p ${{ runner.temp }}/Payload
+          APP_PATH=$(find ${{ runner.temp }}/HaispaceBooths.xcarchive/Products -name "*.app" | head -1)
+          cp -r "$APP_PATH" ${{ runner.temp }}/Payload/
+          cd ${{ runner.temp }}
+          zip -r HaispaceBooths.ipa Payload/
+          echo "✅ IPA created: $(du -sh HaispaceBooths.ipa)"
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: HaispaceBooths-IPA
+          path: ${{ runner.temp }}/HaispaceBooths.ipa
+          retention-days: 7
