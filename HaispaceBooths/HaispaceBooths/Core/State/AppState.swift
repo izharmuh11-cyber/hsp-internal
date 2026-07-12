@@ -134,6 +134,8 @@ final class AppState {
         // kita paksa (bypass) state-nya menjadi valid agar KioskRouterView bisa di-test.
         license.status = .valid
         auth.authStatus = .authenticated
+        auth.currentUser = .mockOperator // Wajib diisi agar isLoggedIn = true
+        
         boothConfig.activeEventId = "event-test-001"
         boothConfig.activeEventName = "Test Event"
         boothConfig.activePackages = BoothPackage.mockPackages
