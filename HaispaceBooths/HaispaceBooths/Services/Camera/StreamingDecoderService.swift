@@ -69,7 +69,7 @@ final class StreamingDecoderService {
         
         sps.withUnsafeBufferPointer { spsBuffer in
             pps.withUnsafeBufferPointer { ppsBuffer in
-                let parameterSetPointers: [UnsafePointer<UInt8>?] = [spsBuffer.baseAddress, ppsBuffer.baseAddress]
+                let parameterSetPointers: [UnsafePointer<UInt8>] = [spsBuffer.baseAddress!, ppsBuffer.baseAddress!]
                 let parameterSetSizes: [Int] = [sps.count, pps.count]
                 
                 var formatDesc: CMVideoFormatDescription?

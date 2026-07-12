@@ -46,107 +46,7 @@ struct MissionControlView: View {
                     }
                     
                     ScrollView(showsIndicators: false) {
-                        VStack(alignment: .leading, spacing: 32) {
-                            
-                            // 1. STATUS PERANGKAT
-                            VStack(alignment: .leading, spacing: 16) {
-                                SectionHeader(title: "STATUS PERANGKAT", icon: "antenna.radiowaves.left.and.right")
-                                
-                                HStack {
-                                    StatusCard(
-                                        title: "HaiCamera",
-                                        value: "\(Int(appState.p2p.iphoneBatteryLevel * 100))%",
-                                        icon: "iphone",
-                                        color: appState.p2p.iphoneBatteryLevel > 0.2 ? .green : .red
-                                    )
-                                    
-                                    StatusCard(
-                                        title: "P2P Link",
-                                        value: appState.p2p.isConnected ? "Bagus" : "Terputus",
-                                        icon: appState.p2p.signalQuality.sfSymbol,
-                                        color: appState.p2p.isConnected ? .green : .red
-                                    )
-                                }
-                            }
-                            
-                            // 2. QUICK ACTIONS
-                            VStack(alignment: .leading, spacing: 16) {
-                                SectionHeader(title: "QUICK ACTIONS", icon: "bolt.fill")
-                                
-                                HStack(spacing: 12) {
-                                    ActionButton(title: "Reset Sesi", icon: "arrow.counterclockwise", color: .red) {
-                                        appState.currentSession?.reset()
-                                        appState.navigateTo(.landing)
-                                        close()
-                                    }
-                                    
-                                    ActionButton(title: "Pause", icon: "pause.fill", color: .orange) {
-                                        Task {
-                                            await P2PMessageRouter.shared.route(.sessionPause)
-                                        }
-                                    }
-                                    
-                                    ActionButton(title: "+5 Menit", icon: "timer", color: .blue) {
-                                        appState.currentSession?.addTime(minutes: 5)
-                                    }
-                                }
-                            }
-                            
-                            // 3. FRAME AKTIF
-                            VStack(alignment: .leading, spacing: 16) {
-                                SectionHeader(title: "FRAME AKTIF", icon: "photo.on.rectangle")
-                                
-                                ScrollView(.horizontal, showsIndicators: false) {
-                                    HStack(spacing: 12) {
-                                        FrameThumbnail(name: "Classic", isSelected: true)
-                                        FrameThumbnail(name: "Floral", isSelected: false)
-                                        
-                                        // Tombol Impor
-                                        Button(action: {}) {
-                                            VStack {
-                                                Image(systemName: "plus")
-                                                Text("Impor")
-                                                    .font(.caption)
-                                            }
-                                            .frame(width: 80, height: 100)
-                                            .background(Color.white.opacity(0.1))
-                                            .cornerRadius(12)
-                                            .foregroundStyle(.white)
-                                        }
-                                    }
-                                }
-                            }
-                            
-                            // 4. KONTROL KAMERA
-                            VStack(alignment: .leading, spacing: 16) {
-                                SectionHeader(title: "KONTROL KAMERA", icon: "camera.aperture")
-                                
-                                HStack(spacing: 16) {
-                                    Button("Lock AE/AF") {
-                                        // P2P trigger lock
-                                    }
-                                    .buttonStyle(.bordered)
-                                    .tint(.yellow)
-                                    
-                                    Spacer()
-                                    
-                                    HStack(spacing: 0) {
-                                        Text("Zoom:")
-                                            .foregroundStyle(.white.opacity(0.7))
-                                            .padding(.trailing, 8)
-                                        
-                                        Picker("Zoom", selection: .constant(1)) {
-                                            Text("1x").tag(1)
-                                            Text("2x").tag(2)
-                                            Text("3x").tag(3)
-                                        }
-                                        .pickerStyle(.segmented)
-                                        .frame(width: 150)
-                                    }
-                                }
-                            }
-                            
-                        }
+                        scrollContent
                     }
                     
                     Spacer()
@@ -194,6 +94,110 @@ struct MissionControlView: View {
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             appState.operatorState.dismissMissionControl()
+        }
+    }
+    
+    @ViewBuilder
+    private var scrollContent: some View {
+        VStack(alignment: .leading, spacing: 32) {
+            
+            // 1. STATUS PERANGKAT
+            VStack(alignment: .leading, spacing: 16) {
+                SectionHeader(title: "STATUS PERANGKAT", icon: "antenna.radiowaves.left.and.right")
+                
+                HStack {
+                    StatusCard(
+                        title: "HaiCamera",
+                        value: "\(Int(appState.p2p.iphoneBatteryLevel * 100))%",
+                        icon: "iphone",
+                        color: appState.p2p.iphoneBatteryLevel > 0.2 ? .green : .red
+                    )
+                    
+                    StatusCard(
+                        title: "P2P Link",
+                        value: appState.p2p.isConnected ? "Bagus" : "Terputus",
+                        icon: appState.p2p.signalQuality.sfSymbol,
+                        color: appState.p2p.isConnected ? .green : .red
+                    )
+                }
+            }
+            
+            // 2. QUICK ACTIONS
+            VStack(alignment: .leading, spacing: 16) {
+                SectionHeader(title: "QUICK ACTIONS", icon: "bolt.fill")
+                
+                HStack(spacing: 12) {
+                    ActionButton(title: "Reset Sesi", icon: "arrow.counterclockwise", color: .red) {
+                        appState.currentSession?.reset()
+                        appState.navigateTo(.landing)
+                        close()
+                    }
+                    
+                    ActionButton(title: "Pause", icon: "pause.fill", color: .orange) {
+                        Task {
+                            await P2PMessageRouter.shared.route(.sessionPause)
+                        }
+                    }
+                    
+                    ActionButton(title: "+5 Menit", icon: "timer", color: .blue) {
+                        appState.currentSession?.addTime(minutes: 5)
+                    }
+                }
+            }
+            
+            // 3. FRAME AKTIF
+            VStack(alignment: .leading, spacing: 16) {
+                SectionHeader(title: "FRAME AKTIF", icon: "photo.on.rectangle")
+                
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        FrameThumbnail(name: "Classic", isSelected: true)
+                        FrameThumbnail(name: "Floral", isSelected: false)
+                        
+                        // Tombol Impor
+                        Button(action: {}) {
+                            VStack {
+                                Image(systemName: "plus")
+                                Text("Impor")
+                                    .font(.caption)
+                            }
+                            .frame(width: 80, height: 100)
+                            .background(Color.white.opacity(0.1))
+                            .cornerRadius(12)
+                            .foregroundStyle(.white)
+                        }
+                    }
+                }
+            }
+            
+            // 4. KONTROL KAMERA
+            VStack(alignment: .leading, spacing: 16) {
+                SectionHeader(title: "KONTROL KAMERA", icon: "camera.aperture")
+                
+                HStack(spacing: 16) {
+                    Button("Lock AE/AF") {
+                        // P2P trigger lock
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(.yellow)
+                    
+                    Spacer()
+                    
+                    HStack(spacing: 0) {
+                        Text("Zoom:")
+                            .foregroundStyle(.white.opacity(0.7))
+                            .padding(.trailing, 8)
+                        
+                        Picker("Zoom", selection: .constant(1)) {
+                            Text("1x").tag(1)
+                            Text("2x").tag(2)
+                            Text("3x").tag(3)
+                        }
+                        .pickerStyle(.segmented)
+                        .frame(width: 150)
+                    }
+                }
+            }
         }
     }
 }

@@ -23,7 +23,7 @@ actor MultipeerService: NSObject {
     var onDataReceived: ((Data) -> Void)?
 
     private override init() {
-        self.peerID = MCPeerID(displayName: UIDevice.current.name)
+        self.peerID = MCPeerID(displayName: "HaiBooth iPad")
         super.init()
     }
 

@@ -131,7 +131,7 @@ actor LocalTCPRouterService {
         
         connection.send(content: data, completion: .contentProcessed({ error in
             if let error = error {
-                HaispaceLogger.error("Gagal kirim TCP data: \(error)", category: "p2p")
+                HaispaceLogger.error(error)
             }
         }))
     }

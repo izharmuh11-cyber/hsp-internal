@@ -142,7 +142,7 @@ final class PaymentStore {
                 }
                 HaispaceLogger.info("QRIS generated — transaction: \(String(describing: self.transactionId))", category: "payment")
             } catch {
-                HaispaceLogger.error("Failed to generate QRIS: \(error)", category: "payment")
+                HaispaceLogger.error(error)
                 await MainActor.run {
                     self.status = .failed
                 }
