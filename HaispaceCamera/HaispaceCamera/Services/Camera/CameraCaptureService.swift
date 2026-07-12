@@ -10,7 +10,6 @@ import Foundation
 import AVFoundation
 import UIKit
 
-@MainActor
 final class CameraCaptureService: NSObject {
     static let shared = CameraCaptureService()
     
@@ -19,12 +18,13 @@ final class CameraCaptureService: NSObject {
     private let photoOutput = AVCapturePhotoOutput()
     
     // Delegate untuk distribusi frame
-    var onVideoFrameCaptured: ((CMSampleBuffer) -> Void)?
-    var onPhotoCaptured: ((AVCapturePhoto) -> Void)?
+    nonisolated(unsafe) var onVideoFrameCaptured: ((CMSampleBuffer) -> Void)?
+    nonisolated(unsafe) var onPhotoCaptured: ((AVCapturePhoto) -> Void)?
     private var isConfigured = false
     
     // Status Portrait Mode
-    var isPortraitModeActive = false
+    nonisolated(unsafe) var isPortraitModeActive = false
+    nonisolated(unsafe) var isSessionActive = false
     
     private override init() {
         super.init()
@@ -49,7 +49,7 @@ final class CameraCaptureService: NSObject {
                 HaispaceLogger.error("Akses kamera ditolak", category: "camera")
                 return
             }
-            Task { @MainActor in
+            Task {
                 self?.setupSession()
             }
         }
@@ -264,10 +264,8 @@ final class CameraCaptureService: NSObject {
 // MARK: - AVCaptureVideoDataOutputSampleBufferDelegate
 extension CameraCaptureService: AVCaptureVideoDataOutputSampleBufferDelegate {
     nonisolated func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        // Teruskan ke VideoEncoderService
-        Task { @MainActor in
-            self.onVideoFrameCaptured?(sampleBuffer)
-        }
+        // Teruskan ke VideoEncoderService secara langsung dan sinkron
+        self.onVideoFrameCaptured?(sampleBuffer)
     }
 }
 
@@ -278,8 +276,6 @@ extension CameraCaptureService: AVCapturePhotoCaptureDelegate {
             HaispaceLogger.error("Gagal capture foto: \(error.localizedDescription)", category: "camera")
             return
         }
-        Task { @MainActor in
-            self.onPhotoCaptured?(photo)
-        }
+        self.onPhotoCaptured?(photo)
     }
 }

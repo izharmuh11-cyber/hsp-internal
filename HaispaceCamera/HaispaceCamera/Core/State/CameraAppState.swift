@@ -269,28 +269,23 @@ final class CameraAppState {
     private func setupCameraPipeline() {
         // Setup capture service callbacks
         CameraCaptureService.shared.onVideoFrameCaptured = { [weak self] sampleBuffer in
-            Task {
-                if let formatDesc = CMSampleBufferGetFormatDescription(sampleBuffer) {
-                    let dimensions = CMVideoFormatDescriptionGetDimensions(formatDesc)
-                    await VideoEncoderService.shared.configure(width: dimensions.width, height: dimensions.height)
-                }
-                await VideoEncoderService.shared.encode(sampleBuffer: sampleBuffer)
-                
-                guard let self = self else { return }
-                let isSessionActive = await MainActor.run { self.isSessionActive }
-                if isSessionActive {
-                    HandGestureDetector.shared.processFrame(sampleBuffer) {
-                        Task {
-                            if await P2PClientService.shared.isConnected() {
-                                try? await P2PClientService.shared.sendData(P2PMessage.gestureDetected.encode())
-                                HaispaceLogger.info("Gesture 'Hai' terdeteksi! Mengirim sinyal pemicu ke iPad.", category: "camera")
-                                
-                                // Feedback haptic pada iPhone saat gesture berhasil dibaca
-                                await MainActor.run {
-                                    let generator = UINotificationFeedbackGenerator()
-                                    generator.notificationOccurred(.success)
-                                }
-                            }
+            if let formatDesc = CMSampleBufferGetFormatDescription(sampleBuffer) {
+                let dimensions = CMVideoFormatDescriptionGetDimensions(formatDesc)
+                VideoEncoderService.shared.configure(width: dimensions.width, height: dimensions.height)
+            }
+            VideoEncoderService.shared.encode(sampleBuffer: sampleBuffer)
+            
+            guard let self = self else { return }
+            if CameraCaptureService.shared.isSessionActive {
+                HandGestureDetector.shared.processFrame(sampleBuffer) {
+                    Task {
+                        if await P2PClientService.shared.isConnected() {
+                            try? await P2PClientService.shared.sendData(P2PMessage.gestureDetected.encode())
+                            HaispaceLogger.info("Gesture 'Hai' terdeteksi! Mengirim sinyal pemicu ke iPad.", category: "camera")
+                            
+                            // Feedback haptic pada iPhone saat gesture berhasil dibaca
+                            let generator = UINotificationFeedbackGenerator()
+                            generator.notificationOccurred(.success)
                         }
                     }
                 }
@@ -316,12 +311,10 @@ final class CameraAppState {
         }
         
         // Setup encoder callback
-        Task {
-            await VideoEncoderService.shared.setOnNALUReady { nalu in
-                Task {
-                    if await P2PClientService.shared.isConnected() {
-                        try? await P2PClientService.shared.sendData(nalu)
-                    }
+        VideoEncoderService.shared.setOnNALUReady { nalu in
+            Task {
+                if await P2PClientService.shared.isConnected() {
+                    try? await P2PClientService.shared.sendData(nalu)
                 }
             }
         }
@@ -329,6 +322,8 @@ final class CameraAppState {
     
     @MainActor
     func updateStreamingState() {
+        CameraCaptureService.shared.isSessionActive = (cameraStatus == .sessionActive)
+        
         switch cameraStatus {
         case .paired, .sessionActive:
             CameraCaptureService.shared.configureAndStart()

@@ -9,11 +9,12 @@ import Foundation
 import VideoToolbox
 import CoreMedia
 
-actor VideoEncoderService {
+final class VideoEncoderService {
     static let shared = VideoEncoderService()
     
     private var compressionSession: VTCompressionSession?
     private var isConfigured = false
+    private let queue = DispatchQueue(label: "id.haispaceproject.camera.encoderQueue")
     
     // Callback saat NAL Unit siap dikirim
     var onNALUReady: ((Data) -> Void)?
@@ -25,64 +26,68 @@ actor VideoEncoderService {
     }
     
     func configure(width: Int32, height: Int32) {
-        guard !isConfigured else { return }
-        
-        let status = VTCompressionSessionCreate(
-            allocator: kCFAllocatorDefault,
-            width: width,
-            height: height,
-            codecType: kCMVideoCodecType_H264,
-            encoderSpecification: nil,
-            imageBufferAttributes: nil,
-            compressedDataAllocator: nil,
-            outputCallback: compressionOutputCallback,
-            refcon: UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque()),
-            compressionSessionOut: &compressionSession
-        )
-        
-        guard status == noErr, let session = compressionSession else {
-            HaispaceLogger.error("Gagal membuat VTCompressionSession: \(status)", category: "camera")
-            return
+        queue.sync {
+            guard !isConfigured else { return }
+            
+            let status = VTCompressionSessionCreate(
+                allocator: kCFAllocatorDefault,
+                width: width,
+                height: height,
+                codecType: kCMVideoCodecType_H264,
+                encoderSpecification: nil,
+                imageBufferAttributes: nil,
+                compressedDataAllocator: nil,
+                outputCallback: compressionOutputCallback,
+                refcon: UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque()),
+                compressionSessionOut: &compressionSession
+            )
+            
+            guard status == noErr, let session = compressionSession else {
+                HaispaceLogger.error("Gagal membuat VTCompressionSession: \(status)", category: "camera")
+                return
+            }
+            
+            // Optimasi untuk real-time streaming berlatensi rendah
+            VTSessionSetProperty(session, key: kVTCompressionPropertyKey_ProfileLevel, value: kVTProfileLevel_H264_Baseline_AutoLevel)
+            VTSessionSetProperty(session, key: kVTCompressionPropertyKey_RealTime, value: kCFBooleanTrue)
+            VTSessionSetProperty(session, key: kVTCompressionPropertyKey_AllowFrameReordering, value: kCFBooleanFalse)
+            
+            // Bitrate: 2.5 Mbps cukup untuk preview 720p/1080p yang jernih
+            let bitrateLimit: Int32 = 2_500_000
+            VTSessionSetProperty(session, key: kVTCompressionPropertyKey_AverageBitRate, value: NSNumber(value: bitrateLimit))
+            
+            // Keyframe interval tiap 30 frame (~1 detik pada 30fps)
+            VTSessionSetProperty(session, key: kVTCompressionPropertyKey_MaxKeyFrameInterval, value: NSNumber(value: 30))
+            
+            VTCompressionSessionPrepareToEncodeFrames(session)
+            isConfigured = true
+            HaispaceLogger.info("VideoEncoderService configured: \(width)x\(height)", category: "camera")
         }
-        
-        // Optimasi untuk real-time streaming berlatensi rendah
-        VTSessionSetProperty(session, key: kVTCompressionPropertyKey_ProfileLevel, value: kVTProfileLevel_H264_Baseline_AutoLevel)
-        VTSessionSetProperty(session, key: kVTCompressionPropertyKey_RealTime, value: kCFBooleanTrue)
-        VTSessionSetProperty(session, key: kVTCompressionPropertyKey_AllowFrameReordering, value: kCFBooleanFalse)
-        
-        // Bitrate: 2.5 Mbps cukup untuk preview 720p/1080p yang jernih
-        let bitrateLimit: Int32 = 2_500_000
-        VTSessionSetProperty(session, key: kVTCompressionPropertyKey_AverageBitRate, value: NSNumber(value: bitrateLimit))
-        
-        // Keyframe interval tiap 30 frame (~1 detik pada 30fps)
-        VTSessionSetProperty(session, key: kVTCompressionPropertyKey_MaxKeyFrameInterval, value: NSNumber(value: 30))
-        
-        VTCompressionSessionPrepareToEncodeFrames(session)
-        isConfigured = true
-        HaispaceLogger.info("VideoEncoderService configured: \(width)x\(height)", category: "camera")
     }
     
     func encode(sampleBuffer: CMSampleBuffer) {
-        guard isConfigured, let session = compressionSession,
-              let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
-        
-        let presentationTimeStamp = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
-        let duration = CMSampleBufferGetDuration(sampleBuffer)
-        
-        var flags: VTEncodeInfoFlags = []
-        VTCompressionSessionEncodeFrame(
-            session,
-            imageBuffer: imageBuffer,
-            presentationTimeStamp: presentationTimeStamp,
-            duration: duration,
-            frameProperties: nil,
-            sourceFrameRefcon: nil,
-            infoFlagsOut: &flags
-        )
+        queue.sync {
+            guard isConfigured, let session = compressionSession,
+                  let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+            
+            let presentationTimeStamp = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+            let duration = CMSampleBufferGetDuration(sampleBuffer)
+            
+            var flags: VTEncodeInfoFlags = []
+            VTCompressionSessionEncodeFrame(
+                session,
+                imageBuffer: imageBuffer,
+                presentationTimeStamp: presentationTimeStamp,
+                duration: duration,
+                frameProperties: nil,
+                sourceFrameRefcon: nil,
+                infoFlagsOut: &flags
+            )
+        }
     }
     
     // Dipanggil oleh outputCallback C-function
-    nonisolated func handleEncodedSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
+    func handleEncodedSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
         guard let attachments = CMSampleBufferGetSampleAttachmentsArray(sampleBuffer, createIfNecessary: false) as? [[CFString: Any]],
               let attachment = attachments.first else { return }
         
@@ -171,7 +176,7 @@ actor VideoEncoderService {
         guard !nalus.isEmpty else { return }
         Task {
             for nalu in nalus {
-                await dispatchNALU(data: nalu)
+                dispatchNALU(data: nalu)
             }
         }
     }
