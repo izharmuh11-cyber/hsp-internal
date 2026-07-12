@@ -34,10 +34,15 @@ struct HaispaceBoothsApp: App {
                 .task {
                     // Setup awal saat app launch
                     await appState.setup()
+                    GitHubLogUploader.uploadLatestLog(eventName: "app_launch")
                 }
                 // Saat app menjadi aktif — validasi lisensi jika diperlukan
                 .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
                     appState.handleAppBecomeActive()
+                    GitHubLogUploader.uploadLatestLog(eventName: "app_active")
+                }
+                .onReceive(NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)) { _ in
+                    GitHubLogUploader.uploadLatestLog(eventName: "app_background")
                 }
         }
     }

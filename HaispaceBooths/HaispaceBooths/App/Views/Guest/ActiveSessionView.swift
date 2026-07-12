@@ -9,23 +9,33 @@ import AVFoundation
 
 // MARK: - Streaming Video View (UIViewRepresentable)
 
-struct StreamingVideoView: UIViewRepresentable {
-    func makeUIView(context: Context) -> UIView {
-        let view = UIView()
-        view.backgroundColor = .black
-        
-        let layer = StreamingDecoderService.shared.displayLayer
-        layer.frame = view.bounds
-        view.layer.addSublayer(layer)
-        
-        return view
+class StreamingDecoderView: UIView {
+    private let displayLayer: AVSampleBufferDisplayLayer
+    
+    init(displayLayer: AVSampleBufferDisplayLayer) {
+        self.displayLayer = displayLayer
+        super.init(frame: .zero)
+        self.backgroundColor = .black
+        self.layer.addSublayer(displayLayer)
     }
     
-    func updateUIView(_ uiView: UIView, context: Context) {
-        // Force layer frame update jika terjadi rotasi/resize
-        if let layer = uiView.layer.sublayers?.first as? AVSampleBufferDisplayLayer {
-            layer.frame = uiView.bounds
-        }
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        displayLayer.frame = self.bounds
+    }
+}
+
+struct StreamingVideoView: UIViewRepresentable {
+    func makeUIView(context: Context) -> StreamingDecoderView {
+        return StreamingDecoderView(displayLayer: StreamingDecoderService.shared.displayLayer)
+    }
+    
+    func updateUIView(_ uiView: StreamingDecoderView, context: Context) {
+        // Layout disesuaikan oleh layoutSubviews
     }
 }
 

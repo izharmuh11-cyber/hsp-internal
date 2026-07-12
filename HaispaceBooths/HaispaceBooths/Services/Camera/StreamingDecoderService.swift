@@ -28,13 +28,6 @@ final class StreamingDecoderService {
     
     private init() {
         displayLayer.videoGravity = .resizeAspectFill
-        
-        var timebase: CMTimebase?
-        CMTimebaseCreateWithSourceClock(allocator: kCFAllocatorDefault, sourceClock: CMClockGetHostTimeClock(), timebaseOut: &timebase)
-        displayLayer.controlTimebase = timebase
-        if let tb = timebase {
-            CMTimebaseSetRate(tb, rate: 1.0)
-        }
     }
     
     /// Mengelola paket raw NALU dari network.
