@@ -739,7 +739,7 @@ struct ActiveSessionView: View {
                         HStack(spacing: 6) {
                             Image(systemName: "camera.fill")
                                 .font(.system(size: 11))
-                            Text("\(s.photos.capturedCount) / \(s.config.maxShots ?? 9)")
+                            Text("\(s.photos.capturedCount) / \(s.package_.maxPhotoCount)")
                                 .font(.system(size: 12, weight: .bold, design: .rounded))
                         }
                         .padding(.horizontal, 12)
