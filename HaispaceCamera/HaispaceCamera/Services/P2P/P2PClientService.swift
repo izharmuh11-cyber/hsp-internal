@@ -15,6 +15,7 @@ actor P2PClientService: NSObject {
     private var session: MCSession?
     private var browser: MCNearbyServiceBrowser?
     private var isBrowsing = false
+    private var activeEventId: String?
     
     // Fallback connection via Network framework
     private var tcpConnection: NWConnection?
@@ -49,6 +50,8 @@ actor P2PClientService: NSObject {
                 return
             }
         }
+        
+        self.activeEventId = payload.eventId
         
         let signature = QRPairingPayload.generateSignature(
             peerId: payload.peerId,
@@ -213,15 +216,15 @@ actor P2PClientService: NSObject {
         session = MCSession(peer: peerID, securityIdentity: nil, encryptionPreference: .required)
         session?.delegate = self
         
-        let safeEventId = String(payload.eventId.prefix(8))
-        let serviceType = "hs-\(safeEventId)"
+        self.activeEventId = payload.eventId
+        let serviceType = "haibooth"
         
         browser = MCNearbyServiceBrowser(peer: peerID, serviceType: serviceType)
         browser?.delegate = self
         browser?.startBrowsingForPeers()
         isBrowsing = true
         
-        HaispaceLogger.info("Mulai browse P2P (MPC Fallback) untuk service: \(serviceType)", category: "p2p")
+        HaispaceLogger.info("Mulai browse P2P (MPC Fallback) untuk service: \(serviceType) dengan eventId: \(payload.eventId)", category: "p2p")
     }
     
     func disconnect() {
@@ -334,7 +337,15 @@ extension P2PClientService: MCSessionDelegate {
 extension P2PClientService: MCNearbyServiceBrowserDelegate {
     nonisolated func browser(_ browser: MCNearbyServiceBrowser, foundPeer peerID: MCPeerID, withDiscoveryInfo info: [String : String]?) {
         Task {
-            HaispaceLogger.info("Ditemukan iPad host: \(peerID.displayName)", category: "p2p")
+            let activeEventId = await self.activeEventId
+            HaispaceLogger.info("Ditemukan iPad host: \(peerID.displayName), discoveryInfo: \(String(describing: info))", category: "p2p")
+            
+            // Verifikasi eventId sebelum melakukan invitation
+            guard let info = info, info["eventId"] == activeEventId else {
+                HaispaceLogger.warning("Abaikan iPad host karena eventId tidak cocok (Info: \(info?["eventId"] ?? "nil"), Target: \(activeEventId ?? "nil"))", category: "p2p")
+                return
+            }
+            
             // Otomatis invite host
             if let activeSession = await self.session {
                 browser.invitePeer(peerID, to: activeSession, withContext: nil, timeout: 30)

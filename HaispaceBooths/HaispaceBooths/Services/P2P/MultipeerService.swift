@@ -39,16 +39,15 @@ actor MultipeerService: NSObject {
     func startHosting(eventId: String, boothId: String) {
         guard !isAdvertising else { return }
 
-        // Mencegah clash dengan booth lain (maks 15 karakter)
-        let safeEventId = String(eventId.prefix(8))
-        let serviceType = "hs-\(safeEventId)"
-
         session = MCSession(peer: peerID, securityIdentity: nil, encryptionPreference: .required)
         session?.delegate = self
 
+        // Gunakan serviceType statik "haibooth" yang didaftarkan di Info.plist
+        // Gunakan discoveryInfo untuk mengirim eventId secara dinamis
+        let serviceType = "haibooth"
         advertiser = MCNearbyServiceAdvertiser(
             peer: peerID,
-            discoveryInfo: ["booth": boothId],
+            discoveryInfo: ["booth": boothId, "eventId": eventId],
             serviceType: serviceType
         )
         advertiser?.delegate = self
@@ -56,7 +55,7 @@ actor MultipeerService: NSObject {
         isAdvertising = true
         
         onConnectionStateChange?(.scanning)
-        HaispaceLogger.info("Memulai MPC advertising dengan serviceType: \(serviceType)", category: "p2p")
+        HaispaceLogger.info("Memulai MPC advertising dengan serviceType: \(serviceType) (eventId: \(eventId))", category: "p2p")
     }
 
     func stopHosting() {
