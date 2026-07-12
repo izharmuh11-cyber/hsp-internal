@@ -10,6 +10,7 @@
 import Foundation
 import Observation
 import UIKit
+import CoreMedia
 
 // MARK: - CameraStatus
 
