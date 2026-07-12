@@ -34,7 +34,7 @@ struct MissionControlView: View {
                 Spacer()
                 
                 // Sidebar Content
-                VStack(alignment: .leading, spacing: 32) {
+                VStack(alignment: .leading, spacing: 20) {
                     // Header
                     HStack {
                         Text("MISSION CONTROL")
@@ -74,9 +74,10 @@ struct MissionControlView: View {
                 }
                 .padding(24)
                 .frame(width: 400)
+                .frame(maxHeight: .infinity)
                 .background(
-                    Rectangle()
-                        .fill(Color(hex: "#1A1A24").opacity(0.95))
+                    Color(hex: "#1A1A24")
+                        .opacity(0.95)
                         .ignoresSafeArea()
                 )
                 .overlay(
