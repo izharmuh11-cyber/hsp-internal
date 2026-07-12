@@ -8,6 +8,7 @@
 
 import Foundation
 import AVFoundation
+import UIKit
 
 actor PhotoTransferService {
     static let shared = PhotoTransferService()
@@ -103,7 +104,6 @@ actor PhotoTransferService {
         // Implementasi sederhana kompresi JPEG menggunakan UIImage
         // Seharusnya dijalankan di detached task karena berat
         return await Task.detached(priority: .userInitiated) {
-            import UIKit
             guard let image = UIImage(data: data),
                   let compressedData = image.jpegData(compressionQuality: quality) else {
                 return data

@@ -73,7 +73,7 @@ final class CameraCaptureService: NSObject {
         }
         
         // Setup Photo Output untuk jepretan full quality
-        photoOutput.isHighResolutionCaptureEnabled = true
+        // Note: isHighResolutionCaptureEnabled is deprecated in iOS 16+, using default maxPhotoDimensions
         if captureSession.canAddOutput(photoOutput) {
             captureSession.addOutput(photoOutput)
         }
@@ -81,7 +81,7 @@ final class CameraCaptureService: NSObject {
         captureSession.commitConfiguration()
         
         Task.detached(priority: .userInitiated) {
-            self.captureSession.startRunning()
+            await self.captureSession.startRunning()
             HaispaceLogger.info("Camera capture session started", category: "camera")
         }
         
@@ -91,7 +91,7 @@ final class CameraCaptureService: NSObject {
     /// Trigger pemotretan kualitas tinggi (dipanggil saat menerima instruksi dari iPad)
     func captureHighQualityPhoto() {
         let photoSettings = AVCapturePhotoSettings()
-        photoSettings.isHighResolutionPhotoEnabled = true
+        // Note: isHighResolutionPhotoEnabled is deprecated in iOS 16+
         photoSettings.flashMode = .off // Flash menggunakan layar iPad, iPhone flash dimatikan
         
         photoOutput.capturePhoto(with: photoSettings, delegate: self)

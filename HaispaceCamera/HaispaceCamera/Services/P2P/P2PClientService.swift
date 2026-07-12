@@ -21,7 +21,7 @@ actor P2PClientService: NSObject {
     var onDataReceived: ((Data) -> Void)?
     
     private override init() {
-        self.peerID = MCPeerID(displayName: UIDevice.current.name)
+        self.peerID = MCPeerID(displayName: "HaispaceCamera-\(UUID().uuidString.prefix(4))")
         super.init()
     }
     
@@ -30,7 +30,9 @@ actor P2PClientService: NSObject {
         // Validasi Payload
         guard !payload.isExpired else {
             HaispaceLogger.warning("QR Code sudah expired", category: "p2p")
-            Task { await onConnectionStateChange?(.failed(reason: "QR Expired")) }
+            Task {
+                if let callback = await self.onConnectionStateChange { callback(.failed(reason: "QR Expired")) }
+            }
             return
         }
         
@@ -44,11 +46,15 @@ actor P2PClientService: NSObject {
         
         guard signature == payload.sig else {
             HaispaceLogger.error("Signature QR Payload tidak valid", category: "p2p")
-            Task { await onConnectionStateChange?(.failed(reason: "Invalid Signature")) }
+            Task {
+                if let callback = await self.onConnectionStateChange { callback(.failed(reason: "Invalid Signature")) }
+            }
             return
         }
         
-        Task { await onConnectionStateChange?(.scanning) }
+        Task {
+            if let callback = await self.onConnectionStateChange { callback(.scanning) }
+        }
         
         // Setup Session
         session = MCSession(peer: peerID, securityIdentity: nil, encryptionPreference: .required)
@@ -71,12 +77,14 @@ actor P2PClientService: NSObject {
         browser = nil
         session = nil
         isBrowsing = false
-        Task { await onConnectionStateChange?(.disconnected) }
+        Task {
+            if let callback = await self.onConnectionStateChange { callback(.disconnected) }
+        }
     }
     
     func sendData(_ data: Data) throws {
         guard let session = session, !session.connectedPeers.isEmpty else {
-            throw HaispaceError.p2pConnectionLost
+            throw NSError(domain: "P2PClientService", code: -1, userInfo: [NSLocalizedDescriptionKey: "P2P Connection Lost"])
         }
         try session.send(data, toPeers: session.connectedPeers, with: .reliable)
     }
@@ -86,14 +94,15 @@ actor P2PClientService: NSObject {
 extension P2PClientService: MCSessionDelegate {
     nonisolated func session(_ session: MCSession, peer peerID: MCPeerID, didChange state: MCSessionState) {
         Task {
+            let callback = await self.onConnectionStateChange
             switch state {
             case .connected:
-                await self.onConnectionStateChange?(.connected)
+                callback?(.connected)
                 HaispaceLogger.info("MPC terhubung ke: \(peerID.displayName)", category: "p2p")
             case .connecting:
-                await self.onConnectionStateChange?(.connecting)
+                callback?(.connecting)
             case .notConnected:
-                await self.onConnectionStateChange?(.disconnected)
+                callback?(.disconnected)
                 HaispaceLogger.warning("MPC terputus dari: \(peerID.displayName)", category: "p2p")
             @unknown default:
                 break
@@ -103,7 +112,8 @@ extension P2PClientService: MCSessionDelegate {
     
     nonisolated func session(_ session: MCSession, didReceive data: Data, fromPeer peerID: MCPeerID) {
         Task {
-            await self.onDataReceived?(data)
+            let callback = await self.onDataReceived
+            callback?(data)
             // Di iPhone, sebagian pesan bisa ditangkap dan diroute
             // P2PMessageRouter untuk Camera bisa diimplementasikan atau langsung handle
         }
@@ -120,7 +130,9 @@ extension P2PClientService: MCNearbyServiceBrowserDelegate {
         Task {
             HaispaceLogger.info("Ditemukan iPad host: \(peerID.displayName)", category: "p2p")
             // Otomatis invite host
-            browser.invitePeer(peerID, to: self.session!, withContext: nil, timeout: 30)
+            if let activeSession = await self.session {
+                browser.invitePeer(peerID, to: activeSession, withContext: nil, timeout: 30)
+            }
         }
     }
     
