@@ -18,6 +18,8 @@ actor P2PClientService: NSObject {
     
     // Fallback connection via Network framework
     private var tcpConnection: NWConnection?
+    private var tcpTimeoutTask: Task<Void, Never>?
+    private var fallbackTriggered = false
     
     private var onConnectionStateChange: (@Sendable (P2PConnectionState) -> Void)?
     private var onDataReceived: (@Sendable (Data) -> Void)?
@@ -84,40 +86,30 @@ actor P2PClientService: NSObject {
         
         let connection = NWConnection(host: host, port: endpointPort, using: .tcp)
         self.tcpConnection = connection
+        self.fallbackTriggered = false
         
-        // Timer timeout 3 detik
-        var fallbackTriggered = false
-        let timeoutTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { [weak self] _ in
-            Task { [weak self] in
-                guard let self = self else { return }
-                if !fallbackTriggered {
-                    fallbackTriggered = true
-                    HaispaceLogger.warning("Koneksi TCP timeout (3s). Fallback ke MPC.", category: "p2p")
-                    await self.cancelTCPConnection()
-                    await self.startMPCFallback(payload: payload)
-                }
-            }
+        self.cancelTimeoutTask()
+        
+        let timeoutTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 3_000_000_000) // 3 seconds
+            guard let self = self else { return }
+            await self.triggerFallback(payload: payload)
         }
+        self.tcpTimeoutTask = timeoutTask
         
         connection.stateUpdateHandler = { [weak self] state in
             Task { [weak self] in
                 guard let self = self else { return }
                 switch state {
                 case .ready:
-                    timeoutTimer.invalidate()
-                    if let callback = self.onConnectionStateChange { callback(.connected) }
-                    HaispaceLogger.info("Koneksi TCP Client terhubung ke iPad: \(ip):\(port)", category: "p2p")
-                    self.receiveTCPData(connection)
+                    self.cancelTimeoutTask()
+                    self.handleTCPReady(connection: connection, ip: ip, port: port)
                 case .failed(let error):
-                    timeoutTimer.invalidate()
-                    if !fallbackTriggered {
-                        fallbackTriggered = true
-                        HaispaceLogger.warning("Koneksi TCP Client gagal: \(error). Fallback ke MPC.", category: "p2p")
-                        await self.cancelTCPConnection()
-                        await self.startMPCFallback(payload: payload)
-                    }
+                    self.cancelTimeoutTask()
+                    HaispaceLogger.warning("Koneksi TCP Client gagal: \(error)", category: "p2p")
+                    self.triggerFallback(payload: payload)
                 case .cancelled:
-                    timeoutTimer.invalidate()
+                    self.cancelTimeoutTask()
                 default:
                     break
                 }
@@ -125,6 +117,26 @@ actor P2PClientService: NSObject {
         }
         
         connection.start(queue: .global(qos: .userInteractive))
+    }
+    
+    private func cancelTimeoutTask() {
+        self.tcpTimeoutTask?.cancel()
+        self.tcpTimeoutTask = nil
+    }
+    
+    private func triggerFallback(payload: QRPairingPayload) {
+        if !self.fallbackTriggered {
+            self.fallbackTriggered = true
+            HaispaceLogger.warning("Koneksi TCP gagal atau timeout. Fallback ke MPC.", category: "p2p")
+            self.cancelTCPConnection()
+            self.startMPCFallback(payload: payload)
+        }
+    }
+    
+    private func handleTCPReady(connection: NWConnection, ip: String, port: Int) {
+        if let callback = self.onConnectionStateChange { callback(.connected) }
+        HaispaceLogger.info("Koneksi TCP Client terhubung ke iPad: \(ip):\(port)", category: "p2p")
+        self.receiveTCPData(connection)
     }
     
     private func cancelTCPConnection() {
@@ -136,8 +148,9 @@ actor P2PClientService: NSObject {
         Task { [weak self] in
             do {
                 while true {
+                    guard let self = self else { break }
                     // 1. Baca header 4 byte
-                    let headerData = try await readExactBytes(connection: connection, count: 4)
+                    let headerData = try await self.readExactBytes(connection: connection, count: 4)
                     guard headerData.count == 4 else { break }
                     
                     // Convert to UInt32 (big-endian)
@@ -145,17 +158,12 @@ actor P2PClientService: NSObject {
                     guard length > 0 else { continue }
                     
                     // 2. Baca body data
-                    let bodyData = try await readExactBytes(connection: connection, count: Int(length))
+                    let bodyData = try await self.readExactBytes(connection: connection, count: Int(length))
                     guard bodyData.count == Int(length) else { break }
                     
                     // 3. Callback
-                    if let self = self {
-                        if let callback = await self.onConnectionStateChange { // Wait, is connectionState callback or data callback? It's data callback!
-                            // Wait, let's call the data callback
-                        }
-                        if let callback = await self.onDataReceived {
-                            callback(bodyData)
-                        }
+                    if let callback = self.onDataReceived {
+                        callback(bodyData)
                     }
                 }
             } catch {
@@ -164,7 +172,7 @@ actor P2PClientService: NSObject {
             
             if let self = self {
                 await self.cancelTCPConnection()
-                if let callback = await self.onConnectionStateChange {
+                if let callback = self.onConnectionStateChange {
                     callback(.disconnected)
                 }
             }
