@@ -234,18 +234,16 @@ struct MissionControlView: View {
                         .cornerRadius(12)
                     }
                     
-                    if let logURL = LocalLogWriter.logFileURL() {
-                        ShareLink(item: logURL) {
-                            HStack {
-                                Image(systemName: "square.and.arrow.up")
-                                Text("Bagikan Log")
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.green.opacity(0.15))
-                            .foregroundStyle(.green)
-                            .cornerRadius(12)
+                    ShareLink(item: LocalLogWriter.readLogContent()) {
+                        HStack {
+                            Image(systemName: "square.and.arrow.up")
+                            Text("Bagikan Log")
                         }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.green.opacity(0.15))
+                        .foregroundStyle(.green)
+                        .cornerRadius(12)
                     }
                 }
             }
@@ -373,8 +371,14 @@ private struct LogViewerSheet: View {
                 }
                 
                 ToolbarItem(placement: .topBarTrailing) {
-                    if let logURL = LocalLogWriter.logFileURL() {
-                        ShareLink(item: logURL) {
+                    HStack(spacing: 16) {
+                        Button {
+                            UIPasteboard.general.string = logContent
+                        } label: {
+                            Image(systemName: "doc.on.doc")
+                        }
+                        
+                        ShareLink(item: logContent) {
                             Image(systemName: "square.and.arrow.up")
                         }
                     }

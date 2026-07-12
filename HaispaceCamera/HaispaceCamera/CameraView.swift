@@ -405,8 +405,14 @@ private struct CameraLogViewerSheet: View {
                 }
                 
                 ToolbarItem(placement: .topBarTrailing) {
-                    if let logURL = LocalLogWriter.logFileURL(subsystem: "camera") {
-                        ShareLink(item: logURL) {
+                    HStack(spacing: 16) {
+                        Button {
+                            UIPasteboard.general.string = logContent
+                        } label: {
+                            Image(systemName: "doc.on.doc")
+                        }
+                        
+                        ShareLink(item: logContent) {
                             Image(systemName: "square.and.arrow.up")
                         }
                     }
