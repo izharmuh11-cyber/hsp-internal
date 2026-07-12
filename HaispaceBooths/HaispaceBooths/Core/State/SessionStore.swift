@@ -227,7 +227,13 @@ final class SessionStore {
                 guard let self else { break }
                 guard case .photoPreview(let id, let thumbnailData) = message else { continue }
                 await MainActor.run {
-                    let thumbnail = PhotoThumbnail(photoId: id, data: thumbnailData, capturedAt: Date(), sortOrder: self.photos.capturedCount)
+                    let sortOrder: Int
+                    if let existing = self.photos.capturedPhotos.first(where: { $0.id == id }) {
+                        sortOrder = existing.sortOrder
+                    } else {
+                        sortOrder = self.photos.capturedCount
+                    }
+                    let thumbnail = PhotoThumbnail(photoId: id, data: thumbnailData, capturedAt: Date(), sortOrder: sortOrder)
                     self.photos.receiveThumbnail(thumbnail)
                 }
             }

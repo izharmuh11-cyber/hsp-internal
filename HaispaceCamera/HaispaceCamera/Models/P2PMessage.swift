@@ -21,6 +21,7 @@ enum P2PMessage: Codable, Equatable {
     case sessionResume
     case sessionEnd(summary: SessionSummary)
     case focusPoint(normalizedX: Float, normalizedY: Float)
+    case gestureDetected
 
     // MARK: Photo Transfer Messages (iPhone → iPad)
     case photoMetadata(photoId: String, fileSize: Int, capturedAt: Date, sortOrder: Int)
@@ -44,7 +45,7 @@ enum P2PMessageType: String, CaseIterable {
     case ping, sessionStart, triggerCapture, sessionPause, sessionResume, sessionEnd, focusPoint
     case photoMetadata, photoPreview, photoFull, photoAck
     case cameraStatus, cameraReady, cameraError
-    case pairingRequest, pairingAcknowledge
+    case pairingRequest, pairingAcknowledge, gestureDetected
 
     static func type(of message: P2PMessage) -> P2PMessageType {
         switch message {
@@ -55,6 +56,7 @@ enum P2PMessageType: String, CaseIterable {
         case .sessionResume: return .sessionResume
         case .sessionEnd: return .sessionEnd
         case .focusPoint: return .focusPoint
+        case .gestureDetected: return .gestureDetected
         case .photoMetadata: return .photoMetadata
         case .photoPreview: return .photoPreview
         case .photoFull: return .photoFull

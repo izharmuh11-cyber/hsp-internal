@@ -54,25 +54,25 @@ final class PhotoStore {
 
     // MARK: - Receive from P2P (Channel 1 — Thumbnail)
 
-    /// Dipanggil saat thumbnail tiba dari iPhone (Channel 1 — cepat, <100ms)
     @MainActor
     func receiveThumbnail(_ thumbnail: PhotoThumbnail) {
-        // Hindari duplikat
-        guard !capturedPhotos.contains(where: { $0.id == thumbnail.photoId }) else {
-            HaispaceLogger.debug("Thumbnail duplikat diabaikan: \(thumbnail.photoId)")
-            return
-        }
-
         let photo = CapturedPhoto(
             id: thumbnail.photoId,
             thumbnailData: thumbnail.data,
             capturedAt: thumbnail.capturedAt,
             sortOrder: thumbnail.sortOrder
         )
-        capturedPhotos.append(photo)
-        capturedPhotos.sort { $0.sortOrder < $1.sortOrder }
 
-        HaispaceLogger.info("Thumbnail diterima — foto ke-\(thumbnail.sortOrder + 1)", category: "photo")
+        if let index = capturedPhotos.firstIndex(where: { $0.id == thumbnail.photoId }) {
+            // Ini adalah retake! Timpa foto lama
+            capturedPhotos[index] = photo
+            HaispaceLogger.info("Foto \(thumbnail.photoId) sukses di-retake (ditimpa)!", category: "photo")
+        } else {
+            // Foto baru
+            capturedPhotos.append(photo)
+            capturedPhotos.sort { $0.sortOrder < $1.sortOrder }
+            HaispaceLogger.info("Thumbnail diterima — foto ke-\(thumbnail.sortOrder + 1)", category: "photo")
+        }
     }
 
     // MARK: - Upgrade to Full Quality (Channel 2)

@@ -82,6 +82,10 @@ final class CameraAppState {
     // Sesi yang aktif — diterima dari iPad via P2P
     var activeSession: CameraSessionInfo?
 
+    // Menyimpan status retake sementara saat pemicu jepret aktif
+    var activeRetakePhotoId: String? = nil
+    var activeCaptureIndex: Int? = nil
+
     // Screen brightness management
     private var originalBrightness: CGFloat = UIScreen.main.brightness
 
@@ -113,6 +117,7 @@ final class CameraAppState {
     func startSession(_ config: CameraSessionInfo) {
         activeSession = config
         cameraStatus = .sessionActive
+        updateStreamingState()
         setScreenBlack(true)
         HaispaceLogger.info("Sesi dimulai di HaiCamera: \(config.sessionId)", category: "session")
     }
@@ -122,6 +127,7 @@ final class CameraAppState {
     func endSession() {
         activeSession = nil
         cameraStatus = .sessionEnded
+        updateStreamingState()
         setScreenBlack(false)
         HaispaceLogger.info("Sesi diakhiri di HaiCamera", category: "session")
 
@@ -131,6 +137,7 @@ final class CameraAppState {
             await MainActor.run {
                 if case .sessionEnded = self.cameraStatus {
                     self.cameraStatus = .paired
+                    self.updateStreamingState()
                 }
             }
         }
@@ -261,20 +268,40 @@ final class CameraAppState {
     @MainActor
     private func setupCameraPipeline() {
         // Setup capture service callbacks
-        CameraCaptureService.shared.onVideoFrameCaptured = { sampleBuffer in
+        CameraCaptureService.shared.onVideoFrameCaptured = { [weak self] sampleBuffer in
             Task {
                 if let formatDesc = CMSampleBufferGetFormatDescription(sampleBuffer) {
                     let dimensions = CMVideoFormatDescriptionGetDimensions(formatDesc)
                     await VideoEncoderService.shared.configure(width: dimensions.width, height: dimensions.height)
                 }
                 await VideoEncoderService.shared.encode(sampleBuffer: sampleBuffer)
+                
+                guard let self = self else { return }
+                let isSessionActive = await MainActor.run { self.isSessionActive }
+                if isSessionActive {
+                    HandGestureDetector.shared.processFrame(sampleBuffer) {
+                        Task {
+                            if await P2PClientService.shared.isConnected() {
+                                try? await P2PClientService.shared.sendData(P2PMessage.gestureDetected.encode())
+                                HaispaceLogger.info("Gesture 'Hai' terdeteksi! Mengirim sinyal pemicu ke iPad.", category: "camera")
+                            }
+                        }
+                    }
+                }
             }
         }
         
-        CameraCaptureService.shared.onPhotoCaptured = { photo in
-            Task {
-                let photoId = UUID().uuidString
-                await PhotoTransferService.shared.handleNewCapture(photoId: photoId, capture: photo)
+        CameraCaptureService.shared.onPhotoCaptured = { [weak self] photo in
+            Task { @MainActor in
+                guard let self = self else { return }
+                let photoId = self.activeRetakePhotoId ?? UUID().uuidString
+                let sortOrder = self.activeCaptureIndex ?? 0
+                
+                // Reset state setelah terpakai
+                self.activeRetakePhotoId = nil
+                self.activeCaptureIndex = nil
+                
+                await PhotoTransferService.shared.handleNewCapture(photoId: photoId, capture: photo, sortOrder: sortOrder)
             }
         }
         
@@ -313,8 +340,10 @@ final class CameraAppState {
             )
             self.startSession(cameraSession)
             
-        case .triggerCapture(_, let index):
-            HaispaceLogger.info("Menerima trigger jepret dari iPad (indeks: \(index))", category: "camera")
+        case .triggerCapture(let poseId, let index):
+            HaispaceLogger.info("Menerima trigger jepret dari iPad (indeks: \(index), replace ID: \(String(describing: poseId)))", category: "camera")
+            self.activeRetakePhotoId = poseId
+            self.activeCaptureIndex = index
             CameraCaptureService.shared.captureHighQualityPhoto()
             
         case .sessionEnd:

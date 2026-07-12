@@ -38,6 +38,9 @@ enum P2PMessage: Codable, Equatable {
     /// Kirim koordinat untuk AE/AF lock (dari tap tamu di layar iPad)
     case focusPoint(normalizedX: Float, normalizedY: Float)
 
+    /// Sinyal deteksi gesture "Hai" (5 jari) dari iPhone
+    case gestureDetected
+
     // MARK: Photo Transfer Messages (iPhone → iPad)
 
     /// Metadata foto sebelum data dikirim — iPad bersiap menerima
@@ -92,6 +95,7 @@ enum P2PMessageType: String, CaseIterable {
     case cameraError
     case pairingRequest
     case pairingAcknowledge
+    case gestureDetected
 
     /// Tipe pesan dari P2PMessage
     static func type(of message: P2PMessage) -> P2PMessageType {
@@ -103,6 +107,7 @@ enum P2PMessageType: String, CaseIterable {
         case .sessionResume: return .sessionResume
         case .sessionEnd: return .sessionEnd
         case .focusPoint: return .focusPoint
+        case .gestureDetected: return .gestureDetected
         case .photoMetadata: return .photoMetadata
         case .photoPreview: return .photoPreview
         case .photoFull: return .photoFull

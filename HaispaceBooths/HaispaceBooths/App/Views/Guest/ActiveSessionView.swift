@@ -41,6 +41,8 @@ struct StreamingVideoView: UIViewRepresentable {
 
 // MARK: - Active Session View
 
+// MARK: - Active Session View
+
 struct ActiveSessionView: View {
     @Environment(AppState.self) private var appState
     
@@ -48,6 +50,9 @@ struct ActiveSessionView: View {
     @State private var localCountdown: Int = 0 // 3.. 2.. 1.. 0
     @State private var showFlash: Bool = false
     @State private var isBriefing: Bool = true
+    @State private var isCapturing: Bool = false
+    @State private var activeSelectedPhotoForPreview: CapturedPhoto? = nil
+    @State private var gestureListenerTask: Task<Void, Never>? = nil
     
     // Timer sesi dari SessionStore
     private var session: SessionStore? {
@@ -58,15 +63,146 @@ struct ActiveSessionView: View {
         ZStack {
             Color.black.ignoresSafeArea()
             
-            // Background Live View (Dari P2P)
-            StreamingVideoView()
-                .ignoresSafeArea()
-            
-            // Overlay Flash (Saat shutter dipicu)
-            if showFlash {
-                Color.white
-                    .ignoresSafeArea()
-                    .zIndex(10)
+            HStack(spacing: 0) {
+                // Main camera preview area
+                ZStack {
+                    StreamingVideoView()
+                        .ignoresSafeArea()
+                    
+                    // Overlay Flash (Saat jepretan dipicu)
+                    if showFlash {
+                        Color.white
+                            .ignoresSafeArea()
+                            .zIndex(10)
+                    }
+                    
+                    // Center Countdown (3.. 2.. 1)
+                    if localCountdown > 0 {
+                        Text("\(localCountdown)")
+                            .font(.system(size: 180, weight: .heavy, design: .rounded))
+                            .foregroundStyle(.white)
+                            .shadow(color: .black.opacity(0.5), radius: 20, y: 10)
+                            .transition(.scale.combined(with: .opacity))
+                            .zIndex(15)
+                            .id("countdown-\(localCountdown)") // Force animation re-trigger
+                    }
+                    
+                    // UI Chrome (Hanya tampil jika tidak ada flash dan bukan briefing)
+                    if !showFlash && !isBriefing {
+                        // Floating Shutter Button
+                        if localCountdown == 0 {
+                            VStack {
+                                Spacer()
+                                HStack {
+                                    Spacer()
+                                    Button(action: {
+                                        startManualCaptureSequence()
+                                    }) {
+                                        Circle()
+                                            .fill(.white)
+                                            .frame(width: 80, height: 80)
+                                            .overlay(
+                                                Circle()
+                                                    .stroke(.black.opacity(0.2), lineWidth: 4)
+                                                    .padding(4)
+                                            )
+                                            .shadow(color: .black.opacity(0.3), radius: 10, y: 5)
+                                    }
+                                    .disabled(isCapturing)
+                                    .opacity(isCapturing ? 0.5 : 1.0)
+                                    Spacer()
+                                }
+                                .padding(.bottom, 40)
+                            }
+                        }
+                    }
+                }
+                
+                // Sidebar Photo Grid (Right)
+                VStack(spacing: 16) {
+                    Text("HASIL FOTO")
+                        .font(.caption.bold())
+                        .tracking(2)
+                        .foregroundStyle(.white.opacity(0.6))
+                        .padding(.top, 24)
+                    
+                    ScrollView {
+                        VStack(spacing: 12) {
+                            if let s = session {
+                                ForEach(s.photos.capturedPhotos) { photo in
+                                    Button(action: {
+                                        activeSelectedPhotoForPreview = photo
+                                    }) {
+                                        VStack(spacing: 4) {
+                                            if let uiImage = UIImage(data: photo.thumbnailData) {
+                                                Image(uiImage: uiImage)
+                                                    .resizable()
+                                                    .scaledToFill()
+                                                    .frame(width: 100, height: 130)
+                                                    .cornerRadius(8)
+                                                    .clipped()
+                                                    .overlay(
+                                                        RoundedRectangle(cornerRadius: 8)
+                                                            .stroke(.white.opacity(0.2), lineWidth: 1)
+                                                    )
+                                            } else {
+                                                RoundedRectangle(cornerRadius: 8)
+                                                    .fill(Color.white.opacity(0.1))
+                                                    .frame(width: 100, height: 130)
+                                                    .overlay(
+                                                        Image(systemName: "photo")
+                                                            .foregroundStyle(.white.opacity(0.3))
+                                                    )
+                                            }
+                                            
+                                            Text("Pose \(photo.sortOrder + 1)")
+                                                .font(.caption2)
+                                                .foregroundStyle(.white.opacity(0.8))
+                                        }
+                                        .padding(4)
+                                        .background(.white.opacity(0.05))
+                                        .cornerRadius(10)
+                                    }
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 12)
+                    }
+                    
+                    Spacer()
+                    
+                    // Sisa Waktu
+                    if let s = session {
+                        VStack(spacing: 4) {
+                            Text("SISA WAKTU")
+                                .font(.system(size: 10, weight: .bold))
+                                .tracking(1)
+                                .foregroundStyle(.white.opacity(0.5))
+                            Text(formatTime(s.remainingSeconds))
+                                .font(.system(size: 20, weight: .bold, design: .monospaced))
+                                .foregroundStyle(s.remainingSeconds <= 30 ? Color.red : Color.white)
+                        }
+                        .padding(.bottom, 8)
+                    }
+                    
+                    // Finish Button
+                    Button(action: {
+                        appState.navigateTo(.photoSelection)
+                    }) {
+                        Text("Selesai")
+                            .font(.subheadline.bold())
+                            .foregroundStyle(.black)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(.white)
+                            .cornerRadius(12)
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 24)
+                    }
+                }
+                .frame(width: 140)
+                .background(.ultraThinMaterial)
+                .ignoresSafeArea(edges: .vertical)
             }
             
             // Briefing Overlay (Tampil sesaat sebelum sesi dimulai)
@@ -89,80 +225,77 @@ struct ActiveSessionView: View {
                 .zIndex(20)
             }
             
-            // UI Chrome (Hanya tampil jika tidak ada flash dan bukan briefing)
-            if !showFlash && !isBriefing {
-                VStack {
-                    // Top Bar (Sisa Waktu)
-                    HStack {
-                        Spacer()
-                        VStack(alignment: .trailing, spacing: 4) {
-                            Text("SISA WAKTU")
-                                .font(.caption.bold())
-                                .tracking(2)
-                                .foregroundStyle(.white.opacity(0.8))
-                                .shadow(color: .black, radius: 2)
-                            
-                            if let s = session {
-                                Text(formatTime(s.remainingSeconds))
-                                    .font(.system(size: 36, weight: .bold, design: .monospaced))
-                                    .foregroundStyle(s.remainingSeconds <= 30 ? Color.red : Color.white)
-                                    .shadow(color: .black, radius: 4)
-                            }
+            // Selective Retake Premium Modal Overlay
+            if let selectedPhoto = activeSelectedPhotoForPreview {
+                ZStack {
+                    Color.black.opacity(0.8)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            activeSelectedPhotoForPreview = nil
                         }
-                    }
-                    .padding(32)
                     
-                    Spacer()
-                    
-                    // Center Countdown (3.. 2.. 1)
-                    if localCountdown > 0 {
-                        Text("\(localCountdown)")
-                            .font(.system(size: 180, weight: .heavy, design: .rounded))
-                            .foregroundStyle(.white)
-                            .shadow(color: .black.opacity(0.5), radius: 20, y: 10)
-                            .transition(.scale.combined(with: .opacity))
-                            .id("countdown-\(localCountdown)") // Force animation re-trigger
-                    }
-                    
-                    Spacer()
-                    
-                    // Bottom Bar (Progress Foto)
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("FOTO TERAMBIL")
-                                .font(.caption.bold())
-                                .tracking(2)
-                                .foregroundStyle(.white.opacity(0.8))
-                                .shadow(color: .black, radius: 2)
-                            
-                            if let s = session {
-                                Text("\(s.photos.capturedCount)")
-                                    .font(.system(size: 28, weight: .bold))
+                    VStack(spacing: 24) {
+                        if let uiImage = UIImage(data: selectedPhoto.thumbnailData) {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .scaledToFit()
+                                .cornerRadius(16)
+                                .frame(maxHeight: 500)
+                                .shadow(color: .black.opacity(0.4), radius: 20)
+                        }
+                        
+                        HStack(spacing: 16) {
+                            Button(action: {
+                                activeSelectedPhotoForPreview = nil
+                            }) {
+                                Text("Batal")
+                                    .font(.headline)
                                     .foregroundStyle(.white)
-                                    .shadow(color: .black, radius: 4)
+                                    .padding(.horizontal, 24)
+                                    .padding(.vertical, 12)
+                                    .background(.white.opacity(0.15))
+                                    .clipShape(Capsule())
+                            }
+                            
+                            Button(action: {
+                                let targetId = selectedPhoto.id
+                                let targetOrder = selectedPhoto.sortOrder
+                                activeSelectedPhotoForPreview = nil
+                                startManualCaptureSequence(replacePhotoId: targetId, sortOrder: targetOrder)
+                            }) {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "arrow.triangle.2.circlepath.camera")
+                                    Text("Foto Ulang (Retake)")
+                                }
+                                .font(.headline)
+                                .foregroundStyle(.black)
+                                .padding(.horizontal, 24)
+                                .padding(.vertical, 12)
+                                .background(.white)
+                                .clipShape(Capsule())
                             }
                         }
-                        
-                        Spacer()
-                        
-                        // Small pip thumbnail foto terakhir (Opsional)
-                        if session?.photos.capturedPhotos.last?.id != nil {
-                            // Dummy PIP indicator
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Color.white.opacity(0.2))
-                                .frame(width: 60, height: 80)
-                                .overlay(
-                                    Image(systemName: "photo")
-                                        .foregroundStyle(.white.opacity(0.5))
-                                )
-                        }
                     }
-                    .padding(32)
+                    .padding(24)
+                    .background(.ultraThinMaterial)
+                    .cornerRadius(24)
+                    .padding(40)
                 }
+                .zIndex(30)
             }
         }
         .onAppear {
             startSessionSequence()
+            startGestureListener()
+        }
+        .onDisappear {
+            gestureListenerTask?.cancel()
+            gestureListenerTask = nil
+        }
+        .onChange(of: session?.status) { oldStatus, newStatus in
+            if newStatus == .photoSelection {
+                appState.navigateTo(.photoSelection)
+            }
         }
     }
     
@@ -183,53 +316,48 @@ struct ActiveSessionView: View {
                 isBriefing = false
             }
             session.start()
-            startIntervalCaptureLoop()
         }
     }
     
-    private func startIntervalCaptureLoop() {
-        guard let session = session, session.isActive else { return }
-        let interval = 8 // Sesuai config SessionConfig
-        
-        Task {
-            while session.remainingSeconds > 0 && session.isActive {
-                // Countdown loop: 3, 2, 1
-                for i in (1...3).reversed() {
-                    guard session.isActive else { return }
-                    await MainActor.run {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                            localCountdown = i
-                        }
-                    }
-                    try? await Task.sleep(for: .seconds(1))
-                }
-                
-                guard session.isActive else { return }
-                
-                // Jepret!
+    private func startGestureListener() {
+        gestureListenerTask?.cancel()
+        gestureListenerTask = Task { [weak appState] in
+            for await message in await P2PMessageRouter.shared.messageStream(for: .gestureDetected) {
+                guard !Task.isCancelled else { break }
                 await MainActor.run {
-                    localCountdown = 0
-                    triggerCapture()
-                }
-                
-                // Tunggu sisa interval sebelum mulai hitung mundur lagi
-                let waitTime = max(0, interval - 3)
-                if waitTime > 0 {
-                    try? await Task.sleep(for: .seconds(waitTime))
-                }
-            }
-            
-            // Loop berhenti karena waktu habis
-            await MainActor.run {
-                if appState.currentRoute == .activeSession {
-                    appState.navigateTo(.photoSelection)
+                    self.startManualCaptureSequence()
                 }
             }
         }
     }
     
     @MainActor
-    private func triggerCapture() {
+    private func startManualCaptureSequence(replacePhotoId: String? = nil, sortOrder: Int? = nil) {
+        guard !isCapturing && localCountdown == 0 else { return }
+        
+        isCapturing = true
+        
+        // Timer countdown manual: 3, 2, 1
+        Task {
+            for i in (1...3).reversed() {
+                await MainActor.run {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                        localCountdown = i
+                    }
+                }
+                try? await Task.sleep(for: .seconds(1))
+            }
+            
+            await MainActor.run {
+                localCountdown = 0
+                triggerCapture(replacePhotoId: replacePhotoId, sortOrder: sortOrder)
+                isCapturing = false
+            }
+        }
+    }
+    
+    @MainActor
+    private func triggerCapture(replacePhotoId: String? = nil, sortOrder: Int? = nil) {
         // 1. Tampilkan flash putih
         withAnimation(.easeIn(duration: 0.05)) {
             showFlash = true
@@ -244,8 +372,8 @@ struct ActiveSessionView: View {
         
         // 2. Kirim perintah trigger ke iPhone via P2P
         Task {
-            let index = appState.currentSession?.photos.capturedCount ?? 0
-            await P2PMessageRouter.shared.route(.triggerCapture(poseId: nil, captureIndex: index))
+            let index = sortOrder ?? (appState.currentSession?.photos.capturedCount ?? 0)
+            await P2PMessageRouter.shared.route(.triggerCapture(poseId: replacePhotoId, captureIndex: index))
         }
     }
 }

@@ -17,6 +17,7 @@ actor PhotoTransferService {
     private struct PendingTransfer {
         let photoId: String
         let photoData: Data
+        let sortOrder: Int
     }
     
     private var fullQualityQueue: [PendingTransfer] = []
@@ -25,16 +26,16 @@ actor PhotoTransferService {
     private init() {}
     
     /// Dipanggil setiap kali iPhone selesai mengambil foto resolusi tinggi
-    func handleNewCapture(photoId: String, capture: AVCapturePhoto) async {
+    func handleNewCapture(photoId: String, capture: AVCapturePhoto, sortOrder: Int) async {
         guard let data = capture.fileDataRepresentation() else {
             HaispaceLogger.error("Gagal mendapatkan raw data foto dari jepretan", category: "camera")
             return
         }
         
-        HaispaceLogger.info("Mulai dual-channel transfer untuk \(photoId)", category: "p2p")
+        HaispaceLogger.info("Mulai dual-channel transfer untuk \(photoId) (order: \(sortOrder))", category: "p2p")
         
         async let thumbnailTask: Void = sendThumbnailImmediately(photoId: photoId, data: data)
-        async let queueTask: Void = enqueueFullQuality(photoId: photoId, data: data)
+        async let queueTask: Void = enqueueFullQuality(photoId: photoId, data: data, sortOrder: sortOrder)
         
         _ = await (thumbnailTask, queueTask)
     }
@@ -56,8 +57,8 @@ actor PhotoTransferService {
     }
     
     // CHANNEL 2: Background Full Quality Queue
-    private func enqueueFullQuality(photoId: String, data: Data) async {
-        let pending = PendingTransfer(photoId: photoId, photoData: data)
+    private func enqueueFullQuality(photoId: String, data: Data, sortOrder: Int) async {
+        let pending = PendingTransfer(photoId: photoId, photoData: data, sortOrder: sortOrder)
         fullQualityQueue.append(pending)
         
         if !isProcessingQueue {
@@ -90,7 +91,7 @@ actor PhotoTransferService {
                 photoId: nextTransfer.photoId,
                 fileSize: nextTransfer.photoData.count,
                 capturedAt: Date(),
-                sortOrder: 0
+                sortOrder: nextTransfer.sortOrder
             )
             
             do {

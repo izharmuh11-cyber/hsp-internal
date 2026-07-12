@@ -16,6 +16,7 @@
 		298842ACABFE609082F8D369 /* AppSecrets.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E94E858CF0E1D9FC278832 /* AppSecrets.swift */; };
 		312E4885AA74E517548D7FEA /* P2PMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48A34014AEBBEC7A18A7C7BC /* P2PMessage.swift */; };
 		3AA64476AB0FBBC815F3410B /* CameraCaptureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB7E432F9284753E20C6735A /* CameraCaptureService.swift */; };
+		3AA64476AB0FBBC815F3410D /* HandGestureDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB7E432F9284753E20C6735B /* HandGestureDetector.swift */; };
 		5B2144D197626D3DC5E5E0AA /* P2PClientService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F944E1C9E6CFBD7F3471AF3 /* P2PClientService.swift */; };
 		73954D8184E300759ADAD4B8 /* CameraAppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0D34F1D81F1CEE57C6F05A1 /* CameraAppState.swift */; };
 		9D06473BBDEA034C4C23E63F /* CameraSharedTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83784AC5AA11B072D619C4EE /* CameraSharedTypes.swift */; };
@@ -40,6 +41,7 @@
 		'A1000012' = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraView.swift; sourceTree = "<group>"; };
 		'A1000013' = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AB7E432F9284753E20C6735A /* CameraCaptureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CameraCaptureService.swift; path = HaispaceCamera/Services/Camera/CameraCaptureService.swift; sourceTree = SOURCE_ROOT; };
+		AB7E432F9284753E20C6735B /* HandGestureDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = HandGestureDetector.swift; path = HaispaceCamera/Services/Camera/HandGestureDetector.swift; sourceTree = SOURCE_ROOT; };
 		B74C43EE8713624AEFAD0B16 /* PhotoTransferService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PhotoTransferService.swift; path = HaispaceCamera/Services/Camera/PhotoTransferService.swift; sourceTree = SOURCE_ROOT; };
 		C6AA4DEC88E33D41C028424C /* CameraKeychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CameraKeychain.swift; path = HaispaceCamera/Core/Security/CameraKeychain.swift; sourceTree = SOURCE_ROOT; };
 		DF3245AFAF948F81FC481138 /* CameraLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CameraLogger.swift; path = HaispaceCamera/Core/Logging/CameraLogger.swift; sourceTree = SOURCE_ROOT; };
@@ -91,6 +93,7 @@
 				233E4BBC9D472FD083BDC87B /* CameraP2PStore.swift */,
 				48A34014AEBBEC7A18A7C7BC /* P2PMessage.swift */,
 				AB7E432F9284753E20C6735A /* CameraCaptureService.swift */,
+				AB7E432F9284753E20C6735B /* HandGestureDetector.swift */,
 				B74C43EE8713624AEFAD0B16 /* PhotoTransferService.swift */,
 				84B64050928BE53A97B638EE /* VideoEncoderService.swift */,
 				1F944E1C9E6CFBD7F3471AF3 /* P2PClientService.swift */,
@@ -173,6 +176,7 @@
 				160F442A8BCD70DDD66FAA87 /* CameraP2PStore.swift in Sources */,
 				312E4885AA74E517548D7FEA /* P2PMessage.swift in Sources */,
 				3AA64476AB0FBBC815F3410B /* CameraCaptureService.swift in Sources */,
+				3AA64476AB0FBBC815F3410D /* HandGestureDetector.swift in Sources */,
 				B808436FA307BB4C41DA4B38 /* PhotoTransferService.swift in Sources */,
 				0BA44E8E86CCBE8E499FA285 /* VideoEncoderService.swift in Sources */,
 				5B2144D197626D3DC5E5E0AA /* P2PClientService.swift in Sources */,
