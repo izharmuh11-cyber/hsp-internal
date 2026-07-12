@@ -69,6 +69,8 @@ struct HaispaceLogger {
     ) {
         let logger = os.Logger(subsystem: boothSubsystem, category: category)
         logger.info("\(message, privacy: .public)")
+        
+        LocalLogWriter.write(level: .info, message: message)
     }
 
     // MARK: Debug Logging (hanya di DEBUG build)

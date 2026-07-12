@@ -18,6 +18,9 @@ struct MissionControlView: View {
     // Pairing setup presentation
     @State private var isShowingPairingSetup = false
     
+    // Log viewer presentation
+    @State private var isShowingLogViewer = false
+    
     var body: some View {
         ZStack {
             // Invisible background to close when tapped outside
@@ -91,6 +94,9 @@ struct MissionControlView: View {
         }
         .fullScreenCover(isPresented: $isShowingPairingSetup) {
             PairingSetupView()
+        }
+        .sheet(isPresented: $isShowingLogViewer) {
+            LogViewerSheet()
         }
     }
     
@@ -208,6 +214,41 @@ struct MissionControlView: View {
                     }
                 }
             }
+            
+            // 5. DIAGNOSTIK & LOGS
+            VStack(alignment: .leading, spacing: 16) {
+                SectionHeader(title: "DIAGNOSTIK & LOGS", icon: "doc.text.magnifyingglass")
+                
+                HStack(spacing: 12) {
+                    Button(action: {
+                        isShowingLogViewer = true
+                    }) {
+                        HStack {
+                            Image(systemName: "doc.plaintext")
+                            Text("Lihat Log")
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.blue.opacity(0.15))
+                        .foregroundStyle(.blue)
+                        .cornerRadius(12)
+                    }
+                    
+                    if let logURL = LocalLogWriter.logFileURL() {
+                        ShareLink(item: logURL) {
+                            HStack {
+                                Image(systemName: "square.and.arrow.up")
+                                Text("Bagikan Log")
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.green.opacity(0.15))
+                            .foregroundStyle(.green)
+                            .cornerRadius(12)
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -300,4 +341,54 @@ private struct FrameThumbnail: View {
 #Preview {
     MissionControlView()
         .environment(AppState.preview)
+}
+
+private struct LogViewerSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var logContent = ""
+    
+    var body: some View {
+        NavigationStack {
+            VStack {
+                if logContent.isEmpty {
+                    Text("Log kosong atau tidak dapat dimuat.")
+                        .foregroundStyle(.secondary)
+                } else {
+                    ScrollView {
+                        Text(logContent)
+                            .font(.system(.caption, design: .monospaced))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding()
+                    }
+                }
+            }
+            .navigationTitle("Log Sistem")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Hapus Log", role: .destructive) {
+                        LocalLogWriter.clearLog()
+                        logContent = ""
+                    }
+                }
+                
+                ToolbarItem(placement: .topBarTrailing) {
+                    if let logURL = LocalLogWriter.logFileURL() {
+                        ShareLink(item: logURL) {
+                            Image(systemName: "square.and.arrow.up")
+                        }
+                    }
+                }
+                
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Tutup") {
+                        dismiss()
+                    }
+                }
+            }
+            .onAppear {
+                logContent = LocalLogWriter.readLogContent()
+            }
+        }
+    }
 }

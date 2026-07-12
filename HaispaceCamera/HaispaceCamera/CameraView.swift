@@ -54,6 +54,7 @@ struct CameraView: View {
 private struct CameraStandbyView: View {
     @Environment(CameraAppState.self) private var cameraState
     @State private var isAnimating = false
+    @State private var isShowingLogViewer = false
 
     var body: some View {
         ZStack {
@@ -165,6 +166,23 @@ private struct CameraStandbyView: View {
             }
         }
         .preferredColorScheme(.dark)
+        .overlay(alignment: .topTrailing) {
+            Button {
+                isShowingLogViewer = true
+            } label: {
+                Image(systemName: "doc.text.magnifyingglass")
+                    .font(.title3.weight(.medium))
+                    .foregroundStyle(.white.opacity(0.7))
+                    .padding(12)
+                    .background(.ultraThinMaterial)
+                    .clipShape(Circle())
+            }
+            .padding(.top, 16)
+            .padding(.trailing, 24)
+        }
+        .sheet(isPresented: $isShowingLogViewer) {
+            CameraLogViewerSheet()
+        }
         .onAppear {
             withAnimation(.easeInOut(duration: 4).repeatForever(autoreverses: true)) {
                 isAnimating = true
@@ -355,4 +373,54 @@ private struct CameraErrorView: View {
 #Preview("Black Screen — Sesi Aktif") {
     CameraView()
         .environment(CameraAppState.previewActive)
+}
+
+private struct CameraLogViewerSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var logContent = ""
+    
+    var body: some View {
+        NavigationStack {
+            VStack {
+                if logContent.isEmpty {
+                    Text("Log kosong atau tidak dapat dimuat.")
+                        .foregroundStyle(.secondary)
+                } else {
+                    ScrollView {
+                        Text(logContent)
+                            .font(.system(.caption, design: .monospaced))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding()
+                    }
+                }
+            }
+            .navigationTitle("Log Kamera")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Hapus Log", role: .destructive) {
+                        LocalLogWriter.clearLog(subsystem: "camera")
+                        logContent = ""
+                    }
+                }
+                
+                ToolbarItem(placement: .topBarTrailing) {
+                    if let logURL = LocalLogWriter.logFileURL(subsystem: "camera") {
+                        ShareLink(item: logURL) {
+                            Image(systemName: "square.and.arrow.up")
+                        }
+                    }
+                }
+                
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Tutup") {
+                        dismiss()
+                    }
+                }
+            }
+            .onAppear {
+                logContent = LocalLogWriter.readLogContent(subsystem: "camera")
+            }
+        }
+    }
 }

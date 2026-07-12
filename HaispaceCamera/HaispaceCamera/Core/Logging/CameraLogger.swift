@@ -35,6 +35,7 @@ struct HaispaceLogger {
     ) {
         let logger = os.Logger(subsystem: cameraSubsystem, category: category)
         logger.info("\(message, privacy: .public)")
+        LocalLogWriter.write(level: .info, message: message, subsystem: "camera")
     }
 
     static func debug(
@@ -107,6 +108,19 @@ struct LocalLogWriter {
                 try? data.write(to: url, options: .atomic)
             }
         }
+    }
+
+    static func readLogContent(subsystem: String) -> String {
+        guard let url = logFileURL(subsystem: subsystem),
+              let content = try? String(contentsOf: url, encoding: .utf8) else {
+            return "Log file tidak ditemukan atau kosong."
+        }
+        return content
+    }
+
+    static func clearLog(subsystem: String) {
+        guard let url = logFileURL(subsystem: subsystem) else { return }
+        try? FileManager.default.removeItem(at: url)
     }
 
     static func logFileURL(subsystem: String) -> URL? {
