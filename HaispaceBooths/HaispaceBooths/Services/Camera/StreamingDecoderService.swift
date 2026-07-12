@@ -25,6 +25,9 @@ final class StreamingDecoderService {
     // Callback untuk hasil analisis Vision AI
     var onFrameAnalyzed: (@Sendable (Int, PoseCategory, ZoomRecommendation?) -> Void)?
     
+    // Callback saat orientasi video stream berubah (dideteksi dari dimensi frame)
+    var onVideoDimensionsChanged: (@Sendable (Bool) -> Void)?
+    
     // SPS & PPS dari stream
     private var sps: [UInt8]?
     private var pps: [UInt8]?
@@ -144,6 +147,13 @@ final class StreamingDecoderService {
             // Push ke layer
             if displayLayer.isReadyForMoreMediaData {
                 displayLayer.enqueue(sampleBuf)
+            }
+            
+            // Deteksi dimensi & aspek rasio aliran video untuk auto-rotasi
+            if let formatDesc = CMSampleBufferGetFormatDescription(sampleBuf) {
+                let dimensions = CMVideoFormatDescriptionGetDimensions(formatDesc)
+                let isLandscape = dimensions.width >= dimensions.height
+                self.onVideoDimensionsChanged?(isLandscape)
             }
             
             // Analisis Vision AI secara periodik (di-throttled secara internal)

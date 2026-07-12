@@ -59,6 +59,7 @@ struct ActiveSessionView: View {
     @State private var detectedFaceCount: Int = 0
     @State private var currentPoseCategory: PoseCategory = .waiting
     @State private var recommendedZoom: ZoomRecommendation? = nil
+    @State private var isStreamLandscape: Bool = true
     
     // Timer sesi dari SessionStore
     private var session: SessionStore? {
@@ -72,7 +73,15 @@ struct ActiveSessionView: View {
             HStack(spacing: 0) {
                 // Main camera preview area
                 ZStack {
+                    // Background Blur Aurora (Menghindari area hitam kosong di samping saat portrait)
                     StreamingVideoView()
+                        .blur(radius: 30)
+                        .opacity(0.5)
+                        .ignoresSafeArea()
+                    
+                    // Aliran video utama dengan aspek rasio dinamis (16:9 / 9:16)
+                    StreamingVideoView()
+                        .aspectRatio(isStreamLandscape ? 16.0 / 9.0 : 9.0 / 16.0, contentMode: .fit)
                         .ignoresSafeArea()
                     
                     // Corner Brackets Alignment Guide (Tampil tipis membantu tamu memposisikan diri)
@@ -374,13 +383,25 @@ struct ActiveSessionView: View {
                     self.recommendedZoom = zoom
                 }
             }
+            
+            // Set callback untuk deteksi aspek rasio aliran video
+            StreamingDecoderService.shared.onVideoDimensionsChanged = { isLandscape in
+                Task { @MainActor in
+                    if self.isStreamLandscape != isLandscape {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                            self.isStreamLandscape = isLandscape
+                        }
+                    }
+                }
+            }
         }
         .onDisappear {
             gestureListenerTask?.cancel()
             gestureListenerTask = nil
             
-            // Clear Vision AI callback
+            // Clear Vision AI callbacks
             StreamingDecoderService.shared.onFrameAnalyzed = nil
+            StreamingDecoderService.shared.onVideoDimensionsChanged = nil
         }
         .onChange(of: session?.status) { oldStatus, newStatus in
             if newStatus == .photoSelection {

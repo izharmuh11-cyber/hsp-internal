@@ -29,6 +29,8 @@ final class CameraCaptureService: NSObject {
     }
     
     func configureAndStart() {
+        startOrientationTracking()
+        
         if isConfigured {
             if !captureSession.isRunning {
                 Task.detached(priority: .userInitiated) {
@@ -107,9 +109,61 @@ final class CameraCaptureService: NSObject {
     }
     
     func stop() {
+        stopOrientationTracking()
         if captureSession.isRunning {
             captureSession.stopRunning()
             HaispaceLogger.info("Camera capture session stopped", category: "camera")
+        }
+    }
+    
+    // MARK: - Orientation Tracking
+    
+    private func startOrientationTracking() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleOrientationChange),
+            name: UIDevice.orientationDidChangeNotification,
+            object: nil
+        )
+        UIDevice.current.beginGeneratingDeviceOrientationNotifications()
+        // Pemicu awal
+        handleOrientationChange()
+    }
+    
+    private func stopOrientationTracking() {
+        NotificationCenter.default.removeObserver(
+            self,
+            name: UIDevice.orientationDidChangeNotification,
+            object: nil
+        )
+        UIDevice.current.endGeneratingDeviceOrientationNotifications()
+    }
+    
+    @objc private func handleOrientationChange() {
+        let deviceOrientation = UIDevice.current.orientation
+        let avOrientation: AVCaptureVideoOrientation
+        
+        switch deviceOrientation {
+        case .portrait:
+            avOrientation = .portrait
+        case .landscapeLeft:
+            avOrientation = .landscapeRight // Kamera belakang mirror-mapping
+        case .landscapeRight:
+            avOrientation = .landscapeLeft  // Kamera belakang mirror-mapping
+        case .portraitUpsideDown:
+            avOrientation = .portraitUpsideDown
+        default:
+            return // Tetap gunakan orientasi sebelumnya jika posisi datar (flat)
+        }
+        
+        // Perbarui orientasi koneksi video (preview stream)
+        if let videoConnection = videoOutput.connection(with: .video), videoConnection.isVideoOrientationSupported {
+            videoConnection.videoOrientation = avOrientation
+        }
+        
+        // Perbarui orientasi koneksi foto (jepretan resolusi tinggi)
+        if let photoConnection = photoOutput.connection(with: .video), photoConnection.isVideoOrientationSupported {
+            photoConnection.videoOrientation = avOrientation
         }
     }
 }
