@@ -54,6 +54,12 @@ struct ActiveSessionView: View {
     @State private var activeSelectedPhotoForPreview: CapturedPhoto? = nil
     @State private var gestureListenerTask: Task<Void, Never>? = nil
     
+    // Vision AI Pose Guide States
+    @State private var showPoseGuide: Bool = true
+    @State private var detectedFaceCount: Int = 0
+    @State private var currentPoseCategory: PoseCategory = .waiting
+    @State private var recommendedZoom: ZoomRecommendation? = nil
+    
     // Timer sesi dari SessionStore
     private var session: SessionStore? {
         appState.currentSession
@@ -95,6 +101,60 @@ struct ActiveSessionView: View {
                             .id("countdown-\(localCountdown)") // Force animation re-trigger
                     }
                     
+                    // Toggle Pose Guide Button
+                    if localCountdown == 0 && !showFlash && !isBriefing {
+                        VStack {
+                            HStack {
+                                Spacer()
+                                Button(action: {
+                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                        showPoseGuide.toggle()
+                                    }
+                                }) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: showPoseGuide ? "person.crop.rectangle.stack.fill" : "person.crop.rectangle.stack")
+                                        Text(showPoseGuide ? "Sembunyikan Panduan" : "Panduan Pose")
+                                            .font(.subheadline.bold())
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 10)
+                                    .background(.ultraThinMaterial)
+                                    .foregroundStyle(.white)
+                                    .cornerRadius(20)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 20)
+                                            .stroke(.white.opacity(0.15), lineWidth: 1)
+                                    )
+                                    .shadow(color: .black.opacity(0.3), radius: 10, y: 5)
+                                }
+                                .padding(.top, 24)
+                                .padding(.trailing, 24)
+                            }
+                            Spacer()
+                        }
+                    }
+                    
+                    // Auto-Zoom Recommendation Toast
+                    if let recommendedZoom = recommendedZoom, localCountdown == 0 && !showFlash && !isBriefing {
+                        VStack {
+                            HStack {
+                                Image(systemName: "sparkles")
+                                    .foregroundStyle(Color(red: 255/255, green: 215/255, blue: 0/255))
+                                Text("AI menyarankan zoom: \(recommendedZoom.description)")
+                                    .font(.subheadline.bold())
+                                    .foregroundStyle(.white)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(.black.opacity(0.75))
+                            .cornerRadius(16)
+                            .transition(.move(edge: .top).combined(with: .opacity))
+                            .padding(.top, 24)
+                            Spacer()
+                        }
+                        .allowsHitTesting(false)
+                    }
+                    
                     // UI Chrome (Hanya tampil jika tidak ada flash dan bukan briefing)
                     if !showFlash && !isBriefing {
                         // Floating Shutter Button
@@ -124,6 +184,13 @@ struct ActiveSessionView: View {
                             }
                         }
                     }
+                }
+                
+                // Sidebar Pose Guide Panel
+                if showPoseGuide && localCountdown == 0 {
+                    PoseGuidePanel(category: currentPoseCategory, faceCount: detectedFaceCount)
+                        .frame(width: 240)
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
                 }
                 
                 // Sidebar Photo Grid (Right)
@@ -298,10 +365,22 @@ struct ActiveSessionView: View {
         .onAppear {
             startSessionSequence()
             startGestureListener()
+            
+            // Set Vision AI callback
+            StreamingDecoderService.shared.onFrameAnalyzed = { count, category, zoom in
+                Task { @MainActor in
+                    self.detectedFaceCount = count
+                    self.currentPoseCategory = category
+                    self.recommendedZoom = zoom
+                }
+            }
         }
         .onDisappear {
             gestureListenerTask?.cancel()
             gestureListenerTask = nil
+            
+            // Clear Vision AI callback
+            StreamingDecoderService.shared.onFrameAnalyzed = nil
         }
         .onChange(of: session?.status) { oldStatus, newStatus in
             if newStatus == .photoSelection {

@@ -22,6 +22,9 @@ final class StreamingDecoderService {
     // Layer tampilan yang ditempel ke SwiftUI View
     let displayLayer = AVSampleBufferDisplayLayer()
     
+    // Callback untuk hasil analisis Vision AI
+    var onFrameAnalyzed: (@Sendable (Int, PoseCategory, ZoomRecommendation?) -> Void)?
+    
     // SPS & PPS dari stream
     private var sps: [UInt8]?
     private var pps: [UInt8]?
@@ -141,6 +144,13 @@ final class StreamingDecoderService {
             // Push ke layer
             if displayLayer.isReadyForMoreMediaData {
                 displayLayer.enqueue(sampleBuf)
+            }
+            
+            // Analisis Vision AI secara periodik (di-throttled secara internal)
+            if let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuf) {
+                PoseIntelligenceService.shared.analyzeFrame(pixelBuffer: pixelBuffer) { count, category, zoom in
+                    self.onFrameAnalyzed?(count, category, zoom)
+                }
             }
         }
     }
