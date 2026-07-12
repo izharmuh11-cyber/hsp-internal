@@ -1,73 +1,78 @@
-# HaiBooth — Apple Native Photobooth System
+# 📸 HaiBooth — Apple Native Photobooth System
 
 ![HaiBooth Cover](https://via.placeholder.com/1200x400/1A1A24/FFFFFF?text=HAIBOOTH+SYSTEM+—+APPLE+NATIVE)
 
-HaiBooth adalah sistem *photobooth* canggih, **Native First**, dan dirancang khusus untuk ekosistem Apple. Arsitekturnya memisahkan peran kamera (iPhone) dan peran kios tamu (iPad) yang berkomunikasi secara terenkripsi *(P2P)* tanpa membutuhkan jaringan internet aktif *(Offline Always)*.
+HaiBooth adalah sistem *photobooth* profesional yang dirancang khusus dengan pendekatan **Native-First** untuk ekosistem Apple. Arsitektur mutakhirnya memisahkan peran **Kamera Perekam (iPhone)** dan **Kiosk Interaktif Tamu (iPad)** yang berkomunikasi secara terenkripsi *(Peer-to-Peer)* tanpa membutuhkan jaringan internet aktif *(Offline Always)*.
 
 ---
 
-## 🌟 Fitur Utama (Rekapitulasi Fase 1 - 5)
+## 🌟 Rekapitulasi Fitur (Fase 1 - 5)
 
-Proyek ini telah dikembangkan secara bertahap melalui 5 fase krusial:
+Proyek ini telah dikembangkan secara bertahap melalui 5 fase krusial hingga mencapai bentuk sempurnanya:
 
-1. **Fase 1: P2P Network & Kamera Engine**
-   - Menggunakan `MultipeerConnectivity` dengan enkripsi TLS 1.2 untuk komunikasi *seamless* antara iPhone (Camera App) dan iPad (Kiosk App).
-   - *Engine* kamera memanfaatkan `AVCaptureSession` dengan dukungan resolusi tinggi 12MP Apple ProRAW dan *shutter* asinkron tanpa nge-*lag*.
+### Fase 1: P2P Network & Kamera Engine 📡
+- **Offline P2P TLS 1.2:** Menggunakan `MultipeerConnectivity` dan Network.framework untuk komunikasi nirkabel tanpa batas antara iPhone dan iPad dengan latensi ultra-rendah.
+- **ProRAW 12MP Capture Engine:** Mesin kamera di iPhone memanfaatkan `AVCaptureSession` dengan dukungan resolusi tinggi dan pengambilan gambar asinkron tanpa *shutter-lag*.
 
-2. **Fase 2: Alur Kiosk Tamu & Desain UI iPad**
-   - Layar sentuh *Kiosk* di iPad (dibangun menggunakan SwiftUI) yang menuntun tamu secara *step-by-step*: Pendaftaran ➔ Pemilihan Paket ➔ Sesi Foto Aktif ➔ Pemilihan Foto ➔ Pembayaran.
-   - Menggunakan *macOS-inspired frosted glass UI* untuk kesan mewah dan responsif.
+### Fase 2: Alur Kiosk Tamu & Desain UI iPad 🎨
+- **Kiosk Interaktif SwiftUI:** Menuntun tamu melalui proses yang *seamless*: Pendaftaran Tamu ➔ Pemilihan Paket ➔ Sesi Foto ➔ Pemilihan Cetak ➔ Pembayaran.
+- **Frosted Glass UI:** Desain antarmuka terinspirasi dari macOS (material *ThinMaterial*) yang memberikan kesan elegan, responsif, dan premium.
 
-3. **Fase 3: Mission Control & Database Operator**
-   - **Mission Control**: Dashboard rahasia bergaya *Control Center* Apple yang dapat diakses operator melalui ketukan jari 3 kali (*three-finger tap*). Operator dapat mengontrol sesi jarak jauh, memantau daya baterai iPhone, dan menambahkan durasi waktu tamu.
-   - **Offline Ledger (CoreData)**: Semua transaksi, data cetak, dan analitik disimpan aman di memori lokal (*Actor-isolated*) dan akan disinkronisasi di *background* (*Cloudflare R2/Supabase*) ketika *router* menemukan jaringan internet.
+### Fase 3: Mission Control & Database Operator ⚙️
+- **Mission Control (Secret Dashboard):** Panel kontrol operator tersembunyi yang dapat dipanggil menggunakan ketukan 3 jari (*three-finger tap*). Memungkinkan reset sesi, tambah waktu, dan pantau baterai iPhone secara *remote*.
+- **Offline Ledger (CoreData):** Semua transaksi pembayaran, antrian cetak, dan data tamu disimpan di penyimpanan lokal, dan akan disinkronisasikan perlahan ke *Cloud* saat internet tersedia.
 
-4. **Fase 4: Fitur Premium & Kecerdasan Buatan (AI)**
-   - **Metal LUT Filters**: Pemrosesan *Color Grading* menggunakan format standar industri (`.cube`) yang di-*render* instan oleh GPU iOS (*CoreImage + Metal*) — membuat filter sinematik mulus saat slider digeser.
-   - **Apple Vision AI**: *Neural Engine (ANE)* melakukan *tracking* wajah setiap 2 detik untuk menyarankan komposisi *zoom* layar secara pintar, dilengkapi dengan **Living Pose Cards** (Video rekaman loop yang mengajari tamu berpose).
-   - **Memory Book Auto-Generator**: Secara otomatis merakit foto-foto sesi menjadi kolase berformat 9:16 cantik (*Instagram Story Ready*) segera setelah sesi usai tanpa *render time* berlebih.
+### Fase 4: Fitur Premium & Kecerdasan Buatan (AI) 🧠
+- **Real-Time Metal LUT Filters:** Filter *Color Grading* (Hitam Putih, Vintage, Cinematic) berformat `.cube` yang di-render 60 FPS oleh GPU menggunakan **Metal & CoreImage**.
+- **Apple Vision AI Tracking:** Deteksi wajah dan tubuh otomatis berbasis *Neural Engine*. Layar iPad akan memberikan instruksi cerdas untuk memandu tamu berpose.
+- **Memory Book Auto-Generator:** Generator kolase otomatis (rasio 9:16) untuk langsung dibagikan tamu ke Instagram Story/TikTok.
 
-5. **Fase 5: Bug Fixes & Penyatuan Router Utama**
-   - Sistem menavigasi setiap layar UI *Kiosk* menggunakan pola `@Observable AppState` yang disuntikkan ke `.environment`, menjaga sinkronisasi status UI dan *logic layer*.
-   - Integrasi server *Bonjour HTTP Local* yang merilis QR Code untuk pengunduhan foto tamu instan — **Tanpa Kuota Internet!**
+### Fase 5: Bug Fixes, Finalisasi & Sinkronisasi Xcode 🛠️
+- **Robust Architecture:** Memperbaiki aliran Data Flow SwiftUI menggunakan `@Observable AppState`, menjaga agar UI tidak patah saat transisi.
+- **Bonjour Local HTTP Server:** iPad otomatis menjadi server jaringan lokal sehingga tamu dapat mengunduh foto mereka langsung via pemindaian **QR Code** tanpa kuota seluler.
 
 ---
 
-## 🚀 Cara Menjalankan Aplikasi di Xcode Pertama Kali
+## 🚀 Cara Menjalankan di Xcode Pertama Kali
 
-Repositori ini memuat **dua aplikasi** yang berjalan bersamaan:
-- **`HaispaceBooths.xcodeproj`** (Aplikasi Kios & Dashboard Operator untuk **iPad**)
-- **`HaispaceCamera.xcodeproj`** (Aplikasi Perekam & Transmitter untuk **iPhone**)
+Repositori ini memuat **dua aplikasi** yang berjalan saling berdampingan:
+1. **`HaispaceBooths.xcodeproj`** (Aplikasi Kios & Dashboard Operator untuk **iPad**)
+2. **`HaispaceCamera.xcodeproj`** (Aplikasi Perekam & Transmitter untuk **iPhone**)
 
-**Langkah-langkah Build:**
-1. Buka `HaispaceBooths/HaispaceBooths.xcodeproj` menggunakan Xcode (Versi 15+ disarankan).
-2. Di bagian pengaturan *Signing & Capabilities*, atur **Team** menjadi tim Apple Developer Anda.
-3. Pilih *Target Device* iPad Anda (Pastikan iPadOS 17+ terpasang).
+**Langkah-langkah Kompilasi (Build):**
+1. Buka folder `HaispaceBooths` dan buka `HaispaceBooths.xcodeproj` menggunakan Xcode (Versi 16+ disarankan).
+2. Pergi ke tab **Signing & Capabilities**, atur **Team** menjadi tim Apple Developer (Personal/Company) Anda.
+3. Hubungkan **iPad asli** menggunakan kabel ke Mac Anda, dan pilih iPad tersebut sebagai *Target Device*.
 4. Tekan **Run (Cmd + R)** untuk mem-*build* aplikasi di iPad.
-5. Ulangi langkah 1-4 untuk `HaispaceCamera/HaispaceCamera.xcodeproj` menggunakan iPhone Anda.
+5. Setelah berhasil, tutup Xcode (opsional) dan buka `HaispaceCamera/HaispaceCamera.xcodeproj`.
+6. Lakukan hal yang sama untuk **iPhone asli** Anda.
 
-> **Note:** Fitur seperti `MultipeerConnectivity` tidak akan berjalan normal di Simulator. **Wajib** dijalankan menggunakan *real devices* (iPhone & iPad asli).
+> **Peringatan Keras (Simulator):** Fitur kamera perangkat keras, Vision AI ANE, dan `MultipeerConnectivity` **tidak dapat** berjalan di iOS Simulator. **Wajib** menjalankannya menggunakan *real devices*.
+
+---
+
+## 📡 Panduan Koneksi P2P (Menyambungkan iPhone & iPad)
+
+Untuk menjamin latensi serendah mungkin tanpa kabel (di tengah keramaian acara/sinyal *crowded*):
+
+1. **Persiapan Sinyal Jaringan (Rekomendasi Praktik Terbaik):**
+   - Bawa *portable router* biasa (tanpa perlu kartu SIM/paket data) ke lokasi acara. 
+   - Buat jaringan Wi-Fi lokal tertutup (Misal: `HAISPACE_BOOTH_5G`).
+   - Hubungkan iPhone dan iPad ke Wi-Fi tersebut. Apple *Multipeer Connectivity* sangat cerdas; jika perangkat berada dalam satu jaringan router, ia akan menggunakan jalur *Infrastructure Wi-Fi* yang jauh lebih kuat dan cepat dibandingkan *Bluetooth* atau *Ad-hoc Wi-Fi*.
+
+2. **Proses Pemasangan (Pairing):**
+   - Buka aplikasi **HaispaceBooths** di iPad. Setelah login, aplikasi akan membuka jalur komunikasi P2P sebagai *Broadcaster*.
+   - Buka aplikasi **HaispaceCamera** di iPhone.
+   - Layar iPhone akan masuk ke mode *Radar Scanner*. Ketuk nama iPad Anda saat muncul di daftar perangkat terdekat.
+   - Layar iPad akan menampilkan pop-up konfirmasi *Pairing*. Tekan **Terima (Accept)**.
+   - Selesai! Layar iPad sekarang akan menayangkan siaran langsung (Live View) HD dari kamera iPhone Anda.
 
 ---
 
-## 📡 Panduan Koneksi P2P (Menyambungkan iPhone dan iPad)
+## 🔐 Keamanan & Lingkungan (App Secrets)
 
-Untuk menjamin latensi serendah mungkin tanpa kabel:
-
-1. **Persiapan Perangkat Biasa:**
-   - Nyalakan **Wi-Fi** dan **Bluetooth** pada iPad dan iPhone.
-   - (Opsional namun sangat direkomendasikan): Bawa *portable router* atau *Mi-Fi* ke lokasi acara. Buat jaringan Wi-Fi lokal tertutup bernama `HAISPACE_BOOTH` (tidak butuh kuota). Hubungkan iPhone dan iPad ke Wi-Fi tersebut. Apple *Multipeer Connectivity* sangat optimal jika berada pada jaringan router yang sama (akan menggunakan jalur *Infrastructure Wi-Fi* daripada *Bluetooth*).
-
-2. **Proses Pairing (App):**
-   - Buka **HaispaceBooths (iPad)**. Lakukan login operator.
-   - Buka **HaispaceCamera (iPhone)**.
-   - Pada Dashboard Kiosk iPad, aplikasi secara otomatis memulai layanan *Broadcasting*.
-   - Di iPhone Anda, layar *Scanner* akan muncul otomatis. Pilih nama iPad Anda di radar pencarian perangkat.
-   - Di iPad, sebuah pop-up *Pairing Request* (Permintaan Pemasangan) akan muncul. Tekan **Terima (Accept)**.
-   - Boom! 💥 Layar iPad kini seharusnya menampilkan umpan video *live stream* dengan resolusi tinggi langsung dari iPhone Anda. 
-
-## 🔐 Keamanan (App Secrets)
-JANGAN pernah melakukan *commit* konstanta rahasia ke publik. Kunci *HMAC* bawaan di dalam `AppSecrets.swift` saat ini hanya digunakan untuk mode `#DEBUG`. Jika merilisnya ke *Production*, letakkan kredensial pada `.xcconfig` Anda.
+Jangan pernah menyimpan kredensial produksi (API Key, kunci enkripsi JWT, sandi) di dalam *source code* Git. 
+Buka file `Core/Security/AppSecrets.swift`. Kunci *HMAC* dan konfigurasi di sana sudah diamankan, namun jika Anda bersiap meluncurkan ke publik (App Store), sangat direkomendasikan memindahkannya ke `.xcconfig` yang di-*gitignore*.
 
 ---
-*Dikembangkan dengan dedikasi penuh untuk memberikan revolusi nyata pada pengalaman fotografi acara.* 📸✨
+*Dikembangkan dengan penuh ketelitian untuk revolusi industri Photobooth.* 🚀🍏
