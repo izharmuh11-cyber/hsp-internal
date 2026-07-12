@@ -365,8 +365,7 @@ struct ActiveSessionView: View {
                     .zIndex(14)
                 }
             }
-        }
-            
+        
             // Briefing Overlay (Tampil sesaat sebelum sesi dimulai)
             if isBriefing {
                 VStack(spacing: 24) {
