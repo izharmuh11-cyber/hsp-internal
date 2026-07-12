@@ -213,7 +213,10 @@ struct LocalLogWriter {
 
 struct GitHubLogUploader {
     static func uploadLatestLog(eventName: String = "auto_event") {
-        guard let token = UserDefaults.standard.string(forKey: "github_pat"), !token.isEmpty else { return }
+        guard let token = UserDefaults.standard.string(forKey: "github_pat"), !token.isEmpty else {
+            HaispaceLogger.warning("Auto log upload dilewati: token PAT kosong. Silakan masukkan token Anda di menu Log Sistem.", category: "logging")
+            return
+        }
         
         let logContent = LocalLogWriter.readLogContent()
         guard !logContent.isEmpty && logContent != "Log file tidak ditemukan atau kosong." else { return }
@@ -243,8 +246,16 @@ struct GitHubLogUploader {
         ]
         request.httpBody = try? JSONSerialization.data(withJSONObject: body)
         
-        URLSession.shared.dataTask(with: request) { _, _, _ in
-            // Silent background upload
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                HaispaceLogger.error("Auto upload log gagal: \(error.localizedDescription)", category: "logging")
+            } else if let httpResponse = response as? HTTPURLResponse {
+                if (200...299).contains(httpResponse.statusCode) {
+                    HaispaceLogger.info("Auto upload log sukses! File: \(filename)", category: "logging")
+                } else {
+                    HaispaceLogger.error("Auto upload log gagal dengan status: \(httpResponse.statusCode)", category: "logging")
+                }
+            }
         }.resume()
     }
 }
