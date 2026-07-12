@@ -398,58 +398,118 @@ struct ActiveSessionView: View {
             // Selective Retake Premium Modal Overlay
             if let selectedPhoto = activeSelectedPhotoForPreview {
                 ZStack {
-                    Color.black.opacity(0.8)
+                    // Deep Blur Glass Background
+                    Rectangle()
+                        .fill(.ultraThinMaterial)
+                        .ignoresSafeArea()
+                    Color.black.opacity(0.45)
                         .ignoresSafeArea()
                         .onTapGesture {
-                            activeSelectedPhotoForPreview = nil
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                activeSelectedPhotoForPreview = nil
+                            }
                         }
                     
-                    VStack(spacing: 24) {
+                    VStack(spacing: 28) {
+                        // Modal Header
+                        VStack(spacing: 6) {
+                            Text("TINJAU POSE \(selectedPhoto.sortOrder + 1)")
+                                .font(.system(size: 20, weight: .black, design: .rounded))
+                                .tracking(3)
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: [Color(hex: "#7C5CFC"), Color(hex: "#9D85FF")],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                            
+                            Text("Apakah pose ini sudah sesuai, atau Anda ingin mengambil foto ulang?")
+                                .font(.system(size: 13, weight: .medium, design: .rounded))
+                                .foregroundStyle(.white.opacity(0.6))
+                                .multilineTextAlignment(.center)
+                        }
+                        .padding(.top, 12)
+                        
+                        // Photo Frame with Glowing Border
                         if let uiImage = UIImage(data: selectedPhoto.thumbnailData) {
                             Image(uiImage: uiImage)
                                 .resizable()
                                 .scaledToFit()
+                                .frame(maxHeight: 460)
                                 .cornerRadius(16)
-                                .frame(maxHeight: 500)
-                                .shadow(color: .black.opacity(0.4), radius: 20)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(Color.white.opacity(0.2), lineWidth: 1.5)
+                                )
+                                .shadow(color: .black.opacity(0.55), radius: 24, y: 12)
                         }
                         
-                        HStack(spacing: 16) {
+                        // Action Buttons
+                        HStack(spacing: 20) {
+                            // Button Cancel / Close
                             Button(action: {
-                                activeSelectedPhotoForPreview = nil
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                    activeSelectedPhotoForPreview = nil
+                                }
                             }) {
                                 Text("Batal")
-                                    .font(.headline)
+                                    .font(.system(.headline, design: .rounded))
                                     .foregroundStyle(.white)
-                                    .padding(.horizontal, 24)
-                                    .padding(.vertical, 12)
-                                    .background(.white.opacity(0.15))
+                                    .frame(width: 140, height: 48)
+                                    .background(.white.opacity(0.12))
                                     .clipShape(Capsule())
+                                    .overlay(
+                                        Capsule()
+                                            .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                                    )
                             }
                             
+                            // Button Retake
                             Button(action: {
                                 let targetId = selectedPhoto.id
                                 let targetOrder = selectedPhoto.sortOrder
-                                activeSelectedPhotoForPreview = nil
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                    activeSelectedPhotoForPreview = nil
+                                }
                                 startManualCaptureSequence(replacePhotoId: targetId, sortOrder: targetOrder)
                             }) {
                                 HStack(spacing: 8) {
                                     Image(systemName: "arrow.triangle.2.circlepath.camera")
                                     Text("Foto Ulang (Retake)")
                                 }
-                                .font(.headline)
-                                .foregroundStyle(.black)
-                                .padding(.horizontal, 24)
-                                .padding(.vertical, 12)
-                                .background(.white)
+                                .font(.system(.headline, design: .rounded).bold())
+                                .foregroundStyle(.white)
+                                .frame(width: 220, height: 48)
+                                .background(
+                                    LinearGradient(
+                                        colors: [Color(hex: "#7C5CFC"), Color(hex: "#9D85FF")],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
                                 .clipShape(Capsule())
+                                .shadow(color: Color(hex: "#7C5CFC").opacity(0.35), radius: 12, y: 6)
                             }
                         }
+                        .padding(.bottom, 12)
                     }
-                    .padding(24)
-                    .background(.ultraThinMaterial)
-                    .cornerRadius(24)
-                    .padding(40)
+                    .padding(.horizontal, 32)
+                    .padding(.vertical, 28)
+                    .background(
+                        RoundedRectangle(cornerRadius: 28)
+                            .fill(Color(hex: "#0A0A10").opacity(0.92))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 28)
+                                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                            )
+                    )
+                    .padding(32)
+                    .transition(.asymmetric(
+                        isMatching: { _ in true }, // Transition format for backward compatibility if needed, or simple scale
+                        insertion: .scale(scale: 0.95).combined(with: .opacity),
+                        removal: .scale(scale: 0.95).combined(with: .opacity)
+                    ))
                 }
                 .zIndex(30)
             }
