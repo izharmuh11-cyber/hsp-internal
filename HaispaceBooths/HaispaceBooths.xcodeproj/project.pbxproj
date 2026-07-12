@@ -7,21 +7,123 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		B1000001 /* HaispaceBoothsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000010 /* HaispaceBoothsApp.swift */; };
-		B1000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000011 /* ContentView.swift */; };
-		B1000003 /* BoothDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000012 /* BoothDashboardView.swift */; };
+		049C49A6B2B9D22C31B491D0 /* PINEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACD4581AB7614814713A229 /* PINEntryView.swift */; };
+		04EE4CC8981FA8A8C56BE266 /* MemoryBookGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19934568904F55F02C08DCAE /* MemoryBookGenerator.swift */; };
+		084442FF9B1528B352F9E135 /* RenderedPhoto.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7EF4C4895D1909F2DF5C533 /* RenderedPhoto.swift */; };
+		11124D6184D078D8B9B0F9A8 /* PhotoStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02CE4E61BD0F0DA729E4EF09 /* PhotoStore.swift */; };
+		13A847E18FEC7AB299AE5AF8 /* LandingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 356A4D61872266FDEBF2CEC4 /* LandingView.swift */; };
+		155C46A7A00B79CD4772E0A1 /* LicenseStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 688746E48DDA0F52B1466B14 /* LicenseStore.swift */; };
+		15644D4EA0A41B04FD8694E9 /* MissionControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 566246BAAB75AFA491463FA5 /* MissionControlView.swift */; };
+		169143ADA3FF1114D536829C /* FrameCompositorService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B09640919161EC8DE08D0597 /* FrameCompositorService.swift */; };
+		199F493FB014F7DA73116EE2 /* ActiveSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9854752BB088472014BCB18 /* ActiveSessionView.swift */; };
+		1D4C49DABF477B77BA7BF26F /* BoothConfigStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8774DC2A81B8CB9F3F99292 /* BoothConfigStore.swift */; };
+		23FC412992FCCFD08D5D3712 /* P2PMessageRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DDC4A62934A679E5CF0FE83 /* P2PMessageRouter.swift */; };
+		283C4E1DA38AB269B07D2B40 /* GuestInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 396541F1B3B45A73C333F233 /* GuestInfo.swift */; };
+		318B44DABBF18C6933747CA9 /* RegistrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EB94B62A341AF421FBB6C55 /* RegistrationView.swift */; };
+		341941C6A23B345CF61F1B4B /* MultipeerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07BF45128628CA0A34CD15E0 /* MultipeerService.swift */; };
+		36754ACAAE75B7776EB1053A /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58B94CBB8251DCC8B388242D /* RootView.swift */; };
+		38454CDF9A4164AA245FE11D /* ErrorRecovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F3A479A865DCF35DE997AEA /* ErrorRecovery.swift */; };
+		3B05477D80BC694C7A5B4B3A /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01E742EF9D8C7B7C1461EB7D /* KeychainHelper.swift */; };
+		47E64EB5BAFC6BBAE38EC70C /* ErrorHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1D04E6FB3351654CC2AAB02 /* ErrorHandler.swift */; };
+		56254744842B09C590994FF2 /* RetryPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CF74670A5CDB5240E2D769A /* RetryPolicy.swift */; };
+		61A64DBDB713ED126C11540E /* PaymentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF7147E79D66BDB643FCD72E /* PaymentView.swift */; };
+		6467408399B1698CE986B347 /* PaymentStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2774E649141EBD59EA67FC2 /* PaymentStore.swift */; };
+		666744189C2B7F760FE6F0E9 /* FilterService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D274A659B8EC852D169280D /* FilterService.swift */; };
+		6C1640999D64CCA0380E23B2 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DFC4C9D89D04DFAF522FF73 /* Logger.swift */; };
+		7BE940608FEDA68007E94370 /* PoseGuidePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5AF43BAB5312E1BB977D908 /* PoseGuidePanel.swift */; };
+		83604B279D228F5EE22D9044 /* CapturedPhoto.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2D4BCBB65556364C01F846 /* CapturedPhoto.swift */; };
+		87504EA7AB6D95298D16530B /* QRISGeneratorService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BC64748B68D1FAEC1597821 /* QRISGeneratorService.swift */; };
+		87544386AC2DCFE81CE9FDB3 /* DeliveryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEDB4A34B798B9496769BDF6 /* DeliveryView.swift */; };
+		8A364F669BBA39DDC14134B4 /* BackgroundSyncClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = B36446E0BCD843F338B0CF74 /* BackgroundSyncClient.swift */; };
+		90F04084B632647B777FB160 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED1B43B49B9B1BF04436776F /* AppState.swift */; };
+		96D448358BA9B570D31D1328 /* DeliveryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8C248E187EA8D58A8A5C8A9 /* DeliveryStore.swift */; };
+		A6E846629AD1B97DF8794196 /* ErrorPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB4D4B508129C6A4092128E5 /* ErrorPresenter.swift */; };
+		A7C44EA2B25719A897D6B557 /* StreamingDecoderService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A953443C96225A1728337DDE /* StreamingDecoderService.swift */; };
+		ABBD4B0AB24F769195FF0577 /* HaispaceUser.swift in Sources */ = {isa = PBXBuildFile; fileRef = B80C46669353647406AF0737 /* HaispaceUser.swift */; };
+		AEBB45DF9604C262302A7E79 /* BonjourDownloadServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD464BEEB859E40078E586C8 /* BonjourDownloadServer.swift */; };
+		'B1000001' = {isa = PBXBuildFile; fileRef = B1000010; };
+		'B1000002' = {isa = PBXBuildFile; fileRef = B1000011; };
+		'B1000003' = {isa = PBXBuildFile; fileRef = B1000012; };
+		B21C46B48CF8DF994D9A3774 /* HaispaceError+Localized.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71C34BFE86784757E79EE982 /* HaispaceError+Localized.swift */; };
+		C2BD44E88575EAE3DC3DF047 /* PoseIntelligenceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D054FF49488CD1BC4EA0615 /* PoseIntelligenceService.swift */; };
+		C3B0483DBF3A8D0CF3ED9F14 /* LocalTCPRouterService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5CD4BF391F1C8A30DE23FF3 /* LocalTCPRouterService.swift */; };
+		C76144BB82F117749509CCD5 /* CoreDataService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AF44AA3BAB049D9BEF89511 /* CoreDataService.swift */; };
+		CCB241939A17CA330AB1D417 /* CoreDataSchema.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5154A39A5EE56C39915E465 /* CoreDataSchema.swift */; };
+		CE0E45DFAED212C325E75AF9 /* OperatorStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29FA43D1AF86298CDACEC04F /* OperatorStore.swift */; };
+		E04049199254018EE97CA464 /* HaispaceError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55194ED78A4F522D08EA8CD4 /* HaispaceError.swift */; };
+		E4194EAE840FCC02A9759E61 /* AppSecrets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01F84442A9220D23B3975EA3 /* AppSecrets.swift */; };
+		E8034B42BE5814E4115A4E63 /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8C64F7BBD895BDE4B9CF56F /* SessionStore.swift */; };
+		EA7C47BE996816E89DD58164 /* BoothPackage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98474E5E96B3BEB6E48E6B07 /* BoothPackage.swift */; };
+		EDE444748D06E1A722D7F535 /* P2PStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A524D85AF5A63B31DD2A349 /* P2PStore.swift */; };
+		F4494729A162EA8F98534B53 /* PackageSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B15492C8D8B2BFA621D8F7C /* PackageSelectionView.swift */; };
+		F94B45EE93ABBFFDDE041AC7 /* PhotoSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADB444E596FDD0A28A4C53BF /* PhotoSelectionView.swift */; };
+		FA7E457DB4CB131E50205730 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96704D9CA1D8FA967EB5E7CE /* AuthService.swift */; };
+		FDA241F5973AD6C4DB7734BA /* P2PMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D514612B896E493F8D17E5A /* P2PMessage.swift */; };
+		FE594EFAA263496A266AFA7D /* FilterSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6804575A5F6F100EDA41CAF /* FilterSelectionView.swift */; };
+		FF47425DB67E2A4BB7FB7F63 /* AuthStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 863A4E9EA6B81D76A74556D8 /* AuthStore.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		B1000005 /* HaispaceBooths.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HaispaceBooths.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		B1000010 /* HaispaceBoothsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HaispaceBoothsApp.swift; sourceTree = "<group>"; };
-		B1000011 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		B1000012 /* BoothDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoothDashboardView.swift; sourceTree = "<group>"; };
-		B1000013 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		01E742EF9D8C7B7C1461EB7D /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = KeychainHelper.swift; path = HaispaceBooths/HaispaceBooths\Core\Security\KeychainHelper.swift; sourceTree = SOURCE_ROOT; };
+		01F84442A9220D23B3975EA3 /* AppSecrets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppSecrets.swift; path = HaispaceBooths/HaispaceBooths\Core\Security\AppSecrets.swift; sourceTree = SOURCE_ROOT; };
+		02CE4E61BD0F0DA729E4EF09 /* PhotoStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PhotoStore.swift; path = HaispaceBooths/HaispaceBooths\Core\State\PhotoStore.swift; sourceTree = SOURCE_ROOT; };
+		07BF45128628CA0A34CD15E0 /* MultipeerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MultipeerService.swift; path = HaispaceBooths/HaispaceBooths\Services\P2P\MultipeerService.swift; sourceTree = SOURCE_ROOT; };
+		0BC64748B68D1FAEC1597821 /* QRISGeneratorService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = QRISGeneratorService.swift; path = HaispaceBooths/HaispaceBooths\Services\Payment\QRISGeneratorService.swift; sourceTree = SOURCE_ROOT; };
+		0CF74670A5CDB5240E2D769A /* RetryPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RetryPolicy.swift; path = HaispaceBooths/HaispaceBooths\Core\Retry\RetryPolicy.swift; sourceTree = SOURCE_ROOT; };
+		19934568904F55F02C08DCAE /* MemoryBookGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MemoryBookGenerator.swift; path = HaispaceBooths/HaispaceBooths\Services\Processing\MemoryBookGenerator.swift; sourceTree = SOURCE_ROOT; };
+		1A2D4BCBB65556364C01F846 /* CapturedPhoto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CapturedPhoto.swift; path = HaispaceBooths/HaispaceBooths\Models\CapturedPhoto.swift; sourceTree = SOURCE_ROOT; };
+		1D514612B896E493F8D17E5A /* P2PMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = P2PMessage.swift; path = HaispaceBooths/HaispaceBooths\Models\P2PMessage.swift; sourceTree = SOURCE_ROOT; };
+		29FA43D1AF86298CDACEC04F /* OperatorStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = OperatorStore.swift; path = HaispaceBooths/HaispaceBooths\Core\State\OperatorStore.swift; sourceTree = SOURCE_ROOT; };
+		356A4D61872266FDEBF2CEC4 /* LandingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = LandingView.swift; path = HaispaceBooths/HaispaceBooths\App\Views\Guest\LandingView.swift; sourceTree = SOURCE_ROOT; };
+		396541F1B3B45A73C333F233 /* GuestInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = GuestInfo.swift; path = HaispaceBooths/HaispaceBooths\Models\GuestInfo.swift; sourceTree = SOURCE_ROOT; };
+		3AF44AA3BAB049D9BEF89511 /* CoreDataService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CoreDataService.swift; path = HaispaceBooths/HaispaceBooths\Services\Database\CoreDataService.swift; sourceTree = SOURCE_ROOT; };
+		55194ED78A4F522D08EA8CD4 /* HaispaceError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = HaispaceError.swift; path = HaispaceBooths/HaispaceBooths\Core\Error\HaispaceError.swift; sourceTree = SOURCE_ROOT; };
+		566246BAAB75AFA491463FA5 /* MissionControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MissionControlView.swift; path = HaispaceBooths/HaispaceBooths\App\Views\Operator\MissionControlView.swift; sourceTree = SOURCE_ROOT; };
+		58B94CBB8251DCC8B388242D /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RootView.swift; path = HaispaceBooths/HaispaceBooths\App\RootView.swift; sourceTree = SOURCE_ROOT; };
+		5EB94B62A341AF421FBB6C55 /* RegistrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RegistrationView.swift; path = HaispaceBooths/HaispaceBooths\App\Views\Guest\RegistrationView.swift; sourceTree = SOURCE_ROOT; };
+		688746E48DDA0F52B1466B14 /* LicenseStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = LicenseStore.swift; path = HaispaceBooths/HaispaceBooths\Core\State\LicenseStore.swift; sourceTree = SOURCE_ROOT; };
+		6B15492C8D8B2BFA621D8F7C /* PackageSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PackageSelectionView.swift; path = HaispaceBooths/HaispaceBooths\App\Views\Guest\PackageSelectionView.swift; sourceTree = SOURCE_ROOT; };
+		71C34BFE86784757E79EE982 /* HaispaceError+Localized.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "HaispaceError+Localized.swift"; path = "HaispaceBooths/HaispaceBooths\\Core\\Error\\HaispaceError+Localized.swift"; sourceTree = SOURCE_ROOT; };
+		7A524D85AF5A63B31DD2A349 /* P2PStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = P2PStore.swift; path = HaispaceBooths/HaispaceBooths\Core\State\P2PStore.swift; sourceTree = SOURCE_ROOT; };
+		7DFC4C9D89D04DFAF522FF73 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Logger.swift; path = HaispaceBooths/HaispaceBooths\Core\Logging\Logger.swift; sourceTree = SOURCE_ROOT; };
+		7F3A479A865DCF35DE997AEA /* ErrorRecovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ErrorRecovery.swift; path = HaispaceBooths/HaispaceBooths\Core\Error\ErrorRecovery.swift; sourceTree = SOURCE_ROOT; };
+		863A4E9EA6B81D76A74556D8 /* AuthStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AuthStore.swift; path = HaispaceBooths/HaispaceBooths\Core\State\AuthStore.swift; sourceTree = SOURCE_ROOT; };
+		96704D9CA1D8FA967EB5E7CE /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AuthService.swift; path = HaispaceBooths/HaispaceBooths\Services\AuthService.swift; sourceTree = SOURCE_ROOT; };
+		98474E5E96B3BEB6E48E6B07 /* BoothPackage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BoothPackage.swift; path = HaispaceBooths/HaispaceBooths\Models\BoothPackage.swift; sourceTree = SOURCE_ROOT; };
+		9D054FF49488CD1BC4EA0615 /* PoseIntelligenceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PoseIntelligenceService.swift; path = HaispaceBooths/HaispaceBooths\Services\AI\PoseIntelligenceService.swift; sourceTree = SOURCE_ROOT; };
+		9D274A659B8EC852D169280D /* FilterService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FilterService.swift; path = HaispaceBooths/HaispaceBooths\Services\Processing\FilterService.swift; sourceTree = SOURCE_ROOT; };
+		9DDC4A62934A679E5CF0FE83 /* P2PMessageRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = P2PMessageRouter.swift; path = HaispaceBooths/HaispaceBooths\Services\P2P\P2PMessageRouter.swift; sourceTree = SOURCE_ROOT; };
+		A953443C96225A1728337DDE /* StreamingDecoderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = StreamingDecoderService.swift; path = HaispaceBooths/HaispaceBooths\Services\Camera\StreamingDecoderService.swift; sourceTree = SOURCE_ROOT; };
+		AB4D4B508129C6A4092128E5 /* ErrorPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ErrorPresenter.swift; path = HaispaceBooths/HaispaceBooths\Core\Error\ErrorPresenter.swift; sourceTree = SOURCE_ROOT; };
+		ADB444E596FDD0A28A4C53BF /* PhotoSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PhotoSelectionView.swift; path = HaispaceBooths/HaispaceBooths\App\Views\Guest\PhotoSelectionView.swift; sourceTree = SOURCE_ROOT; };
+		B09640919161EC8DE08D0597 /* FrameCompositorService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FrameCompositorService.swift; path = HaispaceBooths/HaispaceBooths\Services\Processing\FrameCompositorService.swift; sourceTree = SOURCE_ROOT; };
+		'B1000005' = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HaispaceBooths.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		'B1000010' = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HaispaceBoothsApp.swift; sourceTree = "<group>"; };
+		'B1000011' = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		'B1000012' = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoothDashboardView.swift; sourceTree = "<group>"; };
+		'B1000013' = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B36446E0BCD843F338B0CF74 /* BackgroundSyncClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BackgroundSyncClient.swift; path = HaispaceBooths/HaispaceBooths\Services\Cloud\BackgroundSyncClient.swift; sourceTree = SOURCE_ROOT; };
+		B7EF4C4895D1909F2DF5C533 /* RenderedPhoto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RenderedPhoto.swift; path = HaispaceBooths/HaispaceBooths\Models\RenderedPhoto.swift; sourceTree = SOURCE_ROOT; };
+		B80C46669353647406AF0737 /* HaispaceUser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = HaispaceUser.swift; path = HaispaceBooths/HaispaceBooths\Models\HaispaceUser.swift; sourceTree = SOURCE_ROOT; };
+		B8774DC2A81B8CB9F3F99292 /* BoothConfigStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BoothConfigStore.swift; path = HaispaceBooths/HaispaceBooths\Core\State\BoothConfigStore.swift; sourceTree = SOURCE_ROOT; };
+		B8C248E187EA8D58A8A5C8A9 /* DeliveryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DeliveryStore.swift; path = HaispaceBooths/HaispaceBooths\Core\State\DeliveryStore.swift; sourceTree = SOURCE_ROOT; };
+		BEDB4A34B798B9496769BDF6 /* DeliveryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DeliveryView.swift; path = HaispaceBooths/HaispaceBooths\App\Views\Guest\DeliveryView.swift; sourceTree = SOURCE_ROOT; };
+		C2774E649141EBD59EA67FC2 /* PaymentStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PaymentStore.swift; path = HaispaceBooths/HaispaceBooths\Core\State\PaymentStore.swift; sourceTree = SOURCE_ROOT; };
+		CD464BEEB859E40078E586C8 /* BonjourDownloadServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BonjourDownloadServer.swift; path = HaispaceBooths/HaispaceBooths\Services\Delivery\BonjourDownloadServer.swift; sourceTree = SOURCE_ROOT; };
+		D6804575A5F6F100EDA41CAF /* FilterSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FilterSelectionView.swift; path = HaispaceBooths/HaispaceBooths\App\Views\Guest\FilterSelectionView.swift; sourceTree = SOURCE_ROOT; };
+		E1D04E6FB3351654CC2AAB02 /* ErrorHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ErrorHandler.swift; path = HaispaceBooths/HaispaceBooths\Core\Error\ErrorHandler.swift; sourceTree = SOURCE_ROOT; };
+		E5CD4BF391F1C8A30DE23FF3 /* LocalTCPRouterService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = LocalTCPRouterService.swift; path = HaispaceBooths/HaispaceBooths\Services\P2P\LocalTCPRouterService.swift; sourceTree = SOURCE_ROOT; };
+		EACD4581AB7614814713A229 /* PINEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PINEntryView.swift; path = HaispaceBooths/HaispaceBooths\App\Views\Operator\PINEntryView.swift; sourceTree = SOURCE_ROOT; };
+		ED1B43B49B9B1BF04436776F /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppState.swift; path = HaispaceBooths/HaispaceBooths\Core\State\AppState.swift; sourceTree = SOURCE_ROOT; };
+		F5154A39A5EE56C39915E465 /* CoreDataSchema.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CoreDataSchema.swift; path = HaispaceBooths/HaispaceBooths\Services\Database\CoreDataSchema.swift; sourceTree = SOURCE_ROOT; };
+		F5AF43BAB5312E1BB977D908 /* PoseGuidePanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PoseGuidePanel.swift; path = HaispaceBooths/HaispaceBooths\App\Views\Components\PoseGuidePanel.swift; sourceTree = SOURCE_ROOT; };
+		F8C64F7BBD895BDE4B9CF56F /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SessionStore.swift; path = HaispaceBooths/HaispaceBooths\Core\State\SessionStore.swift; sourceTree = SOURCE_ROOT; };
+		F9854752BB088472014BCB18 /* ActiveSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ActiveSessionView.swift; path = HaispaceBooths/HaispaceBooths\App\Views\Guest\ActiveSessionView.swift; sourceTree = SOURCE_ROOT; };
+		FF7147E79D66BDB643FCD72E /* PaymentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PaymentView.swift; path = HaispaceBooths/HaispaceBooths\App\Views\Guest\PaymentView.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		B1000020 /* Frameworks */ = {
+		'B1000020' = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -31,43 +133,94 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		B1000030 /* HaispaceBooths */ = {
+		'B1000030' = {
 			isa = PBXGroup;
 			children = (
-				B1000010 /* HaispaceBoothsApp.swift */,
-				B1000011 /* ContentView.swift */,
-				B1000012 /* BoothDashboardView.swift */,
-				B1000013 /* Info.plist */,
+				B1000010,
+				B1000011,
+				B1000012,
+				B1000013,
 			);
 			path = HaispaceBooths;
 			sourceTree = "<group>";
 		};
-		B1000031 /* Products */ = {
+		'B1000031' = {
 			isa = PBXGroup;
 			children = (
-				B1000005 /* HaispaceBooths.app */,
+				B1000005,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		B1000032 /* MainGroup */ = {
+		'B1000032' = {
 			isa = PBXGroup;
 			children = (
-				B1000030 /* HaispaceBooths */,
-				B1000031 /* Products */,
+				B1000030,
+				B1000031,
+				58B94CBB8251DCC8B388242D /* RootView.swift */,
+				F5AF43BAB5312E1BB977D908 /* PoseGuidePanel.swift */,
+				F9854752BB088472014BCB18 /* ActiveSessionView.swift */,
+				BEDB4A34B798B9496769BDF6 /* DeliveryView.swift */,
+				D6804575A5F6F100EDA41CAF /* FilterSelectionView.swift */,
+				356A4D61872266FDEBF2CEC4 /* LandingView.swift */,
+				6B15492C8D8B2BFA621D8F7C /* PackageSelectionView.swift */,
+				FF7147E79D66BDB643FCD72E /* PaymentView.swift */,
+				ADB444E596FDD0A28A4C53BF /* PhotoSelectionView.swift */,
+				5EB94B62A341AF421FBB6C55 /* RegistrationView.swift */,
+				566246BAAB75AFA491463FA5 /* MissionControlView.swift */,
+				EACD4581AB7614814713A229 /* PINEntryView.swift */,
+				E1D04E6FB3351654CC2AAB02 /* ErrorHandler.swift */,
+				AB4D4B508129C6A4092128E5 /* ErrorPresenter.swift */,
+				7F3A479A865DCF35DE997AEA /* ErrorRecovery.swift */,
+				71C34BFE86784757E79EE982 /* HaispaceError+Localized.swift */,
+				55194ED78A4F522D08EA8CD4 /* HaispaceError.swift */,
+				7DFC4C9D89D04DFAF522FF73 /* Logger.swift */,
+				0CF74670A5CDB5240E2D769A /* RetryPolicy.swift */,
+				01F84442A9220D23B3975EA3 /* AppSecrets.swift */,
+				01E742EF9D8C7B7C1461EB7D /* KeychainHelper.swift */,
+				ED1B43B49B9B1BF04436776F /* AppState.swift */,
+				863A4E9EA6B81D76A74556D8 /* AuthStore.swift */,
+				B8774DC2A81B8CB9F3F99292 /* BoothConfigStore.swift */,
+				B8C248E187EA8D58A8A5C8A9 /* DeliveryStore.swift */,
+				688746E48DDA0F52B1466B14 /* LicenseStore.swift */,
+				29FA43D1AF86298CDACEC04F /* OperatorStore.swift */,
+				7A524D85AF5A63B31DD2A349 /* P2PStore.swift */,
+				C2774E649141EBD59EA67FC2 /* PaymentStore.swift */,
+				02CE4E61BD0F0DA729E4EF09 /* PhotoStore.swift */,
+				F8C64F7BBD895BDE4B9CF56F /* SessionStore.swift */,
+				98474E5E96B3BEB6E48E6B07 /* BoothPackage.swift */,
+				1A2D4BCBB65556364C01F846 /* CapturedPhoto.swift */,
+				396541F1B3B45A73C333F233 /* GuestInfo.swift */,
+				B80C46669353647406AF0737 /* HaispaceUser.swift */,
+				1D514612B896E493F8D17E5A /* P2PMessage.swift */,
+				B7EF4C4895D1909F2DF5C533 /* RenderedPhoto.swift */,
+				96704D9CA1D8FA967EB5E7CE /* AuthService.swift */,
+				9D054FF49488CD1BC4EA0615 /* PoseIntelligenceService.swift */,
+				A953443C96225A1728337DDE /* StreamingDecoderService.swift */,
+				B36446E0BCD843F338B0CF74 /* BackgroundSyncClient.swift */,
+				F5154A39A5EE56C39915E465 /* CoreDataSchema.swift */,
+				3AF44AA3BAB049D9BEF89511 /* CoreDataService.swift */,
+				CD464BEEB859E40078E586C8 /* BonjourDownloadServer.swift */,
+				E5CD4BF391F1C8A30DE23FF3 /* LocalTCPRouterService.swift */,
+				07BF45128628CA0A34CD15E0 /* MultipeerService.swift */,
+				9DDC4A62934A679E5CF0FE83 /* P2PMessageRouter.swift */,
+				0BC64748B68D1FAEC1597821 /* QRISGeneratorService.swift */,
+				9D274A659B8EC852D169280D /* FilterService.swift */,
+				B09640919161EC8DE08D0597 /* FrameCompositorService.swift */,
+				19934568904F55F02C08DCAE /* MemoryBookGenerator.swift */,
 			);
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		B1000040 /* HaispaceBooths */ = {
+		'B1000040' = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = B1000050 /* Build configuration list for PBXNativeTarget "HaispaceBooths" */;
+			buildConfigurationList = B1000050;
 			buildPhases = (
-				B1000021 /* Sources */,
-				B1000020 /* Frameworks */,
-				B1000022 /* Resources */,
+				B1000021,
+				B1000020,
+				B1000022,
 			);
 			buildRules = (
 			);
@@ -75,20 +228,20 @@
 			);
 			name = HaispaceBooths;
 			productName = HaispaceBooths;
-			productReference = B1000005 /* HaispaceBooths.app */;
+			productReference = B1000005;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		B1000060 /* Project object */ = {
+		'B1000060' = {
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1600;
 				LastUpgradeCheck = 1600;
 			};
-			buildConfigurationList = B1000061 /* Build configuration list for PBXProject "HaispaceBooths" */;
+			buildConfigurationList = B1000061;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -96,18 +249,18 @@
 				en,
 				Base,
 			);
-			mainGroup = B1000032 /* MainGroup */;
-			productRefGroup = B1000031 /* Products */;
+			mainGroup = B1000032;
+			productRefGroup = B1000031;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				B1000040 /* HaispaceBooths */,
+				B1000040,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		B1000022 /* Resources */ = {
+		'B1000022' = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -117,20 +270,71 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		B1000021 /* Sources */ = {
+		'B1000021' = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B1000001 /* HaispaceBoothsApp.swift in Sources */,
-				B1000002 /* ContentView.swift in Sources */,
-				B1000003 /* BoothDashboardView.swift in Sources */,
+				B1000001,
+				B1000002,
+				B1000003,
+				36754ACAAE75B7776EB1053A /* RootView.swift in Sources */,
+				7BE940608FEDA68007E94370 /* PoseGuidePanel.swift in Sources */,
+				199F493FB014F7DA73116EE2 /* ActiveSessionView.swift in Sources */,
+				87544386AC2DCFE81CE9FDB3 /* DeliveryView.swift in Sources */,
+				FE594EFAA263496A266AFA7D /* FilterSelectionView.swift in Sources */,
+				13A847E18FEC7AB299AE5AF8 /* LandingView.swift in Sources */,
+				F4494729A162EA8F98534B53 /* PackageSelectionView.swift in Sources */,
+				61A64DBDB713ED126C11540E /* PaymentView.swift in Sources */,
+				F94B45EE93ABBFFDDE041AC7 /* PhotoSelectionView.swift in Sources */,
+				318B44DABBF18C6933747CA9 /* RegistrationView.swift in Sources */,
+				15644D4EA0A41B04FD8694E9 /* MissionControlView.swift in Sources */,
+				049C49A6B2B9D22C31B491D0 /* PINEntryView.swift in Sources */,
+				47E64EB5BAFC6BBAE38EC70C /* ErrorHandler.swift in Sources */,
+				A6E846629AD1B97DF8794196 /* ErrorPresenter.swift in Sources */,
+				38454CDF9A4164AA245FE11D /* ErrorRecovery.swift in Sources */,
+				B21C46B48CF8DF994D9A3774 /* HaispaceError+Localized.swift in Sources */,
+				E04049199254018EE97CA464 /* HaispaceError.swift in Sources */,
+				6C1640999D64CCA0380E23B2 /* Logger.swift in Sources */,
+				56254744842B09C590994FF2 /* RetryPolicy.swift in Sources */,
+				E4194EAE840FCC02A9759E61 /* AppSecrets.swift in Sources */,
+				3B05477D80BC694C7A5B4B3A /* KeychainHelper.swift in Sources */,
+				90F04084B632647B777FB160 /* AppState.swift in Sources */,
+				FF47425DB67E2A4BB7FB7F63 /* AuthStore.swift in Sources */,
+				1D4C49DABF477B77BA7BF26F /* BoothConfigStore.swift in Sources */,
+				96D448358BA9B570D31D1328 /* DeliveryStore.swift in Sources */,
+				155C46A7A00B79CD4772E0A1 /* LicenseStore.swift in Sources */,
+				CE0E45DFAED212C325E75AF9 /* OperatorStore.swift in Sources */,
+				EDE444748D06E1A722D7F535 /* P2PStore.swift in Sources */,
+				6467408399B1698CE986B347 /* PaymentStore.swift in Sources */,
+				11124D6184D078D8B9B0F9A8 /* PhotoStore.swift in Sources */,
+				E8034B42BE5814E4115A4E63 /* SessionStore.swift in Sources */,
+				EA7C47BE996816E89DD58164 /* BoothPackage.swift in Sources */,
+				83604B279D228F5EE22D9044 /* CapturedPhoto.swift in Sources */,
+				283C4E1DA38AB269B07D2B40 /* GuestInfo.swift in Sources */,
+				ABBD4B0AB24F769195FF0577 /* HaispaceUser.swift in Sources */,
+				FDA241F5973AD6C4DB7734BA /* P2PMessage.swift in Sources */,
+				084442FF9B1528B352F9E135 /* RenderedPhoto.swift in Sources */,
+				FA7E457DB4CB131E50205730 /* AuthService.swift in Sources */,
+				C2BD44E88575EAE3DC3DF047 /* PoseIntelligenceService.swift in Sources */,
+				A7C44EA2B25719A897D6B557 /* StreamingDecoderService.swift in Sources */,
+				8A364F669BBA39DDC14134B4 /* BackgroundSyncClient.swift in Sources */,
+				CCB241939A17CA330AB1D417 /* CoreDataSchema.swift in Sources */,
+				C76144BB82F117749509CCD5 /* CoreDataService.swift in Sources */,
+				AEBB45DF9604C262302A7E79 /* BonjourDownloadServer.swift in Sources */,
+				C3B0483DBF3A8D0CF3ED9F14 /* LocalTCPRouterService.swift in Sources */,
+				341941C6A23B345CF61F1B4B /* MultipeerService.swift in Sources */,
+				23FC412992FCCFD08D5D3712 /* P2PMessageRouter.swift in Sources */,
+				87504EA7AB6D95298D16530B /* QRISGeneratorService.swift in Sources */,
+				666744189C2B7F760FE6F0E9 /* FilterService.swift in Sources */,
+				169143ADA3FF1114D536829C /* FrameCompositorService.swift in Sources */,
+				04EE4CC8981FA8A8C56BE266 /* MemoryBookGenerator.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		B1000070 /* Debug */ = {
+		'B1000070' = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -166,7 +370,7 @@
 			};
 			name = Debug;
 		};
-		B1000071 /* Release */ = {
+		'B1000071' = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -196,7 +400,7 @@
 			};
 			name = Release;
 		};
-		B1000072 /* Debug - Target */ = {
+		'B1000072' = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
@@ -209,7 +413,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "id.haispaceproject.booth";
+				PRODUCT_BUNDLE_IDENTIFIER = id.haispaceproject.booth;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = iphoneos;
 				SUPPORTS_MACCATALYST = NO;
@@ -219,7 +423,7 @@
 			};
 			name = Debug;
 		};
-		B1000073 /* Release - Target */ = {
+		'B1000073' = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
@@ -232,7 +436,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "id.haispaceproject.booth";
+				PRODUCT_BUNDLE_IDENTIFIER = id.haispaceproject.booth;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = iphoneos;
 				SUPPORTS_MACCATALYST = NO;
@@ -245,26 +449,25 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		B1000050 /* Build configuration list for PBXNativeTarget "HaispaceBooths" */ = {
+		'B1000050' = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				B1000072 /* Debug */,
-				B1000073 /* Release */,
+				B1000072,
+				B1000073,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		B1000061 /* Build configuration list for PBXProject "HaispaceBooths" */ = {
+		'B1000061' = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				B1000070 /* Debug */,
-				B1000071 /* Release */,
+				B1000070,
+				B1000071,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
-
 	};
-	rootObject = B1000060 /* Project object */;
+	rootObject = B1000060;
 }

@@ -198,41 +198,4 @@ extension AppState {
     }
 }
 
-// MARK: - App Secrets (Compile-time constants)
 
-/// Konstanta keamanan — JANGAN simpan sebagai plain string literal di kode
-/// Gunakan Swift build configuration atau xcconfig untuk nilai sebenarnya
-struct AppSecrets {
-    /// Shared secret untuk HMAC-SHA256 signature pada QR pairing payload
-    /// TODO: Ganti dengan nilai dari build configuration sebelum production
-    static let qrPayloadSharedSecret: String = {
-        #if DEBUG
-        return "haispace-debug-secret-2026"
-        #else
-        // Production: load dari xcconfig atau environment
-        return ProcessInfo.processInfo.environment["HAISPACE_QR_SECRET"] ?? "MISSING_SECRET"
-        #endif
-    }()
-}
-
-// MARK: - HMAC-SHA256 Implementation
-
-import CommonCrypto
-
-struct HMACSHA256 {
-    static func sign(message: String, key: String) -> String {
-        guard let messageData = message.data(using: .utf8),
-              let keyData = key.data(using: .utf8) else { return "" }
-
-        var result = [UInt8](repeating: 0, count: Int(CC_SHA256_DIGEST_LENGTH))
-        messageData.withUnsafeBytes { messageBytes in
-            keyData.withUnsafeBytes { keyBytes in
-                CCHmac(CCHmacAlgorithm(kCCHmacAlgSHA256),
-                       keyBytes.baseAddress, keyData.count,
-                       messageBytes.baseAddress, messageData.count,
-                       &result)
-            }
-        }
-        return result.map { String(format: "%02x", $0) }.joined()
-    }
-}
