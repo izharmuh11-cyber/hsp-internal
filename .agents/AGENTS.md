@@ -13,8 +13,8 @@ All AI agents working on this project must strictly adhere to the following work
    * Discuss technical tradeoffs if any (e.g., performance, security, complexity).
 
 3. **Strict Git Push Authorization:**
-   * **NEVER** run `git push` automatically.
-   * All changes must remain purely local in the working directory until the operator explicitly requests a push with commands like *"silahkan push"* or *"oke push"*.
+   * **Automatic Push for Bug/Compile Fixes:** The agent is authorized to automatically push commits for the purpose of fixing compilation issues, resolving bugs, or CI/CD troubleshooting to ensure build success.
+   * **Explicit Authorization for Features:** For new features, architectural changes, or strategic proposals, `git push` is **strictly prohibited** until the operator explicitly requests or authorizes it (e.g., *"silahkan push"*, *"oke push"*).
 
 4. **Confidentiality of Design Docs:**
    * Do not remove `docs/design/` from `.gitignore`. Internal design strategy documents must remain local-only.

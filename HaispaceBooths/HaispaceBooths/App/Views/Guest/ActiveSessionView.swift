@@ -214,6 +214,7 @@ struct ActiveSessionView: View {
                 .ignoresSafeArea(edges: .vertical)
                 .transition(.move(edge: .trailing).combined(with: .opacity))
             }
+        }
             
             // Briefing Overlay (Tampil sesaat sebelum sesi dimulai)
             if isBriefing {
