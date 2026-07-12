@@ -69,29 +69,25 @@ final class StreamingDecoderService {
         
         sps.withUnsafeBufferPointer { spsBuffer in
             pps.withUnsafeBufferPointer { ppsBuffer in
-                let parameterSetPointers = [spsBuffer.baseAddress!, ppsBuffer.baseAddress!]
-                let parameterSetSizes = [sps.count, pps.count]
+                let parameterSetPointers: [UnsafePointer<UInt8>?] = [spsBuffer.baseAddress, ppsBuffer.baseAddress]
+                let parameterSetSizes: [Int] = [sps.count, pps.count]
                 
-                parameterSetPointers.withUnsafeBufferPointer { pointersBuffer in
-                    parameterSetSizes.withUnsafeBufferPointer { sizesBuffer in
-                        var formatDesc: CMVideoFormatDescription?
-                        let status = CMVideoFormatDescriptionCreateFromH264ParameterSets(
-                            allocator: kCFAllocatorDefault,
-                            parameterSetCount: 2,
-                            parameterSetPointers: pointersBuffer.baseAddress!,
-                            parameterSetSizes: sizesBuffer.baseAddress!,
-                            nalUnitHeaderLength: 4,
-                            formatDescriptionOut: &formatDesc
-                        )
-                        
-                        if status == noErr {
-                            self.formatDescription = formatDesc
-                            HaispaceLogger.debug("VideoFormatDescription berhasil diperbarui", category: "camera")
-                        } else {
-                            let error = NSError(domain: "StreamingDecoder", code: Int(status), userInfo: [NSLocalizedDescriptionKey: "Gagal membuat VideoFormatDescription: \(status)"])
-                            HaispaceLogger.error(error)
-                        }
-                    }
+                var formatDesc: CMVideoFormatDescription?
+                let status = CMVideoFormatDescriptionCreateFromH264ParameterSets(
+                    allocator: kCFAllocatorDefault,
+                    parameterSetCount: 2,
+                    parameterSetPointers: parameterSetPointers,
+                    parameterSetSizes: parameterSetSizes,
+                    nalUnitHeaderLength: 4,
+                    formatDescriptionOut: &formatDesc
+                )
+                
+                if status == noErr {
+                    self.formatDescription = formatDesc
+                    HaispaceLogger.debug("VideoFormatDescription berhasil diperbarui", category: "camera")
+                } else {
+                    let error = NSError(domain: "StreamingDecoder", code: Int(status), userInfo: [NSLocalizedDescriptionKey: "Gagal membuat VideoFormatDescription: \(status)"])
+                    HaispaceLogger.error(error)
                 }
             }
         }
@@ -140,7 +136,7 @@ final class StreamingDecoderService {
             // Pastikan buffer siap dirender as soon as possible
             if let attachments = CMSampleBufferGetSampleAttachmentsArray(sampleBuf, createIfNecessary: true) as? NSArray,
                let dict = attachments.firstObject as? NSMutableDictionary {
-                dict[kCMSampleAttachmentKey_DisplayImmediately] = true
+                dict[kCMSampleAttachmentKey_DisplayImmediately as String] = true
             }
             
             // Push ke layer
