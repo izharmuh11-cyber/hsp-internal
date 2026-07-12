@@ -36,13 +36,12 @@ class HandGestureDetector {
             var extendedFingers = 0
             
             // Jari yang dideteksi (selain jempol)
-            let fingers: [VNDetectHumanHandPoseRequest.JointsGroupName] = [
-                .indexFinger, .middleFinger, .ringFinger, .littleFinger
-            ]
+            let mcpJoints: [VNHumanHandPoseObservation.JointName] = [.indexMCP, .middleMCP, .ringMCP, .littleMCP]
+            let tipJoints: [VNHumanHandPoseObservation.JointName] = [.indexTip, .middleTip, .ringTip, .littleTip]
             
-            for finger in fingers {
-                let mcp = try observation.recognizedPoint(try jointName(for: finger, type: .mcp))
-                let tip = try observation.recognizedPoint(try jointName(for: finger, type: .tip))
+            for i in 0..<mcpJoints.count {
+                let mcp = try observation.recognizedPoint(mcpJoints[i])
+                let tip = try observation.recognizedPoint(tipJoints[i])
                 
                 if mcp.confidence > 0.3 && tip.confidence > 0.3 {
                     // Hitung jarak dari pergelangan tangan (wrist) ke sendi bawah (mcp) dan ke ujung jari (tip)
@@ -76,25 +75,6 @@ class HandGestureDetector {
         } catch {
             // Abaikan kesalahan pembacaan frame sementara
         }
-    }
-    
-    private func jointName(for group: VNDetectHumanHandPoseRequest.JointsGroupName, type: JointType) throws -> VNDetectHumanHandPoseRequest.JointName {
-        switch (group, type) {
-        case (.indexFinger, .mcp): return .indexMCP
-        case (.indexFinger, .tip): return .indexTip
-        case (.middleFinger, .mcp): return .middleMCP
-        case (.middleFinger, .tip): return .middleTip
-        case (.ringFinger, .mcp): return .ringMCP
-        case (.ringFinger, .tip): return .ringTip
-        case (.littleFinger, .mcp): return .littleMCP
-        case (.littleFinger, .tip): return .littleTip
-        default:
-            throw NSError(domain: "HandGestureDetector", code: 1, userInfo: nil)
-        }
-    }
-    
-    private enum JointType {
-        case mcp, tip
     }
     
     private func distance(from p1: CGPoint, to p2: CGPoint) -> CGFloat {
