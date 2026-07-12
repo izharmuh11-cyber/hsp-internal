@@ -102,14 +102,14 @@ actor P2PClientService: NSObject {
                 guard let self = self else { return }
                 switch state {
                 case .ready:
-                    self.cancelTimeoutTask()
-                    self.handleTCPReady(connection: connection, ip: ip, port: port)
+                    await self.cancelTimeoutTask()
+                    await self.handleTCPReady(connection: connection, ip: ip, port: port)
                 case .failed(let error):
-                    self.cancelTimeoutTask()
+                    await self.cancelTimeoutTask()
                     HaispaceLogger.warning("Koneksi TCP Client gagal: \(error)", category: "p2p")
-                    self.triggerFallback(payload: payload)
+                    await self.triggerFallback(payload: payload)
                 case .cancelled:
-                    self.cancelTimeoutTask()
+                    await self.cancelTimeoutTask()
                 default:
                     break
                 }
@@ -162,7 +162,7 @@ actor P2PClientService: NSObject {
                     guard bodyData.count == Int(length) else { break }
                     
                     // 3. Callback
-                    if let callback = self.onDataReceived {
+                    if let callback = await self.onDataReceived {
                         callback(bodyData)
                     }
                 }
@@ -172,7 +172,7 @@ actor P2PClientService: NSObject {
             
             if let self = self {
                 await self.cancelTCPConnection()
-                if let callback = self.onConnectionStateChange {
+                if let callback = await self.onConnectionStateChange {
                     callback(.disconnected)
                 }
             }

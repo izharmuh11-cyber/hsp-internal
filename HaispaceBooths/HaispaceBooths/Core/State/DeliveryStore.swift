@@ -155,21 +155,23 @@ final class DeliveryStore {
         HaispaceLogger.info("Local network server dimulai", category: "delivery")
         
         do {
-            try BonjourDownloadServer.shared.start()
+            try await BonjourDownloadServer.shared.start()
         } catch {
-            HaispaceLogger.error("Gagal memulai BonjourDownloadServer: \(error)", category: "delivery")
+            HaispaceLogger.error(error)
         }
         
         var hostedURLs: [String] = []
         for photo in photos {
-            let url = BonjourDownloadServer.shared.hostPhoto(id: photo.id, data: photo.data)
+            let url = await BonjourDownloadServer.shared.hostPhoto(id: photo.id, data: photo.data)
             HaispaceLogger.info("Foto di-host di local server: \(url)", category: "delivery")
             hostedURLs.append(url)
         }
         
+        let serverPort = await BonjourDownloadServer.shared.port.rawValue
+        let finalHostedURLs = hostedURLs
         await MainActor.run {
-            self.localServerPort = Int(BonjourDownloadServer.shared.port.rawValue)
-            self.localServerURL = hostedURLs.first
+            self.localServerPort = Int(serverPort)
+            self.localServerURL = finalHostedURLs.first
             self.status = .delivering
         }
     }

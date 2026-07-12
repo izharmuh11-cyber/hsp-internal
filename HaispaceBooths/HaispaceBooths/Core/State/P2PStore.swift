@@ -301,7 +301,7 @@ final class P2PStore: @unchecked Sendable {
                 HaispaceLogger.info("Pesan \(P2PMessageType.type(of: message)) terkirim via MPC", category: "p2p")
             }
         } catch {
-            HaispaceLogger.error("Gagal mengirim pesan \(P2PMessageType.type(of: message)): \(error)", category: "p2p")
+            HaispaceLogger.error(error)
         }
     }
 }

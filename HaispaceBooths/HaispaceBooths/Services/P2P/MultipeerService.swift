@@ -116,7 +116,11 @@ extension MultipeerService: MCSessionDelegate {
 
     nonisolated func session(_ session: MCSession, didFinishReceivingResourceWithName resourceName: String, fromPeer peerID: MCPeerID, at localURL: URL?, withError error: Error?) {
         guard error == nil, let localURL = localURL else {
-            HaispaceLogger.error("MPC gagal menerima resource: \(resourceName) - \(String(describing: error))", category: "p2p")
+            if let error = error {
+                HaispaceLogger.error(error)
+            } else {
+                HaispaceLogger.error(HaispaceError.unknown(underlying: NSError(domain: "MultipeerService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to receive resource"])))
+            }
             return
         }
         
@@ -127,7 +131,7 @@ extension MultipeerService: MCSessionDelegate {
                 HaispaceLogger.info("MPC sukses menerima resource foto penuh: \(resourceName)", category: "p2p")
             }
         } catch {
-            HaispaceLogger.error("Gagal membaca resource MPC terunduh: \(error.localizedDescription)", category: "p2p")
+            HaispaceLogger.error(error)
         }
     }
 }
