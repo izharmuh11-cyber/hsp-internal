@@ -13,7 +13,7 @@ def sync_project(project_path, source_dir, target_name)
 
   # Find all .swift files in the source directory
   swift_files = []
-  Find.find(source_dir) do |path|
+  Find.find(File.expand_path(source_dir)) do |path|
     swift_files << path if path =~ /.*\.swift$/
   end
   
@@ -24,7 +24,7 @@ def sync_project(project_path, source_dir, target_name)
     file_name = File.basename(file_path)
     
     # Check if the file is already in the project to avoid duplicates
-    unless project.files.any? { |f| f.path == file_name || f.path == file_path }
+    unless project.files.any? { |f| f.real_path.to_s == file_path }
       # Add file directly to main group with absolute/relative path properly mapped
       file_ref = project.main_group.new_file(file_path)
       target.add_file_references([file_ref])
