@@ -25,10 +25,8 @@ def sync_project(project_path, source_dir, target_name)
     
     # Check if the file is already in the project to avoid duplicates
     unless project.files.any? { |f| f.path == file_name || f.path == file_path }
-      # Add file to project group (main group)
-      group = project.main_group.find_subpath(File.dirname(file_path), true)
-      group.set_source_tree('<group>')
-      file_ref = group.new_reference(File.basename(file_path))
+      # Add file directly to main group with absolute/relative path properly mapped
+      file_ref = project.main_group.new_file(file_path)
       target.add_file_references([file_ref])
       added_count += 1
       puts "Added: #{file_path}"
