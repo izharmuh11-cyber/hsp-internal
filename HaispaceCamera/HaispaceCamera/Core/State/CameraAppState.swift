@@ -14,7 +14,7 @@ import UIKit
 // MARK: - CameraStatus
 
 /// Status kamera iPhone
-enum CameraStatus {
+enum CameraStatus: Equatable {
     case standby        // Layar minimal, kamera off, menunggu pairing
     case paired         // Terhubung ke iPad, siap menerima perintah sesi
     case sessionActive  // Sesi foto berlangsung, layar HITAM (brightness = 0)

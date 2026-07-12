@@ -32,7 +32,7 @@ actor P2PClientService: NSObject {
             guard !payload.isExpired else {
                 HaispaceLogger.warning("QR Code sudah expired", category: "p2p")
                 Task {
-                    if let callback = await self.onConnectionStateChange { callback(.failed(reason: "QR Expired")) }
+                    if let callback = self.onConnectionStateChange { callback(.failed(reason: "QR Expired")) }
                 }
                 return
             }
@@ -49,13 +49,13 @@ actor P2PClientService: NSObject {
         guard signature == payload.sig else {
             HaispaceLogger.error("Signature QR Payload tidak valid", category: "p2p")
             Task {
-                if let callback = await self.onConnectionStateChange { callback(.failed(reason: "Invalid Signature")) }
+                if let callback = self.onConnectionStateChange { callback(.failed(reason: "Invalid Signature")) }
             }
             return
         }
         
         Task {
-            if let callback = await self.onConnectionStateChange { callback(.scanning) }
+            if let callback = self.onConnectionStateChange { callback(.scanning) }
         }
         
         // TODO: Coba TCP Socket terlebih dahulu menggunakan payload.ip dan payload.port.
@@ -88,7 +88,7 @@ actor P2PClientService: NSObject {
         session = nil
         isBrowsing = false
         Task {
-            if let callback = await self.onConnectionStateChange { callback(.disconnected) }
+            if let callback = self.onConnectionStateChange { callback(.disconnected) }
         }
     }
     
@@ -104,7 +104,7 @@ actor P2PClientService: NSObject {
 extension P2PClientService: MCSessionDelegate {
     nonisolated func session(_ session: MCSession, peer peerID: MCPeerID, didChange state: MCSessionState) {
         Task {
-            let callback = await self.onConnectionStateChange
+            let callback = self.onConnectionStateChange
             switch state {
             case .connected:
                 callback?(.connected)

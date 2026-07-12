@@ -58,7 +58,7 @@ private struct CameraStandbyView: View {
     var body: some View {
         ZStack {
             // 1. Premium Animated Background
-            Color(hex: "#05050A").ignoresSafeArea()
+            Color(red: 5/255, green: 5/255, blue: 10/255).ignoresSafeArea()
             
             // Subtle ambient glows for iPhone
             Circle()
@@ -147,11 +147,11 @@ private struct CameraStandbyView: View {
                     .frame(maxWidth: .infinity)
                     .frame(height: 64)
                     .background(
-                        LinearGradient(colors: [Color(hex: "#0052D4"), Color(hex: "#4364F7"), Color(hex: "#6FB1FC")], startPoint: .leading, endPoint: .trailing)
+                        LinearGradient(colors: [Color(red: 0, green: 82/255, blue: 212/255), Color(red: 67/255, green: 100/255, blue: 247/255), Color(red: 111/255, green: 177/255, blue: 252/255)], startPoint: .leading, endPoint: .trailing)
                     )
                     .foregroundStyle(.white)
                     .clipShape(Capsule())
-                    .shadow(color: Color(hex: "#4364F7").opacity(0.5), radius: 20, y: 10)
+                    .shadow(color: Color(red: 67/255, green: 100/255, blue: 247/255).opacity(0.5), radius: 20, y: 10)
                 }
                 .padding(.horizontal, 32)
                 .padding(.bottom, 20)
@@ -219,7 +219,7 @@ private struct CameraPairedView: View {
 
     var body: some View {
         ZStack {
-            Color(hex: "#05050A").ignoresSafeArea()
+            Color(red: 5/255, green: 5/255, blue: 10/255).ignoresSafeArea()
             
             // Green glow background indicating ready
             Circle()
@@ -233,9 +233,9 @@ private struct CameraPairedView: View {
                 // Status indicator
                 HStack(spacing: 12) {
                     Circle()
-                        .fill(Color(hex: "#00D9A0"))
+                        .fill(Color(red: 0, green: 217/255, blue: 160/255))
                         .frame(width: 12, height: 12)
-                        .shadow(color: Color(hex: "#00D9A0"), radius: 8)
+                        .shadow(color: Color(red: 0, green: 217/255, blue: 160/255), radius: 8)
                     Text("Terhubung")
                         .font(.headline.weight(.semibold))
                         .foregroundStyle(.white.opacity(0.9))
