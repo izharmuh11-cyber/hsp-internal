@@ -72,436 +72,561 @@ struct ActiveSessionView: View {
     }
     
     var body: some View {
-        ZStack {
-            // Dynamic moving aurora background
-            Color.black.ignoresSafeArea()
+        GeometryReader { screenGeo in
+            let ipadLandscape = screenGeo.size.width > screenGeo.size.height
             
             ZStack {
-                RadialGradient(colors: [Color(hex: "#7C5CFC").opacity(0.12), .clear], center: .center, startRadius: 10, endRadius: 350)
-                    .scaleEffect(animateAurora ? 1.25 : 0.8)
-                    .offset(x: animateAurora ? -100 : 100, y: animateAurora ? -50 : 50)
+                // Dynamic moving aurora background
+                Color.black.ignoresSafeArea()
                 
-                RadialGradient(colors: [Color(hex: "#00D9A0").opacity(0.08), .clear], center: .center, startRadius: 10, endRadius: 300)
-                    .scaleEffect(animateAurora ? 0.8 : 1.25)
-                    .offset(x: animateAurora ? 120 : -120, y: animateAurora ? 80 : -80)
-            }
-            .ignoresSafeArea()
-            .blur(radius: 40)
-            .allowsHitTesting(false)
-            
-            ZStack {
-                // Background Blur Aurora (Menghindari area hitam kosong di samping saat portrait)
-                StreamingVideoView()
-                    .blur(radius: 30)
-                    .opacity(0.5)
-                    .ignoresSafeArea()
-                
-                // Aliran video utama dengan aspek rasio dinamis (16:9 / 9:16) dan deteksi ketukan fokus (tap-to-focus)
-                GeometryReader { geometry in
-                    StreamingVideoView()
-                        .gesture(
-                            DragGesture(minimumDistance: 0)
-                                .onEnded { value in
-                                    guard localCountdown == 0 else { return }
-                                    
-                                    let width = geometry.size.width
-                                    let height = geometry.size.height
-                                    guard width > 0 && height > 0 else { return }
-                                    
-                                    // Koordinat ternormalisasi relative ke ukuran video view
-                                    let x = Float(value.location.x / width)
-                                    let y = Float(value.location.y / height)
-                                    
-                                    // Batasi koordinat agar berada dalam rentang [0.0, 1.0]
-                                    let cleanX = max(0.0, min(1.0, x))
-                                    let cleanY = max(0.0, min(1.0, y))
-                                    
-                                    Task {
-                                        await P2PMessageRouter.shared.route(.focusPoint(normalizedX: cleanX, normalizedY: cleanY))
-                                    }
-                                    
-                                    // Tampilkan indikator fokus visual kuning
-                                    self.focusTapPoint = value.location
-                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                                        self.showFocusIndicator = true
-                                    }
-                                    
-                                    // Sembunyikan setelah 1 detik
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                                        withAnimation(.easeOut(duration: 0.3)) {
-                                            self.showFocusIndicator = false
-                                        }
-                                    }
-                                    
-                                    SessionFeedbackService.shared.triggerHaptic(style: .light)
-                                }
-                        )
+                ZStack {
+                    RadialGradient(colors: [Color(hex: "#7C5CFC").opacity(0.12), .clear], center: .center, startRadius: 10, endRadius: 350)
+                        .scaleEffect(animateAurora ? 1.25 : 0.8)
+                        .offset(x: animateAurora ? -100 : 100, y: animateAurora ? -50 : 50)
+                    
+                    RadialGradient(colors: [Color(hex: "#00D9A0").opacity(0.08), .clear], center: .center, startRadius: 10, endRadius: 300)
+                        .scaleEffect(animateAurora ? 0.8 : 1.25)
+                        .offset(x: animateAurora ? 120 : -120, y: animateAurora ? 80 : -80)
                 }
-                .aspectRatio(isStreamLandscape ? 16.0 / 9.0 : 9.0 / 16.0, contentMode: .fill)
                 .ignoresSafeArea()
+                .blur(radius: 40)
+                .allowsHitTesting(false)
                 
-                // Visual AE/AF Focus Indicator (Pulsing yellow square)
-                if let focusPoint = focusTapPoint, showFocusIndicator {
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color(red: 255/255, green: 215/255, blue: 0/255), lineWidth: 1.5)
-                        .frame(width: 60, height: 60)
-                        .position(focusPoint)
-                        .scaleEffect(showFocusIndicator ? 1.0 : 1.4)
-                        .opacity(showFocusIndicator ? 1.0 : 0.0)
-                        .overlay(
-                            Circle()
-                                .fill(Color(red: 255/255, green: 215/255, blue: 0/255))
-                                .frame(width: 4, height: 4)
-                                .position(focusPoint)
-                        )
-                        .allowsHitTesting(false)
-                }
-                
-                // Corner Brackets Alignment Guide (Tampil tipis membantu tamu memposisikan diri)
-                CornerBracketsShape()
-                    .stroke(Color.white.opacity(0.3), lineWidth: 2)
-                    .padding(EdgeInsets(top: 80, leading: 100, bottom: 80, trailing: 100))
-                    .allowsHitTesting(false)
-                    .opacity(isBriefing ? 0 : 1)
-                    .animation(.easeInOut, value: isBriefing)
-                
-                // Overlay Flash (Saat jepretan dipicu)
-                if showFlash {
-                    Color.white
+                ZStack {
+                    // Background Blur Aurora (Menghindari area hitam kosong di samping saat portrait)
+                    StreamingVideoView()
+                        .blur(radius: 30)
+                        .opacity(0.5)
                         .ignoresSafeArea()
-                        .zIndex(10)
-                }
-                
-                // Center Countdown (3.. 2.. 1)
-                if localCountdown > 0 {
-                    Text("\(localCountdown)")
-                        .font(.system(size: 180, weight: .heavy, design: .rounded))
-                        .foregroundStyle(localCountdown == 1 ? Color(red: 255/255, green: 215/255, blue: 0/255) : .white) // Emas untuk detik 1
-                        .shadow(color: .black.opacity(0.5), radius: 20, y: 10)
-                        .transition(.scale.combined(with: .opacity))
-                        .zIndex(15)
-                        .id("countdown-\(localCountdown)") // Force animation re-trigger
-                }
-                
-                // Toggle Pose Guide Button
-                if localCountdown == 0 && !showFlash && !isBriefing {
-                    VStack {
+                    
+                    // Aliran video utama dengan aspek rasio dinamis (16:9 / 9:16) dan deteksi ketukan fokus (tap-to-focus)
+                    GeometryReader { geometry in
+                        StreamingVideoView()
+                            .gesture(
+                                DragGesture(minimumDistance: 0)
+                                    .onEnded { value in
+                                        guard localCountdown == 0 else { return }
+                                        
+                                        let width = geometry.size.width
+                                        let height = geometry.size.height
+                                        guard width > 0 && height > 0 else { return }
+                                        
+                                        // Koordinat ternormalisasi relative ke ukuran video view
+                                        let x = Float(value.location.x / width)
+                                        let y = Float(value.location.y / height)
+                                        
+                                        // Batasi koordinat agar berada dalam rentang [0.0, 1.0]
+                                        let cleanX = max(0.0, min(1.0, x))
+                                        let cleanY = max(0.0, min(1.0, y))
+                                        
+                                        Task {
+                                            await P2PMessageRouter.shared.route(.focusPoint(normalizedX: cleanX, normalizedY: cleanY))
+                                        }
+                                        
+                                        // Tampilkan indikator fokus visual kuning
+                                        self.focusTapPoint = value.location
+                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                                            self.showFocusIndicator = true
+                                        }
+                                        
+                                        // Sembunyikan setelah 1 detik
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                                            withAnimation(.easeOut(duration: 0.3)) {
+                                                self.showFocusIndicator = false
+                                            }
+                                        }
+                                        
+                                        SessionFeedbackService.shared.triggerHaptic(style: .light)
+                                    }
+                            )
+                    }
+                    .aspectRatio(isStreamLandscape ? 16.0 / 9.0 : 9.0 / 16.0, contentMode: .fill)
+                    .ignoresSafeArea()
+                    
+                    // Visual AE/AF Focus Indicator (Pulsing yellow square)
+                    if let focusPoint = focusTapPoint, showFocusIndicator {
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color(red: 255/255, green: 215/255, blue: 0/255), lineWidth: 1.5)
+                            .frame(width: 60, height: 60)
+                            .position(focusPoint)
+                            .scaleEffect(showFocusIndicator ? 1.0 : 1.4)
+                            .opacity(showFocusIndicator ? 1.0 : 0.0)
+                            .overlay(
+                                Circle()
+                                    .fill(Color(red: 255/255, green: 215/255, blue: 0/255))
+                                    .frame(width: 4, height: 4)
+                                    .position(focusPoint)
+                            )
+                            .allowsHitTesting(false)
+                    }
+                    
+                    // Corner Brackets Alignment Guide (Tampil tipis membantu tamu memposisikan diri)
+                    CornerBracketsShape()
+                        .stroke(Color.white.opacity(0.3), lineWidth: 2)
+                        .padding(EdgeInsets(top: 80, leading: 100, bottom: 80, trailing: 100))
+                        .allowsHitTesting(false)
+                        .opacity(isBriefing ? 0 : 1)
+                        .animation(.easeInOut, value: isBriefing)
+                    
+                    // Overlay Flash (Saat jepretan dipicu)
+                    if showFlash {
+                        Color.white
+                            .ignoresSafeArea()
+                            .zIndex(10)
+                    }
+                    
+                    // Center Countdown (3.. 2.. 1)
+                    if localCountdown > 0 {
+                        Text("\(localCountdown)")
+                            .font(.system(size: 180, weight: .heavy, design: .rounded))
+                            .foregroundStyle(localCountdown == 1 ? Color(red: 255/255, green: 215/255, blue: 0/255) : .white) // Emas untuk detik 1
+                            .shadow(color: .black.opacity(0.5), radius: 20, y: 10)
+                            .transition(.scale.combined(with: .opacity))
+                            .zIndex(15)
+                            .id("countdown-\(localCountdown)") // Force animation re-trigger
+                    }
+                    
+                    // Toggle Pose Guide Button
+                    if localCountdown == 0 && !showFlash && !isBriefing {
+                        VStack {
+                            HStack {
+                                Spacer()
+                                Button(action: {
+                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                        showPoseGuide.toggle()
+                                    }
+                                }) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: showPoseGuide ? "person.crop.rectangle.stack.fill" : "person.crop.rectangle.stack")
+                                        Text(showPoseGuide ? "Sembunyikan Panduan" : "Panduan Pose")
+                                            .font(.subheadline.bold())
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 10)
+                                    .background(.ultraThinMaterial)
+                                    .foregroundStyle(.white)
+                                    .cornerRadius(20)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 20)
+                                            .stroke(.white.opacity(0.15), lineWidth: 1)
+                                    )
+                                    .shadow(color: .black.opacity(0.3), radius: 10, y: 5)
+                                }
+                                .padding(.top, 24)
+                                .padding(.trailing, 24)
+                            }
+                            Spacer()
+                        }
+                        .zIndex(12)
+                    }
+                    
+                    // Auto-Zoom Recommendation Toast
+                    if let recommendedZoom = recommendedZoom, localCountdown == 0 && !showFlash && !isBriefing {
+                        VStack {
+                            HStack {
+                                Image(systemName: "sparkles")
+                                    .foregroundStyle(Color(red: 255/255, green: 215/255, blue: 0/255))
+                                Text("AI menyarankan zoom: \(recommendedZoom.description)")
+                                    .font(.subheadline.bold())
+                                    .foregroundStyle(.white)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(.black.opacity(0.75))
+                            .cornerRadius(16)
+                            .transition(.move(edge: .top).combined(with: .opacity))
+                            .padding(.top, 24)
+                            Spacer()
+                        }
+                        .allowsHitTesting(false)
+                        .zIndex(13)
+                    }
+                    
+                    // Floating Sidebar Pose Guide Panel
+                    if showPoseGuide && localCountdown == 0 {
                         HStack {
                             Spacer()
-                            Button(action: {
-                                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                                    showPoseGuide.toggle()
-                                }
-                            }) {
-                                HStack(spacing: 8) {
-                                    Image(systemName: showPoseGuide ? "person.crop.rectangle.stack.fill" : "person.crop.rectangle.stack")
-                                    Text(showPoseGuide ? "Sembunyikan Panduan" : "Panduan Pose")
-                                        .font(.subheadline.bold())
-                                }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 10)
-                                .background(.ultraThinMaterial)
-                                .foregroundStyle(.white)
-                                .cornerRadius(20)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 20)
-                                        .stroke(.white.opacity(0.15), lineWidth: 1)
+                            PoseGuidePanel(category: currentPoseCategory, faceCount: detectedFaceCount)
+                                .frame(width: 250, height: 460)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 24)
+                                        .fill(.ultraThinMaterial)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 24)
+                                                .stroke(.white.opacity(0.12), lineWidth: 1)
+                                        )
                                 )
-                                .shadow(color: .black.opacity(0.3), radius: 10, y: 5)
-                            }
-                            .padding(.top, 24)
-                            .padding(.trailing, 24)
+                                .cornerRadius(24)
+                                .shadow(color: .black.opacity(0.35), radius: 15, y: 8)
+                                .padding(.trailing, 24)
+                                .padding(.bottom, ipadLandscape ? 120 : 0) // Shift up only in Landscape
+                                .padding(.top, ipadLandscape ? 0 : 100) // Shift down in Portrait to clear top widgets
                         }
-                        Spacer()
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
+                        .zIndex(11)
                     }
-                    .zIndex(12)
-                }
-                
-                // Auto-Zoom Recommendation Toast
-                if let recommendedZoom = recommendedZoom, localCountdown == 0 && !showFlash && !isBriefing {
-                    VStack {
+                    
+                    // Floating Photo Strip Drawer (Only shown in Portrait Mode)
+                    if !ipadLandscape && localCountdown == 0 && !showFlash && !isBriefing {
                         HStack {
-                            Image(systemName: "sparkles")
-                                .foregroundStyle(Color(red: 255/255, green: 215/255, blue: 0/255))
-                            Text("AI menyarankan zoom: \(recommendedZoom.description)")
-                                .font(.subheadline.bold())
-                                .foregroundStyle(.white)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(.black.opacity(0.75))
-                        .cornerRadius(16)
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                        .padding(.top, 24)
-                        Spacer()
-                    }
-                    .allowsHitTesting(false)
-                    .zIndex(13)
-                }
-                
-                // Floating Sidebar Pose Guide Panel
-                if showPoseGuide && localCountdown == 0 {
-                    HStack {
-                        Spacer()
-                        PoseGuidePanel(category: currentPoseCategory, faceCount: detectedFaceCount)
-                            .frame(width: 250, height: 460)
-                            .background(
-                                RoundedRectangle(cornerRadius: 24)
-                                    .fill(.ultraThinMaterial)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 24)
-                                            .stroke(.white.opacity(0.12), lineWidth: 1)
-                                    )
-                            )
-                            .cornerRadius(24)
-                            .shadow(color: .black.opacity(0.35), radius: 15, y: 8)
-                            .padding(.trailing, 24)
-                            .padding(.bottom, 120) // Leave space for bottom dock
-                    }
-                    .transition(.move(edge: .trailing).combined(with: .opacity))
-                    .zIndex(11)
-                }
-                
-                // Floating Bottom Controls Bar
-                if localCountdown == 0 && !showFlash && !isBriefing {
-                    VStack {
-                        Spacer()
-                        
-                        // Horizontal macOS style dock
-                        HStack(spacing: 24) {
-                            // Left: Scrollable Horizontal Photo Strip
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 12) {
-                                    if let s = session {
-                                        ForEach(s.photos.capturedPhotos) { photo in
-                                            Button(action: {
-                                                activeSelectedPhotoForPreview = photo
-                                            }) {
-                                                if let uiImage = UIImage(data: photo.thumbnailData) {
-                                                    Image(uiImage: uiImage)
-                                                        .resizable()
-                                                        .scaledToFill()
-                                                        .frame(width: 54, height: 70)
-                                                        .cornerRadius(8)
-                                                        .overlay(
-                                                            RoundedRectangle(cornerRadius: 8)
-                                                                .stroke(.white.opacity(0.2), lineWidth: 1)
-                                                        )
+                            Spacer()
+                            VStack(spacing: 12) {
+                                Text("HASIL")
+                                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                                    .tracking(2)
+                                    .foregroundStyle(.white.opacity(0.6))
+                                    .padding(.top, 16)
+                                
+                                ScrollView(.vertical, showsIndicators: false) {
+                                    VStack(spacing: 10) {
+                                        if let s = session {
+                                            ForEach(s.photos.capturedPhotos) { photo in
+                                                Button(action: {
+                                                    activeSelectedPhotoForPreview = photo
+                                                }) {
+                                                    if let uiImage = UIImage(data: photo.thumbnailData) {
+                                                        Image(uiImage: uiImage)
+                                                            .resizable()
+                                                            .scaledToFill()
+                                                            .frame(width: 50, height: 65)
+                                                            .cornerRadius(6)
+                                                            .overlay(
+                                                                RoundedRectangle(cornerRadius: 6)
+                                                                    .stroke(.white.opacity(0.2), lineWidth: 1)
+                                                            )
+                                                            .clipped()
+                                                    }
                                                 }
                                             }
                                         }
                                     }
+                                    .padding(.horizontal, 8)
                                 }
-                                .padding(.horizontal, 12)
                             }
-                            .frame(width: 300, height: 80)
-                            .background(.white.opacity(0.05))
-                            .cornerRadius(12)
-                            
-                            Spacer()
-                            
-                            // Center: Shutter Button
-                            Button(action: {
-                                startManualCaptureSequence()
-                            }) {
-                                Circle()
-                                    .fill(.white)
-                                    .frame(width: 76, height: 76)
+                            .frame(width: 66, height: 320)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(.ultraThinMaterial)
                                     .overlay(
-                                        Circle()
-                                            .stroke(.black.opacity(0.25), lineWidth: 4)
-                                            .padding(3)
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .stroke(.white.opacity(0.1), lineWidth: 1)
                                     )
-                                    .shadow(color: .black.opacity(0.3), radius: 10, y: 5)
-                            }
-                            .disabled(isCapturing)
-                            .opacity(isCapturing ? 0.5 : 1.0)
-                            
+                            )
+                            .padding(.trailing, 16)
+                            .padding(.bottom, 140) // Anchor above the bottom dock
+                        }
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
+                        .zIndex(14)
+                    }
+                    
+                    // Floating Bottom Controls Bar (Adaptive Landscape / Portrait)
+                    if localCountdown == 0 && !showFlash && !isBriefing {
+                        VStack {
                             Spacer()
                             
-                            // Right: Sisa Waktu & Selesai Button
-                            HStack(spacing: 16) {
-                                if let s = session {
-                                    VStack(alignment: .trailing, spacing: 2) {
-                                        Text("SISA WAKTU")
-                                            .font(.system(size: 9, weight: .bold))
-                                            .tracking(1)
-                                            .foregroundStyle(.white.opacity(0.5))
-                                        Text(formatTime(s.remainingSeconds))
-                                            .font(.system(size: 18, weight: .bold, design: .monospaced))
-                                            .foregroundStyle(s.remainingSeconds <= 30 ? Color.red : Color.white)
+                            if ipadLandscape {
+                                // Landscape macOS-Style Dock
+                                HStack(spacing: 24) {
+                                    // Left: Scrollable Horizontal Photo Strip
+                                    ScrollView(.horizontal, showsIndicators: false) {
+                                        HStack(spacing: 12) {
+                                            if let s = session {
+                                                ForEach(s.photos.capturedPhotos) { photo in
+                                                    Button(action: {
+                                                        activeSelectedPhotoForPreview = photo
+                                                    }) {
+                                                        if let uiImage = UIImage(data: photo.thumbnailData) {
+                                                            Image(uiImage: uiImage)
+                                                                .resizable()
+                                                                .scaledToFill()
+                                                                .frame(width: 54, height: 70)
+                                                                .cornerRadius(8)
+                                                                .overlay(
+                                                                    RoundedRectangle(cornerRadius: 8)
+                                                                        .stroke(.white.opacity(0.2), lineWidth: 1)
+                                                                )
+                                                                .clipped()
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        .padding(.horizontal, 12)
+                                    }
+                                    .frame(width: 300, height: 80)
+                                    .background(.white.opacity(0.05))
+                                    .cornerRadius(12)
+                                    
+                                    Spacer()
+                                    
+                                    // Center: Shutter Button
+                                    Button(action: {
+                                        startManualCaptureSequence()
+                                    }) {
+                                        Circle()
+                                            .fill(.white)
+                                            .frame(width: 76, height: 76)
+                                            .overlay(
+                                                Circle()
+                                                    .stroke(.black.opacity(0.25), lineWidth: 4)
+                                                    .padding(3)
+                                            )
+                                            .scaleEffect(isCapturing ? 0.92 : 1.0)
+                                            .shadow(color: .black.opacity(0.3), radius: 10, y: 5)
+                                            .animation(.spring(response: 0.2, dampingFraction: 0.5), value: isCapturing)
+                                    }
+                                    .disabled(isCapturing)
+                                    
+                                    Spacer()
+                                    
+                                    // Right: Sisa Waktu & Selesai Button
+                                    HStack(spacing: 16) {
+                                        if let s = session {
+                                            VStack(alignment: .trailing, spacing: 2) {
+                                                Text("SISA WAKTU")
+                                                    .font(.system(size: 9, weight: .bold))
+                                                    .tracking(1)
+                                                    .foregroundStyle(.white.opacity(0.5))
+                                                Text(formatTime(s.remainingSeconds))
+                                                    .font(.system(size: 18, weight: .bold, design: .monospaced))
+                                                    .foregroundStyle(s.remainingSeconds <= 30 ? Color.red : Color.white)
+                                            }
+                                        }
+                                        
+                                        Button(action: {
+                                            appState.navigateTo(.photoSelection)
+                                        }) {
+                                            Text("Selesai")
+                                                .font(.subheadline.bold())
+                                                .foregroundStyle(.black)
+                                                .padding(.horizontal, 22)
+                                                .padding(.vertical, 11)
+                                                .background(.white)
+                                                .cornerRadius(10)
+                                        }
+                                    }
+                                    .frame(width: 300)
+                                }
+                                .padding(.horizontal, 24)
+                                .padding(.vertical, 16)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 24)
+                                        .fill(.ultraThinMaterial)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 24)
+                                                .stroke(.white.opacity(0.12), lineWidth: 1)
+                                        )
+                                )
+                                .padding(.horizontal, 24)
+                                .padding(.bottom, 24)
+                                .shadow(color: .black.opacity(0.4), radius: 20, y: 10)
+                                .transition(.move(edge: .bottom).combined(with: .opacity))
+                            } else {
+                                // Portrait Condensed Dock
+                                HStack(spacing: 24) {
+                                    if let s = session {
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text("SISA WAKTU")
+                                                .font(.system(size: 8, weight: .bold))
+                                                .tracking(1)
+                                                .foregroundStyle(.white.opacity(0.5))
+                                            Text(formatTime(s.remainingSeconds))
+                                                .font(.system(size: 16, weight: .bold, design: .monospaced))
+                                                .foregroundStyle(s.remainingSeconds <= 30 ? Color.red : Color.white)
+                                        }
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    // Center: Shutter Button
+                                    Button(action: {
+                                        startManualCaptureSequence()
+                                    }) {
+                                        Circle()
+                                            .fill(.white)
+                                            .frame(width: 76, height: 76)
+                                            .overlay(
+                                                Circle()
+                                                    .stroke(.black.opacity(0.25), lineWidth: 4)
+                                                    .padding(3)
+                                            )
+                                            .scaleEffect(isCapturing ? 0.92 : 1.0)
+                                            .shadow(color: .black.opacity(0.3), radius: 10, y: 5)
+                                            .animation(.spring(response: 0.2, dampingFraction: 0.5), value: isCapturing)
+                                    }
+                                    .disabled(isCapturing)
+                                    
+                                    Spacer()
+                                    
+                                    Button(action: {
+                                        appState.navigateTo(.photoSelection)
+                                    }) {
+                                        Text("Selesai")
+                                            .font(.subheadline.bold())
+                                            .foregroundStyle(.black)
+                                            .padding(.horizontal, 20)
+                                            .padding(.vertical, 10)
+                                            .background(.white)
+                                            .cornerRadius(10)
                                     }
                                 }
-                                
-                                Button(action: {
-                                    appState.navigateTo(.photoSelection)
-                                }) {
-                                    Text("Selesai")
-                                        .font(.subheadline.bold())
-                                        .foregroundStyle(.black)
-                                        .padding(.horizontal, 22)
-                                        .padding(.vertical, 11)
-                                        .background(.white)
-                                        .cornerRadius(10)
+                                .padding(.horizontal, 24)
+                                .padding(.vertical, 14)
+                                .frame(width: 440)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 24)
+                                        .fill(.ultraThinMaterial)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 24)
+                                                .stroke(.white.opacity(0.12), lineWidth: 1)
+                                        )
+                                )
+                                .padding(.bottom, 24)
+                                .shadow(color: .black.opacity(0.35), radius: 15, y: 8)
+                                .transition(.move(edge: .bottom).combined(with: .opacity))
+                            }
+                        }
+                        .zIndex(15)
+                    }
+                }
+                
+                // Briefing Overlay (Tampil sesaat sebelum sesi dimulai)
+                if isBriefing {
+                    VStack(spacing: 24) {
+                        Image(systemName: "camera.viewfinder")
+                            .font(.system(size: 80))
+                            .foregroundStyle(.white)
+                        Text("Bersiaplah!")
+                            .font(.system(size: 48, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white)
+                        Text("Lihat ke kamera dan berikan senyum terbaikmu.")
+                            .font(.title2)
+                            .foregroundStyle(.white.opacity(0.8))
+                    }
+                    .padding(40)
+                    .background(.black.opacity(0.6))
+                    .cornerRadius(24)
+                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                    .zIndex(20)
+                }
+                
+                // Selective Retake Premium Modal Overlay
+                if let selectedPhoto = activeSelectedPhotoForPreview {
+                    ZStack {
+                        // Deep Blur Glass Background
+                        Rectangle()
+                            .fill(.ultraThinMaterial)
+                            .ignoresSafeArea()
+                        Color.black.opacity(0.45)
+                            .ignoresSafeArea()
+                            .onTapGesture {
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                    activeSelectedPhotoForPreview = nil
                                 }
                             }
-                            .frame(width: 300)
+                        
+                        VStack(spacing: 28) {
+                            // Modal Header
+                            VStack(spacing: 6) {
+                                Text("TINJAU POSE \(selectedPhoto.sortOrder + 1)")
+                                    .font(.system(size: 20, weight: .black, design: .rounded))
+                                    .tracking(3)
+                                    .foregroundStyle(
+                                        LinearGradient(
+                                            colors: [Color(hex: "#7C5CFC"), Color(hex: "#9D85FF")],
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        )
+                                    )
+                                
+                                Text("Apakah pose ini sudah sesuai, atau Anda ingin mengambil foto ulang?")
+                                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                                    .foregroundStyle(.white.opacity(0.6))
+                                    .multilineTextAlignment(.center)
+                            }
+                            .padding(.top, 12)
+                            
+                            // Photo Frame with Glowing Border
+                            if let uiImage = UIImage(data: selectedPhoto.thumbnailData) {
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(maxHeight: 460)
+                                    .cornerRadius(16)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .stroke(Color.white.opacity(0.2), lineWidth: 1.5)
+                                    )
+                                    .shadow(color: .black.opacity(0.55), radius: 24, y: 12)
+                            }
+                            
+                            // Action Buttons
+                            HStack(spacing: 20) {
+                                // Button Cancel / Close
+                                Button(action: {
+                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                        activeSelectedPhotoForPreview = nil
+                                    }
+                                }) {
+                                    Text("Batal")
+                                        .font(.system(.headline, design: .rounded))
+                                        .foregroundStyle(.white)
+                                        .frame(width: 140, height: 48)
+                                        .background(.white.opacity(0.12))
+                                        .clipShape(Capsule())
+                                        .overlay(
+                                            Capsule()
+                                                .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                                        )
+                                }
+                                
+                                // Button Retake
+                                Button(action: {
+                                    let targetId = selectedPhoto.id
+                                    let targetOrder = selectedPhoto.sortOrder
+                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                        activeSelectedPhotoForPreview = nil
+                                    }
+                                    startManualCaptureSequence(replacePhotoId: targetId, sortOrder: targetOrder)
+                                }) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "arrow.triangle.2.circlepath.camera")
+                                        Text("Foto Ulang (Retake)")
+                                    }
+                                    .font(.system(.headline, design: .rounded).bold())
+                                    .foregroundStyle(.white)
+                                    .frame(width: 220, height: 48)
+                                    .background(
+                                        LinearGradient(
+                                            colors: [Color(hex: "#7C5CFC"), Color(hex: "#9D85FF")],
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        )
+                                    )
+                                    .clipShape(Capsule())
+                                    .shadow(color: Color(hex: "#7C5CFC").opacity(0.35), radius: 12, y: 6)
+                                }
+                            }
+                            .padding(.bottom, 12)
                         }
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 16)
+                        .padding(.horizontal, 32)
+                        .padding(.vertical, 28)
                         .background(
-                            RoundedRectangle(cornerRadius: 24)
-                                .fill(.ultraThinMaterial)
+                            RoundedRectangle(cornerRadius: 28)
+                                .fill(Color(hex: "#0A0A10").opacity(0.92))
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: 24)
-                                        .stroke(.white.opacity(0.12), lineWidth: 1)
+                                    RoundedRectangle(cornerRadius: 28)
+                                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
                                 )
                         )
-                        .padding(.horizontal, 24)
-                        .padding(.bottom, 24)
-                        .shadow(color: .black.opacity(0.4), radius: 20, y: 10)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .padding(32)
+                        .transition(.asymmetric(
+                            insertion: .scale(scale: 0.95).combined(with: .opacity),
+                            removal: .scale(scale: 0.95).combined(with: .opacity)
+                        ))
                     }
-                    .zIndex(14)
+                    .zIndex(30)
                 }
-            }
-        
-            // Briefing Overlay (Tampil sesaat sebelum sesi dimulai)
-            if isBriefing {
-                VStack(spacing: 24) {
-                    Image(systemName: "camera.viewfinder")
-                        .font(.system(size: 80))
-                        .foregroundStyle(.white)
-                    Text("Bersiaplah!")
-                        .font(.system(size: 48, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white)
-                    Text("Lihat ke kamera dan berikan senyum terbaikmu.")
-                        .font(.title2)
-                        .foregroundStyle(.white.opacity(0.8))
-                }
-                .padding(40)
-                .background(.black.opacity(0.6))
-                .cornerRadius(24)
-                .transition(.opacity.combined(with: .scale(scale: 0.9)))
-                .zIndex(20)
-            }
-            
-            // Selective Retake Premium Modal Overlay
-            if let selectedPhoto = activeSelectedPhotoForPreview {
-                ZStack {
-                    // Deep Blur Glass Background
-                    Rectangle()
-                        .fill(.ultraThinMaterial)
-                        .ignoresSafeArea()
-                    Color.black.opacity(0.45)
-                        .ignoresSafeArea()
-                        .onTapGesture {
-                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                activeSelectedPhotoForPreview = nil
-                            }
-                        }
-                    
-                    VStack(spacing: 28) {
-                        // Modal Header
-                        VStack(spacing: 6) {
-                            Text("TINJAU POSE \(selectedPhoto.sortOrder + 1)")
-                                .font(.system(size: 20, weight: .black, design: .rounded))
-                                .tracking(3)
-                                .foregroundStyle(
-                                    LinearGradient(
-                                        colors: [Color(hex: "#7C5CFC"), Color(hex: "#9D85FF")],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                            
-                            Text("Apakah pose ini sudah sesuai, atau Anda ingin mengambil foto ulang?")
-                                .font(.system(size: 13, weight: .medium, design: .rounded))
-                                .foregroundStyle(.white.opacity(0.6))
-                                .multilineTextAlignment(.center)
-                        }
-                        .padding(.top, 12)
-                        
-                        // Photo Frame with Glowing Border
-                        if let uiImage = UIImage(data: selectedPhoto.thumbnailData) {
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(maxHeight: 460)
-                                .cornerRadius(16)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .stroke(Color.white.opacity(0.2), lineWidth: 1.5)
-                                )
-                                .shadow(color: .black.opacity(0.55), radius: 24, y: 12)
-                        }
-                        
-                        // Action Buttons
-                        HStack(spacing: 20) {
-                            // Button Cancel / Close
-                            Button(action: {
-                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                    activeSelectedPhotoForPreview = nil
-                                }
-                            }) {
-                                Text("Batal")
-                                    .font(.system(.headline, design: .rounded))
-                                    .foregroundStyle(.white)
-                                    .frame(width: 140, height: 48)
-                                    .background(.white.opacity(0.12))
-                                    .clipShape(Capsule())
-                                    .overlay(
-                                        Capsule()
-                                            .stroke(Color.white.opacity(0.15), lineWidth: 1)
-                                    )
-                            }
-                            
-                            // Button Retake
-                            Button(action: {
-                                let targetId = selectedPhoto.id
-                                let targetOrder = selectedPhoto.sortOrder
-                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                    activeSelectedPhotoForPreview = nil
-                                }
-                                startManualCaptureSequence(replacePhotoId: targetId, sortOrder: targetOrder)
-                            }) {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "arrow.triangle.2.circlepath.camera")
-                                    Text("Foto Ulang (Retake)")
-                                }
-                                .font(.system(.headline, design: .rounded).bold())
-                                .foregroundStyle(.white)
-                                .frame(width: 220, height: 48)
-                                .background(
-                                    LinearGradient(
-                                        colors: [Color(hex: "#7C5CFC"), Color(hex: "#9D85FF")],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                                .clipShape(Capsule())
-                                .shadow(color: Color(hex: "#7C5CFC").opacity(0.35), radius: 12, y: 6)
-                            }
-                        }
-                        .padding(.bottom, 12)
-                    }
-                    .padding(.horizontal, 32)
-                    .padding(.vertical, 28)
-                    .background(
-                        RoundedRectangle(cornerRadius: 28)
-                            .fill(Color(hex: "#0A0A10").opacity(0.92))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 28)
-                                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                            )
-                    )
-                    .padding(32)
-                    .transition(.asymmetric(
-                        insertion: .scale(scale: 0.95).combined(with: .opacity),
-                        removal: .scale(scale: 0.95).combined(with: .opacity)
-                    ))
-                }
-                .zIndex(30)
             }
         }
         .onAppear {
