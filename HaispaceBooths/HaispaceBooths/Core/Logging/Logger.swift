@@ -248,12 +248,12 @@ struct GitHubLogUploader {
         
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
-                HaispaceLogger.error("Auto upload log gagal: \(error.localizedDescription)", category: "logging")
+                HaispaceLogger.warning("Auto upload log gagal: \(error.localizedDescription)", category: "logging")
             } else if let httpResponse = response as? HTTPURLResponse {
                 if (200...299).contains(httpResponse.statusCode) {
                     HaispaceLogger.info("Auto upload log sukses! File: \(filename)", category: "logging")
                 } else {
-                    HaispaceLogger.error("Auto upload log gagal dengan status: \(httpResponse.statusCode)", category: "logging")
+                    HaispaceLogger.warning("Auto upload log gagal dengan status: \(httpResponse.statusCode)", category: "logging")
                 }
             }
         }.resume()
