@@ -118,377 +118,21 @@ struct ActiveSessionView: View {
                     
                     countdownOverlay
                 }
-                    
-                    // Butuh Inspirasi Gaya? Floating Hint Banner
-                    if showPoseHint && localCountdown == 0 && !showPoseOverlay && !showFlash && !isBriefing {
-                        VStack {
-                            Button(action: {
-                                withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
-                                    showPoseHint = false
-                                    showPoseOverlay = true
-                                    currentPoseIndex = 0
-                                }
-                                lastActivityTime = Date()
-                            }) {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "lightbulb.fill")
-                                        .foregroundStyle(Color(red: 255/255, green: 215/255, blue: 0/255))
-                                    Text("Butuh referensi gaya?")
-                                        .font(.subheadline.bold())
-                                        .foregroundStyle(.white)
-                                    Image(systemName: "chevron.right")
-                                        .font(.caption.bold())
-                                        .foregroundStyle(.white.opacity(0.6))
-                                }
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 12)
-                                .background(.ultraThinMaterial)
-                                .cornerRadius(24)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 24)
-                                        .stroke(Color.white.opacity(0.15), lineWidth: 1)
-                                )
-                                .shadow(color: .black.opacity(0.3), radius: 10, y: 5)
-                            }
-                            .padding(.top, 90) // Safely below top widgets
-                            Spacer()
-                        }
-                        .zIndex(22)
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                    }
-                    
-                    // Contextual Ghost Pose Image Overlay
-                    if showPoseOverlay && localCountdown == 0 && !showFlash && !isBriefing {
-                        ZStack {
-                            // Tap outside to dismiss
-                            Color.black.opacity(0.15)
-                                .ignoresSafeArea()
-                                .onTapGesture {
-                                    withAnimation(.easeOut(duration: 0.25)) {
-                                        showPoseOverlay = false
-                                        lastActivityTime = Date()
-                                    }
-                                }
-                            
-                            let poseImages = getPoseImagesForCount(detectedFaceCount)
-                            if !poseImages.isEmpty {
-                                let assetName = poseImages[currentPoseIndex % poseImages.count]
-                                
-                                VStack(spacing: 16) {
-                                    ZStack(alignment: .topTrailing) {
-                                        Image(assetName)
-                                            .resizable()
-                                            .scaledToFit()
-                                            .frame(maxWidth: ipadLandscape ? 500 : 380, maxHeight: ipadLandscape ? 400 : 520)
-                                            .opacity(0.35) // Semi-transparent stencil/ghost overlay!
-                                            .cornerRadius(20)
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 20)
-                                                    .stroke(.white.opacity(0.3), lineWidth: 2)
-                                            )
-                                            .gesture(
-                                                DragGesture(minimumDistance: 20)
-                                                    .onEnded { gesture in
-                                                        let horizontalDrag = gesture.translation.width
-                                                        if horizontalDrag > 30 {
-                                                            // Swipe Right -> Prev Pose
-                                                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                                                currentPoseIndex = (currentPoseIndex - 1 + poseImages.count) % poseImages.count
-                                                            }
-                                                        } else if horizontalDrag < -30 {
-                                                            // Swipe Left -> Next Pose
-                                                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                                                currentPoseIndex = (currentPoseIndex + 1) % poseImages.count
-                                                            }
-                                                        }
-                                                        lastActivityTime = Date()
-                                                    }
-                                            )
-                                        
-                                        // Close Button
-                                        Button(action: {
-                                            withAnimation(.easeOut(duration: 0.25)) {
-                                                showPoseOverlay = false
-                                                lastActivityTime = Date()
-                                            }
-                                        }) {
-                                            Image(systemName: "xmark.circle.fill")
-                                                .font(.system(size: 28))
-                                                .foregroundStyle(.white.opacity(0.8), .black.opacity(0.6))
-                                                .padding(12)
-                                        }
-                                    }
-                                    
-                                    // Dots Pagination
-                                    HStack(spacing: 6) {
-                                        ForEach(0..<poseImages.count, id: \.self) { idx in
-                                            Circle()
-                                                .fill(idx == currentPoseIndex % poseImages.count ? Color.white : Color.white.opacity(0.3))
-                                                .frame(width: 6, height: 6)
-                                        }
-                                    }
-                                    
-                                    Text("Geser (Swipe) untuk pose lain • \(detectedFaceCount) Wajah")
-                                        .font(.system(size: 11, weight: .bold))
-                                        .tracking(1)
-                                        .foregroundStyle(.white.opacity(0.6))
-                                }
-                            }
-                        }
-                        .zIndex(25)
-                        .transition(.opacity.combined(with: .scale(scale: 0.95)))
-                    }
-                    
-                    // Left Floating Sidebar (Galeri Foto)
-                    if localCountdown == 0 && !showFlash && !isBriefing {
-                        VStack(spacing: 12) {
-                            ScrollView(.vertical, showsIndicators: false) {
-                                VStack(spacing: 14) {
-                                    if let s = session {
-                                        ForEach(Array(s.photos.capturedPhotos.enumerated()), id: \.element.id) { index, photo in
-                                            Button(action: {
-                                                activeSelectedPhotoForPreview = photo
-                                            }) {
-                                                if let uiImage = UIImage(data: photo.thumbnailData) {
-                                                    Image(uiImage: uiImage)
-                                                        .resizable()
-                                                        .scaledToFill()
-                                                        .frame(width: 60, height: 78)
-                                                        .cornerRadius(10)
-                                                        .overlay(
-                                                            RoundedRectangle(cornerRadius: 10)
-                                                                .stroke(Color.white, lineWidth: 2) // Polaroid-style white border
-                                                        )
-                                                        .shadow(color: .black.opacity(0.35), radius: 6, y: 3)
-                                                        .rotationEffect(.degrees(index % 2 == 0 ? 1.5 : -1.5)) // Polaroid-style alternate rotation
-                                                        .clipped()
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                .padding(.vertical, 8)
-                                .padding(.horizontal, 4)
-                            }
-                        }
-                        .frame(width: 80, height: ipadLandscape ? 420 : 320)
-                        .padding(.leading, 24)
-                        .padding(.bottom, ipadLandscape ? 120 : 160) // Shift safely above shutter
-                        .transition(.move(edge: .leading).combined(with: .opacity))
-                        .zIndex(14)
-                    }
-                    
-                    // Symmetrical Top Header Pill Bar
-                    if localCountdown == 0 && !showFlash && !isBriefing {
-                        VStack {
-                            HStack {
-                                // Top Left: Queue Number
-                                if let s = session {
-                                    HStack(spacing: 6) {
-                                        Image(systemName: "person.2.fill")
-                                            .font(.system(size: 11, weight: .bold))
-                                        Text("Antrian #\(String(format: "%03d", s.queueNumber ?? 1))")
-                                            .font(.system(size: 12, weight: .bold, design: .rounded))
-                                    }
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 8)
-                                    .background(.ultraThinMaterial)
-                                    .foregroundStyle(.white)
-                                    .cornerRadius(16)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 16)
-                                            .stroke(.white.opacity(0.12), lineWidth: 1)
-                                    )
-                                }
-                                
-                                Spacer()
-                                
-                                // Top Center: iOS Live Activity Timer
-                                if let s = session {
-                                    HStack(spacing: 8) {
-                                        Text("LIVE PREVIEW • \(formatTime(s.remainingSeconds))")
-                                            .font(.system(size: 12, weight: .bold, design: .rounded))
-                                        
-                                        Circle()
-                                            .fill(Color.green)
-                                            .frame(width: 8, height: 8)
-                                            .overlay(
-                                                Circle()
-                                                    .stroke(Color.green, lineWidth: 1.5)
-                                                    .scaleEffect(isPulsing ? 2.0 : 1.0)
-                                                    .opacity(isPulsing ? 0.0 : 1.0)
-                                            )
-                                            .onAppear {
-                                                withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: false)) {
-                                                    isPulsing = true
-                                                }
-                                            }
-                                    }
-                                    .padding(.horizontal, 14)
-                                    .padding(.vertical, 8)
-                                    .background(.ultraThinMaterial)
-                                    .foregroundStyle(s.remainingSeconds <= 30 ? Color.red : Color.white)
-                                    .cornerRadius(16)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 16)
-                                            .stroke(.white.opacity(0.12), lineWidth: 1)
-                                    )
-                                }
-                                
-                                Spacer()
-                                
-                                // Top Right: Photo Count
-                                if let s = session {
-                                    HStack(spacing: 6) {
-                                        Image(systemName: "camera.fill")
-                                            .font(.system(size: 11))
-                                        Text("\(s.photos.capturedCount) / \(s.config.maxShots ?? 9)")
-                                            .font(.system(size: 12, weight: .bold, design: .rounded))
-                                    }
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 8)
-                                    .background(.ultraThinMaterial)
-                                    .foregroundStyle(.white)
-                                    .cornerRadius(16)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 16)
-                                            .stroke(.white.opacity(0.12), lineWidth: 1)
-                                    )
-                                }
-                            }
-                            .padding(.horizontal, 24)
-                            .padding(.top, 24)
-                            
-                            Spacer()
-                        }
-                        .zIndex(18)
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                    }
-                    
-                    shutterAndControlsOverlay
-                    doneButtonOverlay
                 
-                // Briefing Overlay (Tampil sesaat sebelum sesi dimulai)
-                briefingOverlayHelper
-                
-                // Selective Retake Premium Modal Overlay
-                if let selectedPhoto = activeSelectedPhotoForPreview {
-                    ZStack {
-                        // Deep Blur Glass Background
-                        Rectangle()
-                            .fill(.ultraThinMaterial)
-                            .ignoresSafeArea()
-                        Color.black.opacity(0.45)
-                            .ignoresSafeArea()
-                            .onTapGesture {
-                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                    activeSelectedPhotoForPreview = nil
-                                }
-                            }
-                        
-                        VStack(spacing: 28) {
-                            // Modal Header
-                            VStack(spacing: 6) {
-                                Text("TINJAU POSE \(selectedPhoto.sortOrder + 1)")
-                                    .font(.system(size: 20, weight: .black, design: .rounded))
-                                    .tracking(3)
-                                    .foregroundStyle(
-                                        LinearGradient(
-                                            colors: [Color(hex: "#7C5CFC"), Color(hex: "#9D85FF")],
-                                            startPoint: .leading,
-                                            endPoint: .trailing
-                                        )
-                                    )
-                                
-                                Text("Apakah pose ini sudah sesuai, atau Anda ingin mengambil foto ulang?")
-                                    .font(.system(size: 13, weight: .medium, design: .rounded))
-                                    .foregroundStyle(.white.opacity(0.6))
-                                    .multilineTextAlignment(.center)
-                            }
-                            .padding(.top, 12)
-                            
-                            // Photo Frame with Glowing Border
-                            if let uiImage = UIImage(data: selectedPhoto.thumbnailData) {
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(maxHeight: 460)
-                                    .cornerRadius(16)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 16)
-                                            .stroke(Color.white.opacity(0.2), lineWidth: 1.5)
-                                    )
-                                    .shadow(color: .black.opacity(0.55), radius: 24, y: 12)
-                            }
-                            
-                            // Action Buttons
-                            HStack(spacing: 20) {
-                                // Button Cancel / Close
-                                Button(action: {
-                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                        activeSelectedPhotoForPreview = nil
-                                    }
-                                }) {
-                                    Text("Batal")
-                                        .font(.system(.headline, design: .rounded))
-                                        .foregroundStyle(.white)
-                                        .frame(width: 140, height: 48)
-                                        .background(.white.opacity(0.12))
-                                        .clipShape(Capsule())
-                                        .overlay(
-                                            Capsule()
-                                                .stroke(Color.white.opacity(0.15), lineWidth: 1)
-                                        )
-                                }
-                                
-                                // Button Retake
-                                Button(action: {
-                                    let targetId = selectedPhoto.id
-                                    let targetOrder = selectedPhoto.sortOrder
-                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                        activeSelectedPhotoForPreview = nil
-                                    }
-                                    startManualCaptureSequence(replacePhotoId: targetId, sortOrder: targetOrder)
-                                }) {
-                                    HStack(spacing: 8) {
-                                        Image(systemName: "arrow.triangle.2.circlepath.camera")
-                                        Text("Foto Ulang (Retake)")
-                                    }
-                                    .font(.system(.headline, design: .rounded).bold())
-                                    .foregroundStyle(.white)
-                                    .frame(width: 220, height: 48)
-                                    .background(
-                                        LinearGradient(
-                                            colors: [Color(hex: "#7C5CFC"), Color(hex: "#9D85FF")],
-                                            startPoint: .leading,
-                                            endPoint: .trailing
-                                        )
-                                    )
-                                    .clipShape(Capsule())
-                                    .shadow(color: Color(hex: "#7C5CFC").opacity(0.35), radius: 12, y: 6)
-                                }
-                            }
-                            .padding(.bottom, 12)
-                        }
-                        .padding(.horizontal, 32)
-                        .padding(.vertical, 28)
-                        .background(
-                            RoundedRectangle(cornerRadius: 28)
-                                .fill(Color(hex: "#0A0A10").opacity(0.92))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 28)
-                                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                                )
-                        )
-                        .padding(32)
-                        .transition(.asymmetric(
-                            insertion: .scale(scale: 0.95).combined(with: .opacity),
-                            removal: .scale(scale: 0.95).combined(with: .opacity)
-                        ))
-                    }
-                    .zIndex(30)
-                }
+                // Overlays & Panels (Decoupled to keep type-checking limits low)
+                poseHintBanner
+                poseOverlaySelection(ipadLandscape: ipadLandscape)
+                filmStripGallery(ipadLandscape: ipadLandscape)
+                timerAndQuotaHeader
+                shutterAndControlsOverlay
+                doneButtonOverlay
             }
+            
+            // Briefing Overlay (Tampil sesaat sebelum sesi dimulai)
+            briefingOverlayHelper
+            
+            // Selective Retake Premium Modal Overlay
+            retakePremiumModal
         }
         .onReceive(activityTimer) { _ in
             guard localCountdown == 0 && !showPoseOverlay && !isBriefing && !showFlash else { return }
@@ -564,8 +208,8 @@ struct ActiveSessionView: View {
     
     private func startGestureListener() {
         gestureListenerTask?.cancel()
-        gestureListenerTask = Task { [weak appState] in
-            for await message in await P2PMessageRouter.shared.messageStream(for: .gestureDetected) {
+        gestureListenerTask = Task {
+            for await _ in await P2PMessageRouter.shared.messageStream(for: .gestureDetected) {
                 guard !Task.isCancelled else { break }
                 await MainActor.run {
                     self.startManualCaptureSequence()
@@ -862,6 +506,380 @@ struct ActiveSessionView: View {
             }
             .zIndex(15)
             .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
+    }
+    
+    @ViewBuilder
+    private var poseHintBanner: some View {
+        if showPoseHint && localCountdown == 0 && !showPoseOverlay && !showFlash && !isBriefing {
+            VStack {
+                Button(action: {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+                        showPoseHint = false
+                        showPoseOverlay = true
+                        currentPoseIndex = 0
+                    }
+                    lastActivityTime = Date()
+                }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "lightbulb.fill")
+                            .foregroundStyle(Color(red: 255/255, green: 215/255, blue: 0/255))
+                        Text("Butuh referensi gaya?")
+                            .font(.subheadline.bold())
+                            .foregroundStyle(.white)
+                        Image(systemName: "chevron.right")
+                            .font(.caption.bold())
+                            .foregroundStyle(.white.opacity(0.6))
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .background(.ultraThinMaterial)
+                    .cornerRadius(24)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 24)
+                            .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                    )
+                    .shadow(color: .black.opacity(0.3), radius: 10, y: 5)
+                }
+                .padding(.top, 90) // Safely below top widgets
+                Spacer()
+            }
+            .zIndex(22)
+            .transition(.move(edge: .top).combined(with: .opacity))
+        }
+    }
+    
+    @ViewBuilder
+    private func poseOverlaySelection(ipadLandscape: Bool) -> some View {
+        if showPoseOverlay && localCountdown == 0 && !showFlash && !isBriefing {
+            ZStack {
+                // Tap outside to dismiss
+                Color.black.opacity(0.15)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        withAnimation(.easeOut(duration: 0.25)) {
+                            showPoseOverlay = false
+                            lastActivityTime = Date()
+                        }
+                    }
+                
+                let poseImages = getPoseImagesForCount(detectedFaceCount)
+                if !poseImages.isEmpty {
+                    let assetName = poseImages[currentPoseIndex % poseImages.count]
+                    
+                    VStack(spacing: 16) {
+                        ZStack(alignment: .topTrailing) {
+                            Image(assetName)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(maxWidth: ipadLandscape ? 500 : 380, maxHeight: ipadLandscape ? 400 : 520)
+                                .opacity(0.35) // Semi-transparent stencil/ghost overlay!
+                                .cornerRadius(20)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 20)
+                                        .stroke(.white.opacity(0.3), lineWidth: 2)
+                                )
+                                .gesture(
+                                    DragGesture(minimumDistance: 20)
+                                        .onEnded { gesture in
+                                            let horizontalDrag = gesture.translation.width
+                                            if horizontalDrag > 30 {
+                                                // Swipe Right -> Prev Pose
+                                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                                    currentPoseIndex = (currentPoseIndex - 1 + poseImages.count) % poseImages.count
+                                                }
+                                            } else if horizontalDrag < -30 {
+                                                // Swipe Left -> Next Pose
+                                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                                    currentPoseIndex = (currentPoseIndex + 1) % poseImages.count
+                                                }
+                                            }
+                                            lastActivityTime = Date()
+                                        }
+                                )
+                            
+                            // Close Button
+                            Button(action: {
+                                withAnimation(.easeOut(duration: 0.25)) {
+                                    showPoseOverlay = false
+                                    lastActivityTime = Date()
+                                }
+                            }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.system(size: 28))
+                                    .foregroundStyle(.white.opacity(0.8), .black.opacity(0.6))
+                                    .padding(12)
+                            }
+                        }
+                        
+                        // Dots Pagination
+                        HStack(spacing: 6) {
+                            ForEach(0..<poseImages.count, id: \.self) { idx in
+                                Circle()
+                                    .fill(idx == currentPoseIndex % poseImages.count ? Color.white : Color.white.opacity(0.3))
+                                    .frame(width: 6, height: 6)
+                            }
+                        }
+                        
+                        Text("Geser (Swipe) untuk pose lain • \(detectedFaceCount) Wajah")
+                            .font(.system(size: 11, weight: .bold))
+                            .tracking(1)
+                            .foregroundStyle(.white.opacity(0.6))
+                    }
+                }
+            }
+            .zIndex(25)
+            .transition(.opacity.combined(with: .scale(scale: 0.95)))
+        }
+    }
+    
+    @ViewBuilder
+    private func filmStripGallery(ipadLandscape: Bool) -> some View {
+        if localCountdown == 0 && !showFlash && !isBriefing {
+            VStack(spacing: 12) {
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(spacing: 14) {
+                        if let s = session {
+                            ForEach(Array(s.photos.capturedPhotos.enumerated()), id: \.element.id) { index, photo in
+                                Button(action: {
+                                    activeSelectedPhotoForPreview = photo
+                                }) {
+                                    if let uiImage = UIImage(data: photo.thumbnailData) {
+                                        Image(uiImage: uiImage)
+                                            .resizable()
+                                            .scaledToFill()
+                                            .frame(width: 60, height: 78)
+                                            .cornerRadius(10)
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 10)
+                                                    .stroke(Color.white, lineWidth: 2) // Polaroid-style white border
+                                            )
+                                            .shadow(color: .black.opacity(0.35), radius: 6, y: 3)
+                                            .rotationEffect(.degrees(index % 2 == 0 ? 1.5 : -1.5)) // Polaroid-style alternate rotation
+                                            .clipped()
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 4)
+                }
+            }
+            .frame(width: 80, height: ipadLandscape ? 420 : 320)
+            .padding(.leading, 24)
+            .padding(.bottom, ipadLandscape ? 120 : 160) // Shift safely above shutter
+            .transition(.move(edge: .leading).combined(with: .opacity))
+            .zIndex(14)
+        }
+    }
+    
+    @ViewBuilder
+    private var timerAndQuotaHeader: some View {
+        if localCountdown == 0 && !showFlash && !isBriefing {
+            VStack {
+                HStack {
+                    // Top Left: Queue Number
+                    if let s = session {
+                        HStack(spacing: 6) {
+                            Image(systemName: "person.2.fill")
+                                .font(.system(size: 11, weight: .bold))
+                            Text("Antrian #\(String(format: "%03d", s.queueNumber ?? 1))")
+                                .font(.system(size: 12, weight: .bold, design: .rounded))
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(.ultraThinMaterial)
+                        .foregroundStyle(.white)
+                        .cornerRadius(16)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(.white.opacity(0.12), lineWidth: 1)
+                        )
+                    }
+                    
+                    Spacer()
+                    
+                    // Top Center: iOS Live Activity Timer
+                    if let s = session {
+                        HStack(spacing: 8) {
+                            Text("LIVE PREVIEW • \(formatTime(s.remainingSeconds))")
+                                .font(.system(size: 12, weight: .bold, design: .rounded))
+                            
+                            Circle()
+                                .fill(Color.green)
+                                .frame(width: 8, height: 8)
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color.green, lineWidth: 1.5)
+                                        .scaleEffect(isPulsing ? 2.0 : 1.0)
+                                        .opacity(isPulsing ? 0.0 : 1.0)
+                                )
+                                .onAppear {
+                                    withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: false)) {
+                                        isPulsing = true
+                                    }
+                                }
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(.ultraThinMaterial)
+                        .foregroundStyle(s.remainingSeconds <= 30 ? Color.red : Color.white)
+                        .cornerRadius(16)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(.white.opacity(0.12), lineWidth: 1)
+                        )
+                    }
+                    
+                    Spacer()
+                    
+                    // Top Right: Photo Count
+                    if let s = session {
+                        HStack(spacing: 6) {
+                            Image(systemName: "camera.fill")
+                                .font(.system(size: 11))
+                            Text("\(s.photos.capturedCount) / \(s.config.maxShots ?? 9)")
+                                .font(.system(size: 12, weight: .bold, design: .rounded))
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(.ultraThinMaterial)
+                        .foregroundStyle(.white)
+                        .cornerRadius(16)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(.white.opacity(0.12), lineWidth: 1)
+                        )
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 24)
+                
+                Spacer()
+            }
+            .zIndex(18)
+            .transition(.move(edge: .top).combined(with: .opacity))
+        }
+    }
+    
+    @ViewBuilder
+    private var retakePremiumModal: some View {
+        if let selectedPhoto = activeSelectedPhotoForPreview {
+            ZStack {
+                // Deep Blur Glass Background
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+                    .ignoresSafeArea()
+                Color.black.opacity(0.45)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                            activeSelectedPhotoForPreview = nil
+                        }
+                    }
+                
+                VStack(spacing: 28) {
+                    // Modal Header
+                    VStack(spacing: 6) {
+                        Text("TINJAU POSE \(selectedPhoto.sortOrder + 1)")
+                            .font(.system(size: 20, weight: .black, design: .rounded))
+                            .tracking(3)
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [Color(hex: "#7C5CFC"), Color(hex: "#9D85FF")],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                        
+                        Text("Apakah pose ini sudah sesuai, atau Anda ingin mengambil foto ulang?")
+                            .font(.system(size: 13, weight: .medium, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.6))
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding(.top, 12)
+                    
+                    // Photo Frame with Glowing Border
+                    if let uiImage = UIImage(data: selectedPhoto.thumbnailData) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxHeight: 460)
+                            .cornerRadius(16)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(Color.white.opacity(0.2), lineWidth: 1.5)
+                            )
+                            .shadow(color: .black.opacity(0.55), radius: 24, y: 12)
+                    }
+                    
+                    // Action Buttons
+                    HStack(spacing: 20) {
+                        // Button Cancel / Close
+                        Button(action: {
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                activeSelectedPhotoForPreview = nil
+                            }
+                        }) {
+                            Text("Batal")
+                                .font(.system(.headline, design: .rounded))
+                                .foregroundStyle(.white)
+                                .frame(width: 140, height: 48)
+                                .background(.white.opacity(0.12))
+                                .clipShape(Capsule())
+                                .overlay(
+                                    Capsule()
+                                        .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                                )
+                        }
+                        
+                        // Button Retake
+                        Button(action: {
+                            let targetId = selectedPhoto.id
+                            let targetOrder = selectedPhoto.sortOrder
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                activeSelectedPhotoForPreview = nil
+                            }
+                            startManualCaptureSequence(replacePhotoId: targetId, sortOrder: targetOrder)
+                        }) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "arrow.triangle.2.circlepath.camera")
+                                Text("Foto Ulang (Retake)")
+                            }
+                            .font(.system(.headline, design: .rounded).bold())
+                            .foregroundStyle(.white)
+                            .frame(width: 220, height: 48)
+                            .background(
+                                LinearGradient(
+                                    colors: [Color(hex: "#7C5CFC"), Color(hex: "#9D85FF")],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .clipShape(Capsule())
+                            .shadow(color: Color(hex: "#7C5CFC").opacity(0.35), radius: 12, y: 6)
+                        }
+                    }
+                    .padding(.bottom, 12)
+                }
+                .padding(.horizontal, 32)
+                .padding(.vertical, 28)
+                .background(
+                    RoundedRectangle(cornerRadius: 28)
+                        .fill(Color(hex: "#0A0A10").opacity(0.92))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 28)
+                                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                        )
+                )
+                .padding(32)
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.95).combined(with: .opacity),
+                    removal: .scale(scale: 0.95).combined(with: .opacity)
+                ))
+            }
+            .zIndex(30)
         }
     }
     
