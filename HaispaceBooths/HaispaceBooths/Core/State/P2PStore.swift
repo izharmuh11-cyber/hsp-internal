@@ -238,14 +238,25 @@ final class P2PStore: @unchecked Sendable {
         Task {
             await LocalTCPRouterService.shared.registerConnectionStateCallback { [weak self] state in
                 Task { @MainActor in
-                    self?.connectionState = state
+                    guard let self = self else { return }
+                    
+                    // Jika kita sudah terhubung lewat mode lain (MPC), abaikan pembaruan status dari TCP
+                    if self.connectionState == .connected && self.connectionMode != .localRouter {
+                        return
+                    }
+                    
+                    self.connectionState = state
                     if case .connected = state {
-                        self?.connectionMode = .localRouter
-                        self?.connectedPeerName = "iPhone (TCP)"
+                        self.connectionMode = .localRouter
+                        self.connectedPeerName = "iPhone (TCP)"
                         HaispaceLogger.info("Koneksi P2P beralih ke mode: TCP Router", category: "p2p")
                     } else if case .disconnected = state {
+                        self.connectionMode = .none
+                        self.connectedPeerName = ""
                         GitHubLogUploader.uploadLatestLog(eventName: "tcp_disconnected")
                     } else if case .failed(let err) = state {
+                        self.connectionMode = .none
+                        self.connectedPeerName = ""
                         let cleanErr = err.replacingOccurrences(of: " ", with: "_")
                         GitHubLogUploader.uploadLatestLog(eventName: "tcp_failed_\(cleanErr)")
                     }
@@ -254,19 +265,27 @@ final class P2PStore: @unchecked Sendable {
             
             await MultipeerService.shared.registerConnectionStateCallback { [weak self] state in
                 Task { @MainActor in
-                    // TCP memiliki prioritas lebih tinggi. Jangan override jika TCP sudah terhubung.
-                    if self?.connectionMode != .localRouter || self?.connectionState != .connected {
-                        self?.connectionState = state
-                        if case .connected = state {
-                            self?.connectionMode = .multipeerConnectivity
-                            self?.connectedPeerName = "iPhone (MPC)"
-                            HaispaceLogger.info("Koneksi P2P beralih ke mode: MPC Direct", category: "p2p")
-                        } else if case .disconnected = state {
-                            GitHubLogUploader.uploadLatestLog(eventName: "mpc_disconnected")
-                        } else if case .failed(let err) = state {
-                            let cleanErr = err.replacingOccurrences(of: " ", with: "_")
-                            GitHubLogUploader.uploadLatestLog(eventName: "mpc_failed_\(cleanErr)")
-                        }
+                    guard let self = self else { return }
+                    
+                    // Jika kita sudah terhubung lewat mode lain (TCP), abaikan pembaruan status dari MPC
+                    if self.connectionState == .connected && self.connectionMode != .multipeerConnectivity {
+                        return
+                    }
+                    
+                    self.connectionState = state
+                    if case .connected = state {
+                        self.connectionMode = .multipeerConnectivity
+                        self.connectedPeerName = "iPhone (MPC)"
+                        HaispaceLogger.info("Koneksi P2P beralih ke mode: MPC Direct", category: "p2p")
+                    } else if case .disconnected = state {
+                        self.connectionMode = .none
+                        self.connectedPeerName = ""
+                        GitHubLogUploader.uploadLatestLog(eventName: "mpc_disconnected")
+                    } else if case .failed(let err) = state {
+                        self.connectionMode = .none
+                        self.connectedPeerName = ""
+                        let cleanErr = err.replacingOccurrences(of: " ", with: "_")
+                        GitHubLogUploader.uploadLatestLog(eventName: "mpc_failed_\(cleanErr)")
                     }
                 }
             }
