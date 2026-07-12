@@ -52,39 +52,66 @@ struct LandingView: View {
                 Spacer()
                 
                 // Call to Action
-                Button(action: {
-                    withAnimation(.spring) {
-                        appState.navigateTo(.guestRegistration)
+                if appState.p2p.isConnected {
+                    Button(action: {
+                        withAnimation(.spring) {
+                            appState.navigateTo(.guestRegistration)
+                        }
+                    }) {
+                        VStack(spacing: 12) {
+                            Image(systemName: "hand.tap.fill")
+                                .font(.system(size: 32))
+                            
+                            Text("Sentuh untuk Mulai")
+                                .font(.system(size: 24, weight: .bold))
+                        }
+                        .padding(.vertical, 24)
+                        .padding(.horizontal, 48)
+                        .background(
+                            RoundedRectangle(cornerRadius: 30)
+                                .fill(Color(white: 1.0, opacity: 0.05))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 30)
+                                .stroke(
+                                    LinearGradient(colors: [Color(hex: "#F5A623"), Color(hex: "#7C5CFC")], startPoint: .topLeading, endPoint: .bottomTrailing),
+                                    lineWidth: 2
+                                )
+                                .opacity(isPulsing ? 1.0 : 0.3)
+                        )
+                        .foregroundColor(.white)
+                        .shadow(color: Color(hex: "#7C5CFC").opacity(isPulsing ? 0.6 : 0.2), radius: isPulsing ? 20 : 10)
                     }
-                }) {
-                    VStack(spacing: 12) {
-                        Image(systemName: "hand.tap.fill")
-                            .font(.system(size: 32))
-                        
-                        Text("Sentuh untuk Mulai")
-                            .font(.system(size: 24, weight: .bold))
+                    .onAppear {
+                        withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
+                            isPulsing = true
+                        }
                     }
-                    .padding(.vertical, 24)
-                    .padding(.horizontal, 48)
-                    .background(
-                        RoundedRectangle(cornerRadius: 30)
-                            .fill(Color(white: 1.0, opacity: 0.05))
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 30)
-                            .stroke(
-                                LinearGradient(colors: [Color(hex: "#F5A623"), Color(hex: "#7C5CFC")], startPoint: .topLeading, endPoint: .bottomTrailing),
-                                lineWidth: 2
-                            )
-                            .opacity(isPulsing ? 1.0 : 0.3)
-                    )
-                    .foregroundColor(.white)
-                    .shadow(color: Color(hex: "#7C5CFC").opacity(isPulsing ? 0.6 : 0.2), radius: isPulsing ? 20 : 10)
-                }
-                .onAppear {
-                    withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
-                        isPulsing = true
+                } else {
+                    Button(action: {
+                        appState.operatorState.isPairingSetupVisible = true
+                    }) {
+                        VStack(spacing: 12) {
+                            Image(systemName: "camera.badge.ellipsis")
+                                .font(.system(size: 32))
+                            
+                            Text("Hubungkan Kamera")
+                                .font(.system(size: 24, weight: .bold))
+                        }
+                        .padding(.vertical, 24)
+                        .padding(.horizontal, 48)
+                        .background(
+                            RoundedRectangle(cornerRadius: 30)
+                                .fill(Color.orange.opacity(0.1))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 30)
+                                .stroke(Color.orange, lineWidth: 2)
+                        )
+                        .foregroundColor(.orange)
+                        .shadow(color: Color.orange.opacity(0.4), radius: 15)
                     }
+                    .transition(.scale)
                 }
                 
                 Spacer().frame(height: 40)

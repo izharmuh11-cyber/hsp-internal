@@ -40,6 +40,12 @@ struct CameraView: View {
             }
         }
         .animation(.easeInOut(duration: 0.5), value: cameraState.isSessionActive)
+        .onChange(of: cameraState.cameraStatus) { _, newStatus in
+            if case .paired = newStatus {
+                let generator = UINotificationFeedbackGenerator()
+                generator.notificationOccurred(.success)
+            }
+        }
     }
 }
 

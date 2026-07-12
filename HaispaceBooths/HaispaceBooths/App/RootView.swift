@@ -30,6 +30,9 @@ struct RootView: View {
         .animation(.easeInOut(duration: 0.3), value: appState.isAppReady)
         .animation(.spring, value: appState.operatorState.isVerifyingPIN)
         .animation(.spring, value: appState.operatorState.isMissionControlVisible)
+        .fullScreenCover(isPresented: Bindable(appState.operatorState).isPairingSetupVisible) {
+            PairingSetupView()
+        }
     }
     
     @ViewBuilder

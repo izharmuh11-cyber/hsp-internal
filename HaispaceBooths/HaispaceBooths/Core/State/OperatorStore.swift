@@ -23,6 +23,9 @@ final class OperatorStore {
 
     /// Apakah Mission Control overlay sedang ditampilkan?
     var isMissionControlVisible: Bool = false
+    
+    /// Shortcut untuk menampilkan UI Pairing langsung (misal saat terputus di LandingView)
+    var isPairingSetupVisible: Bool = false
 
     /// Status PIN verification untuk Mission Control
     var pinStatus: PINStatus = .notSet

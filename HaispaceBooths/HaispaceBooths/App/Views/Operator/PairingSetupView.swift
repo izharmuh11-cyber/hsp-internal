@@ -201,6 +201,17 @@ struct PairingSetupView: View {
             isAnimating = true
             setupQRGeneration()
         }
+        .onChange(of: appState.p2p.isConnected) { _, isConnected in
+            if isConnected {
+                let generator = UINotificationFeedbackGenerator()
+                generator.notificationOccurred(.success)
+                
+                // Auto dismiss setelah 2 detik
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                    dismiss()
+                }
+            }
+        }
         .onDisappear {
             teardownQRGeneration()
         }
