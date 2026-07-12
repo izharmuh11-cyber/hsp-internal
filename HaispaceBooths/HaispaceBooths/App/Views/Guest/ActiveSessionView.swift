@@ -6,6 +6,7 @@
 
 import SwiftUI
 import AVFoundation
+import AudioToolbox
 
 // MARK: - Streaming Video View (UIViewRepresentable)
 
@@ -69,6 +70,14 @@ struct ActiveSessionView: View {
                     StreamingVideoView()
                         .ignoresSafeArea()
                     
+                    // Corner Brackets Alignment Guide (Tampil tipis membantu tamu memposisikan diri)
+                    CornerBracketsShape()
+                        .stroke(Color.white.opacity(0.3), lineWidth: 2)
+                        .padding(EdgeInsets(top: 80, leading: 100, bottom: 80, trailing: 100))
+                        .allowsHitTesting(false)
+                        .opacity(isBriefing ? 0 : 1)
+                        .animation(.easeInOut, value: isBriefing)
+                    
                     // Overlay Flash (Saat jepretan dipicu)
                     if showFlash {
                         Color.white
@@ -80,7 +89,7 @@ struct ActiveSessionView: View {
                     if localCountdown > 0 {
                         Text("\(localCountdown)")
                             .font(.system(size: 180, weight: .heavy, design: .rounded))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(localCountdown == 1 ? Color(red: 255/255, green: 215/255, blue: 0/255) : .white) // Emas untuk detik 1
                             .shadow(color: .black.opacity(0.5), radius: 20, y: 10)
                             .transition(.scale.combined(with: .opacity))
                             .zIndex(15)
@@ -119,7 +128,8 @@ struct ActiveSessionView: View {
                 }
                 
                 // Sidebar Photo Grid (Right)
-                VStack(spacing: 16) {
+                if localCountdown == 0 {
+                    VStack(spacing: 16) {
                     Text("HASIL FOTO")
                         .font(.caption.bold())
                         .tracking(2)
@@ -203,6 +213,7 @@ struct ActiveSessionView: View {
                 .frame(width: 140)
                 .background(.ultraThinMaterial)
                 .ignoresSafeArea(edges: .vertical)
+                .transition(.move(edge: .trailing).combined(with: .opacity))
             }
             
             // Briefing Overlay (Tampil sesaat sebelum sesi dimulai)
@@ -341,15 +352,31 @@ struct ActiveSessionView: View {
         Task {
             for i in (1...3).reversed() {
                 await MainActor.run {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                         localCountdown = i
+                    }
+                    
+                    // Audio & Haptic feedback per detik countdown
+                    if i == 1 {
+                        UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+                        AudioServicesPlaySystemSound(1057) // Beep
+                    } else {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        AudioServicesPlaySystemSound(1057) // Beep
                     }
                 }
                 try? await Task.sleep(for: .seconds(1))
             }
             
             await MainActor.run {
-                localCountdown = 0
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                    localCountdown = 0
+                }
+                
+                // Suara Shutter & Heavy haptic saat memotret
+                AudioServicesPlaySystemSound(1108) // Shutter click sound
+                UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+                
                 triggerCapture(replacePhotoId: replacePhotoId, sortOrder: sortOrder)
                 isCapturing = false
             }
@@ -375,6 +402,37 @@ struct ActiveSessionView: View {
             let index = sortOrder ?? (appState.currentSession?.photos.capturedCount ?? 0)
             await P2PMessageRouter.shared.route(.triggerCapture(poseId: replacePhotoId, captureIndex: index))
         }
+    }
+}
+
+// MARK: - Corner Brackets Shape
+struct CornerBracketsShape: Shape {
+    let length: CGFloat = 30
+    
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        
+        // Top Left
+        path.move(to: CGPoint(x: rect.minX, y: rect.minY + length))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.minX + length, y: rect.minY))
+        
+        // Top Right
+        path.move(to: CGPoint(x: rect.maxX - length, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY + length))
+        
+        // Bottom Left
+        path.move(to: CGPoint(x: rect.minX, y: rect.maxY - length))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX + length, y: rect.maxY))
+        
+        // Bottom Right
+        path.move(to: CGPoint(x: rect.maxX - length, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - length))
+        
+        return path
     }
 }
 

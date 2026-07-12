@@ -284,6 +284,12 @@ final class CameraAppState {
                             if await P2PClientService.shared.isConnected() {
                                 try? await P2PClientService.shared.sendData(P2PMessage.gestureDetected.encode())
                                 HaispaceLogger.info("Gesture 'Hai' terdeteksi! Mengirim sinyal pemicu ke iPad.", category: "camera")
+                                
+                                // Feedback haptic pada iPhone saat gesture berhasil dibaca
+                                await MainActor.run {
+                                    let generator = UINotificationFeedbackGenerator()
+                                    generator.notificationOccurred(.success)
+                                }
                             }
                         }
                     }
@@ -296,6 +302,10 @@ final class CameraAppState {
                 guard let self = self else { return }
                 let photoId = self.activeRetakePhotoId ?? UUID().uuidString
                 let sortOrder = self.activeCaptureIndex ?? 0
+                
+                // Feedback haptic pada iPhone saat berhasil mengambil foto (shutter)
+                let impact = UIImpactFeedbackGenerator(style: .medium)
+                impact.impactOccurred()
                 
                 // Reset state setelah terpakai
                 self.activeRetakePhotoId = nil
