@@ -117,6 +117,7 @@ final class CameraCaptureService: NSObject {
         // Note: isHighResolutionCaptureEnabled is deprecated in iOS 16+, using default maxPhotoDimensions
         if captureSession.canAddOutput(photoOutput) {
             captureSession.addOutput(photoOutput)
+            photoOutput.maxPhotoQualityPrioritization = .quality
         }
         
         captureSession.commitConfiguration()
@@ -142,7 +143,7 @@ final class CameraCaptureService: NSObject {
         }
         
         // Aktifkan pemrosesan gambar penuh Apple (Smart HDR, Deep Fusion, Neural Engine ISP)
-        if photoOutput.supportedPhotoQualityPrioritizations.contains(.quality) {
+        if photoOutput.maxPhotoQualityPrioritization == .quality {
             photoSettings.photoQualityPrioritization = .quality
         } else {
             photoSettings.photoQualityPrioritization = .balanced
