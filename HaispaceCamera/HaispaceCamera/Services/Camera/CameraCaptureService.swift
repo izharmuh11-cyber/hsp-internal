@@ -58,8 +58,8 @@ final class CameraCaptureService: NSObject {
     private func setupSession() {
         captureSession.beginConfiguration()
         
-        // Atur preset untuk mendapatkan balance antara preview cepat dan foto yang bagus
-        captureSession.sessionPreset = .photo
+        // Atur preset 720p untuk preview yang ringan, cepat, dan hemat bandwidth
+        captureSession.sessionPreset = .hd1280x720
         
         // Cari kamera utama (Wide Angle)
         guard let videoDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back),
