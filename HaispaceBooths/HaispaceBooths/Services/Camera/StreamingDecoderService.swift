@@ -29,9 +29,12 @@ final class StreamingDecoderService {
     private init() {
         displayLayer.videoGravity = .resizeAspectFill
         
-        // Memastikan decode dilakukan as soon as possible tanpa delay sinkronisasi waktu
-        displayLayer.controlTimebase = CMTimebase(pointer: CMTimebaseCreateWithSourceClock(allocator: kCFAllocatorDefault, sourceClock: CMClockGetHostTimeClock(), timebaseOut: nil) as! CMTimebase)
-        displayLayer.controlTimebase?.rate = 1.0
+        var timebase: CMTimebase?
+        CMTimebaseCreateWithSourceClock(allocator: kCFAllocatorDefault, sourceClock: CMClockGetHostTimeClock(), timebaseOut: &timebase)
+        displayLayer.controlTimebase = timebase
+        if let tb = timebase {
+            CMTimebaseSetRate(tb, rate: 1.0)
+        }
     }
     
     /// Mengelola paket raw NALU dari network.
@@ -64,26 +67,33 @@ final class StreamingDecoderService {
     private func updateFormatDescription() {
         guard let sps = sps, let pps = pps else { return }
         
-        let spsPointer = UnsafePointer(sps)
-        let ppsPointer = UnsafePointer(pps)
-        let parameterSetPointers = [spsPointer, ppsPointer]
-        let parameterSetSizes = [sps.count, pps.count]
-        
-        var formatDesc: CMVideoFormatDescription?
-        let status = CMVideoFormatDescriptionCreateFromH264ParameterSets(
-            allocator: kCFAllocatorDefault,
-            parameterSetCount: 2,
-            parameterSetPointers: parameterSetPointers,
-            parameterSetSizes: parameterSetSizes,
-            nalUnitHeaderLength: 4,
-            formatDescriptionOut: &formatDesc
-        )
-        
-        if status == noErr {
-            self.formatDescription = formatDesc
-            HaispaceLogger.debug("VideoFormatDescription berhasil diperbarui", category: "camera")
-        } else {
-            HaispaceLogger.error("Gagal membuat VideoFormatDescription: \(status)", category: "camera")
+        sps.withUnsafeBufferPointer { spsBuffer in
+            pps.withUnsafeBufferPointer { ppsBuffer in
+                let parameterSetPointers = [spsBuffer.baseAddress!, ppsBuffer.baseAddress!]
+                let parameterSetSizes = [sps.count, pps.count]
+                
+                parameterSetPointers.withUnsafeBufferPointer { pointersBuffer in
+                    parameterSetSizes.withUnsafeBufferPointer { sizesBuffer in
+                        var formatDesc: CMVideoFormatDescription?
+                        let status = CMVideoFormatDescriptionCreateFromH264ParameterSets(
+                            allocator: kCFAllocatorDefault,
+                            parameterSetCount: 2,
+                            parameterSetPointers: pointersBuffer.baseAddress!,
+                            parameterSetSizes: sizesBuffer.baseAddress!,
+                            nalUnitHeaderLength: 4,
+                            formatDescriptionOut: &formatDesc
+                        )
+                        
+                        if status == noErr {
+                            self.formatDescription = formatDesc
+                            HaispaceLogger.debug("VideoFormatDescription berhasil diperbarui", category: "camera")
+                        } else {
+                            let error = NSError(domain: "StreamingDecoder", code: Int(status), userInfo: [NSLocalizedDescriptionKey: "Gagal membuat VideoFormatDescription: \(status)"])
+                            HaispaceLogger.error(error)
+                        }
+                    }
+                }
+            }
         }
     }
     
@@ -128,8 +138,10 @@ final class StreamingDecoderService {
         
         if sampleStatus == noErr, let sampleBuf = sampleBuffer {
             // Pastikan buffer siap dirender as soon as possible
-            let attachments = CMSampleBufferGetSampleAttachmentsArray(sampleBuf, createIfNecessary: true) as? [[CFString: Any]]
-            attachments?.first?[kCMSampleAttachmentKey_DisplayImmediately] = true
+            if let attachments = CMSampleBufferGetSampleAttachmentsArray(sampleBuf, createIfNecessary: true) as? NSArray,
+               let dict = attachments.firstObject as? NSMutableDictionary {
+                dict[kCMSampleAttachmentKey_DisplayImmediately] = true
+            }
             
             // Push ke layer
             if displayLayer.isReadyForMoreMediaData {

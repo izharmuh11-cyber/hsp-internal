@@ -22,7 +22,7 @@ protocol AuthServiceProtocol {
 
 /// Singleton service untuk semua operasi autentikasi.
 /// Gunakan `AuthService.shared` — jangan buat instance baru.
-final class AuthService: AuthServiceProtocol {
+final class AuthService {
 
     static let shared: any AuthServiceProtocol = {
         #if DEBUG
@@ -123,7 +123,7 @@ final class LiveAuthService: AuthServiceProtocol {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        try? await session.data(for: request)
+        _ = try? await session.data(for: request)
     }
 }
 

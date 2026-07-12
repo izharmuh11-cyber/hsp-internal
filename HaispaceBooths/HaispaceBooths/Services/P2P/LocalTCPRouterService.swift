@@ -36,7 +36,7 @@ actor LocalTCPRouterService {
                     case .ready:
                         HaispaceLogger.info("TCP Listener ready pada port 55123", category: "p2p")
                     case .failed(let error):
-                        HaispaceLogger.error("TCP Listener gagal: \(error)", category: "p2p")
+                        HaispaceLogger.error(error)
                         await self?.stopHosting()
                     default:
                         break
@@ -53,7 +53,7 @@ actor LocalTCPRouterService {
             listener?.start(queue: .global(qos: .userInteractive))
             
         } catch {
-            HaispaceLogger.error("Gagal inisialisasi TCP Listener: \(error)", category: "p2p")
+            HaispaceLogger.error(error)
         }
     }
     
@@ -63,6 +63,12 @@ actor LocalTCPRouterService {
         listener?.cancel()
         listener = nil
         onConnectionStateChange?(.disconnected)
+    }
+    
+    private func clearConnection(ifMatches connection: NWConnection) {
+        if self.activeConnection === connection {
+            self.activeConnection = nil
+        }
     }
     
     private func acceptConnection(_ connection: NWConnection) {
@@ -80,15 +86,11 @@ actor LocalTCPRouterService {
                 case .failed(let error):
                     HaispaceLogger.warning("Koneksi TCP gagal: \(error)", category: "p2p")
                     await self?.onConnectionStateChange?(.disconnected)
-                    if self?.activeConnection === connection {
-                        self?.activeConnection = nil
-                    }
+                    await self?.clearConnection(ifMatches: connection)
                 case .cancelled:
                     HaispaceLogger.warning("Koneksi TCP dibatalkan", category: "p2p")
                     await self?.onConnectionStateChange?(.disconnected)
-                    if self?.activeConnection === connection {
-                        self?.activeConnection = nil
-                    }
+                    await self?.clearConnection(ifMatches: connection)
                 default:
                     break
                 }

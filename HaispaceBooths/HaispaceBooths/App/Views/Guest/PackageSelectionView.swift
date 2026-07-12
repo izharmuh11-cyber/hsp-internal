@@ -76,13 +76,13 @@ struct PackageSelectionView: View {
                         
                         // Active Add-ons indicator
                         HStack(spacing: 20) {
-                            if selectedAddons.contains(.boomerang) {
-                                Label("Boomerang Active", systemImage: "infinity")
+                            if selectedAddons.contains(.poseGuide) {
+                                Label("Pose Guide Active", systemImage: "figure.walk")
                                     .font(.callout.bold())
                                     .foregroundStyle(Color(hex: "#F5A623"))
                                     .transition(.scale.combined(with: .opacity))
                             }
-                            if selectedAddons.contains(.timelapse) {
+                            if selectedAddons.contains(.memoryBook) {
                                 Label("Timelapse Active", systemImage: "clock.arrow.2.circlepath")
                                     .font(.callout.bold())
                                     .foregroundStyle(Color(hex: "#7C5CFC"))
@@ -177,7 +177,7 @@ struct PackageSelectionView: View {
     }
     
     private func calculateTotal() -> Int {
-        var total = selectedPackage?.price ?? 0
+        let total = selectedPackage?.price ?? 0
         // Tambah harga addons nantinya
         return total
     }

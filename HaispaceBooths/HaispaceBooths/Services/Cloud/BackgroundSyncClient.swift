@@ -60,7 +60,7 @@ final class BackgroundSyncClient {
                 // 2. TODO: Sinkronisasi Gambar ke Cloudflare R2
                 
             } catch {
-                HaispaceLogger.error("Sync gagal: \(error)", category: "cloud")
+                HaispaceLogger.error(error)
             }
             
             isSyncing = false

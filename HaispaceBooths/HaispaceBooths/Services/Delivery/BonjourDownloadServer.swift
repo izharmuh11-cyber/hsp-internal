@@ -36,21 +36,25 @@ final class BonjourDownloadServer {
         listener = try NWListener(using: parameters, on: port)
         
         listener?.stateUpdateHandler = { [weak self] state in
-            guard let self = self else { return }
-            switch state {
-            case .ready:
-                HaispaceLogger.info("BonjourDownloadServer berjalan di port \(self.port.rawValue)", category: "delivery")
-                self.localIPAddress = self.getWiFiAddress()
-            case .failed(let error):
-                HaispaceLogger.error("BonjourDownloadServer gagal: \(error)", category: "delivery")
-                self.stop()
-            default:
-                break
+            Task { @MainActor in
+                guard let self = self else { return }
+                switch state {
+                case .ready:
+                    HaispaceLogger.info("BonjourDownloadServer berjalan di port \(self.port.rawValue)", category: "delivery")
+                    self.localIPAddress = self.getWiFiAddress()
+                case .failed(let error):
+                    HaispaceLogger.error(error)
+                    self.stop()
+                default:
+                    break
+                }
             }
         }
         
         listener?.newConnectionHandler = { [weak self] connection in
-            self?.handleNewConnection(connection)
+            Task { @MainActor in
+                self?.handleNewConnection(connection)
+            }
         }
         
         listener?.start(queue: .global(qos: .userInitiated))
@@ -85,13 +89,15 @@ final class BonjourDownloadServer {
     
     private func handleNewConnection(_ connection: NWConnection) {
         connection.stateUpdateHandler = { state in
-            switch state {
-            case .ready:
-                self.receiveHTTP(on: connection)
-            case .failed, .cancelled:
-                self.connections.removeAll { $0 === connection }
-            default:
-                break
+            Task { @MainActor in
+                switch state {
+                case .ready:
+                    self.receiveHTTP(on: connection)
+                case .failed, .cancelled:
+                    self.connections.removeAll { $0 === connection }
+                default:
+                    break
+                }
             }
         }
         connections.append(connection)
@@ -100,26 +106,28 @@ final class BonjourDownloadServer {
     
     private func receiveHTTP(on connection: NWConnection) {
         connection.receive(minimumIncompleteLength: 1, maximumLength: 4096) { [weak self] data, context, isComplete, error in
-            guard let self = self, let data = data, !data.isEmpty else {
-                connection.cancel()
-                return
-            }
-            
-            // Parse HTTP Request
-            if let requestString = String(data: data, encoding: .utf8) {
-                let lines = requestString.components(separatedBy: .newlines)
-                if let firstLine = lines.first {
-                    let parts = firstLine.components(separatedBy: " ")
-                    if parts.count >= 2, parts[0] == "GET" {
-                        let path = parts[1]
-                        self.handleGETRequest(path: path, on: connection)
-                        return
+            Task { @MainActor in
+                guard let self = self, let data = data, !data.isEmpty else {
+                    connection.cancel()
+                    return
+                }
+                
+                // Parse HTTP Request
+                if let requestString = String(data: data, encoding: .utf8) {
+                    let lines = requestString.components(separatedBy: .newlines)
+                    if let firstLine = lines.first {
+                        let parts = firstLine.components(separatedBy: " ")
+                        if parts.count >= 2, parts[0] == "GET" {
+                            let path = parts[1]
+                            self.handleGETRequest(path: path, on: connection)
+                            return
+                        }
                     }
                 }
+                
+                // Invalid request
+                self.sendHTTPResponse(status: 400, contentType: "text/plain", body: "Bad Request".data(using: .utf8)!, on: connection)
             }
-            
-            // Invalid request
-            self.sendHTTPResponse(status: 400, contentType: "text/plain", body: "Bad Request".data(using: .utf8)!, on: connection)
         }
     }
     

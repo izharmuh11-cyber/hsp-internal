@@ -46,7 +46,7 @@ final class CoreDataService {
         
         container.loadPersistentStores { desc, error in
             if let error = error {
-                HaispaceLogger.error("Gagal load CoreData: \(error.localizedDescription)", category: "database")
+                HaispaceLogger.error(error)
             } else {
                 HaispaceLogger.info("CoreData berhasil di-load: \(desc.url?.lastPathComponent ?? "")", category: "database")
             }
