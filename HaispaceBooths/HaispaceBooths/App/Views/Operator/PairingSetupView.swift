@@ -195,8 +195,8 @@ struct PairingSetupView: View {
         let filter = CIFilter.qrCodeGenerator()
         
         let data = Data(jsonString.utf8)
-        filter.setValue(data, forKey: "inputMessage")
-        filter.setValue("H", forKey: "inputCorrectionLevel") // High error correction
+        filter.message = data
+        filter.correctionLevel = "H" // High error correction
         
         if let outputImage = filter.outputImage {
             // Scale up
