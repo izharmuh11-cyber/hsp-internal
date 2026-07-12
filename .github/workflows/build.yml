@@ -29,8 +29,7 @@ jobs:
             -archivePath ${{ runner.temp }}/HaispaceCamera.xcarchive \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
-            AD_HOC_CODE_SIGNING_ALLOWED=YES \
-            | xcpretty || true
+            AD_HOC_CODE_SIGNING_ALLOWED=YES
 
       - name: Package IPA (Unsigned)
         run: |
@@ -68,8 +67,7 @@ jobs:
             -archivePath ${{ runner.temp }}/HaispaceBooths.xcarchive \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
-            AD_HOC_CODE_SIGNING_ALLOWED=YES \
-            | xcpretty || true
+            AD_HOC_CODE_SIGNING_ALLOWED=YES
 
       - name: Package IPA (Unsigned)
         run: |
