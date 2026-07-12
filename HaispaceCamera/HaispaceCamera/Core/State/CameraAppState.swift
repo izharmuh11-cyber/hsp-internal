@@ -206,12 +206,32 @@ final class CameraAppState {
                 switch state {
                 case .connected:
                     self?.cameraStatus = .paired
+                    // Haptic feedback sukses
+                    let generator = UINotificationFeedbackGenerator()
+                    generator.notificationOccurred(.success)
+                    
                     // Resume transfer queue!
                     Task {
                         await PhotoTransferService.shared.resumeTransferQueue()
                     }
-                case .disconnected, .failed:
+                case .disconnected:
                     self?.cameraStatus = .standby
+                    // Mulai proses menghubungkan kembali (auto-reconnect)
+                    if let payload = self?.p2p.lastPairingPayload {
+                        self?.p2p.startReconnection(payload: payload)
+                    }
+                case .failed(let reason):
+                    self?.cameraStatus = .standby
+                    // Haptic feedback error
+                    let generator = UINotificationFeedbackGenerator()
+                    generator.notificationOccurred(.error)
+                    
+                    // Lakukan auto-reconnect hanya jika bukan kesalahan payload kedaluwarsa atau tanda tangan salah
+                    if reason != "QR Expired" && reason != "Invalid Signature" {
+                        if let payload = self?.p2p.lastPairingPayload {
+                            self?.p2p.startReconnection(payload: payload)
+                        }
+                    }
                 default:
                     break
                 }

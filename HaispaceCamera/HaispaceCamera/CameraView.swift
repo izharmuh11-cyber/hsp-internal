@@ -157,11 +157,32 @@ private struct CameraStandbyView: View {
                 .padding(.horizontal, 32)
                 .padding(.bottom, 20)
                 
-                if cameraState.p2p.connectionState == .connecting || cameraState.p2p.connectionState == .scanning {
+                switch cameraState.p2p.connectionState {
+                case .connecting, .scanning:
                     ProgressView("Menghubungkan...")
                         .tint(.white)
                         .foregroundStyle(.white.opacity(0.8))
                         .padding(.bottom, 20)
+                case .reconnecting(let attempt):
+                    VStack(spacing: 8) {
+                        ProgressView()
+                            .tint(.orange)
+                        Text("Koneksi Terputus. Menghubungkan Kembali... (\(attempt))")
+                            .font(.system(.caption, design: .rounded))
+                            .bold()
+                            .foregroundStyle(.orange)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+                    )
+                    .padding(.bottom, 20)
+                default:
+                    EmptyView()
                 }
             }
         }
@@ -378,6 +399,7 @@ private struct CameraErrorView: View {
 private struct CameraLogViewerSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var logContent = ""
+    @State private var isShowingToast = false
     
     var body: some View {
         NavigationStack {
@@ -401,6 +423,14 @@ private struct CameraLogViewerSheet: View {
                     HStack(spacing: 16) {
                         Button {
                             UIPasteboard.general.string = logContent
+                            withAnimation(.spring) {
+                                isShowingToast = true
+                            }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                withAnimation {
+                                    isShowingToast = false
+                                }
+                            }
                         } label: {
                             HStack {
                                 Image(systemName: "doc.on.doc.fill")
@@ -449,6 +479,24 @@ private struct CameraLogViewerSheet: View {
             }
             .onAppear {
                 logContent = LocalLogWriter.readLogContent(subsystem: "camera")
+            }
+            .overlay {
+                if isShowingToast {
+                    VStack(spacing: 12) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 40))
+                            .foregroundStyle(.green)
+                        
+                        Text("Log Berhasil Disalin")
+                            .font(.headline)
+                            .foregroundStyle(.white)
+                    }
+                    .padding(24)
+                    .background(.ultraThinMaterial)
+                    .cornerRadius(20)
+                    .shadow(color: .black.opacity(0.3), radius: 10)
+                    .transition(.scale.combined(with: .opacity))
+                }
             }
         }
     }

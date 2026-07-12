@@ -8,6 +8,7 @@ import SwiftUI
 struct LogViewerSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var logContent = ""
+    @State private var isShowingToast = false
     
     var body: some View {
         NavigationStack {
@@ -32,6 +33,14 @@ struct LogViewerSheet: View {
                     HStack(spacing: 16) {
                         Button {
                             UIPasteboard.general.string = logContent
+                            withAnimation(.spring) {
+                                isShowingToast = true
+                            }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                withAnimation {
+                                    isShowingToast = false
+                                }
+                            }
                         } label: {
                             HStack {
                                 Image(systemName: "doc.on.doc.fill")
@@ -80,6 +89,24 @@ struct LogViewerSheet: View {
             }
             .onAppear {
                 logContent = LocalLogWriter.readLogContent()
+            }
+            .overlay {
+                if isShowingToast {
+                    VStack(spacing: 12) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 40))
+                            .foregroundStyle(.green)
+                        
+                        Text("Log Berhasil Disalin")
+                            .font(.headline)
+                            .foregroundStyle(.white)
+                    }
+                    .padding(24)
+                    .background(.ultraThinMaterial)
+                    .cornerRadius(20)
+                    .shadow(color: .black.opacity(0.3), radius: 10)
+                    .transition(.scale.combined(with: .opacity))
+                }
             }
         }
     }

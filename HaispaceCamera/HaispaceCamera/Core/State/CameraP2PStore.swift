@@ -29,7 +29,12 @@ final class CameraP2PStore {
         }
     }
 
-    // Auto-reconnect
+    // Auto-reconnect states
+    var reconnectAttempt = 0
+    private var reconnectTimer: Timer?
+    private var isReconnecting = false
+
+    // Auto-reconnect persistence key
     private let payloadKey = "hs_last_qr_payload"
 
     init() {
@@ -58,6 +63,9 @@ final class CameraP2PStore {
     @MainActor
     func updateConnectionState(_ state: P2PConnectionState) {
         connectionState = state
+        if case .connected = state {
+            stopReconnection()
+        }
         if case .disconnected = state {
             latencyMs = 0
             pairedBoothName = nil
@@ -72,6 +80,7 @@ final class CameraP2PStore {
 
     @MainActor
     func startScanning() {
+        stopReconnection() // Hentikan auto-reconnect jika user scan ulang secara manual
         isScanning = true
         connectionState = .scanning
     }
@@ -79,6 +88,46 @@ final class CameraP2PStore {
     @MainActor
     func stopScanning() {
         isScanning = false
+    }
+
+    // MARK: - Auto-Reconnect Logic
+
+    @MainActor
+    func startReconnection(payload: QRPairingPayload) {
+        guard !isConnected, !isReconnecting else { return }
+        isReconnecting = true
+        reconnectAttempt = 1
+        connectionState = .reconnecting(attempt: reconnectAttempt)
+        
+        reconnectTimer?.invalidate()
+        reconnectTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                guard let self = self else { return }
+                if self.isConnected {
+                    self.stopReconnection()
+                    return
+                }
+                
+                self.reconnectAttempt += 1
+                self.connectionState = .reconnecting(attempt: self.reconnectAttempt)
+                HaispaceLogger.info("Auto reconnect attempt \(self.reconnectAttempt) ke iPad...", category: "p2p")
+                await P2PClientService.shared.connect(using: payload, isAutoReconnect: true)
+            }
+        }
+        
+        // Coba koneksi pertama kali langsung
+        Task {
+            HaispaceLogger.info("Mencoba auto-reconnect pertama kali...", category: "p2p")
+            await P2PClientService.shared.connect(using: payload, isAutoReconnect: true)
+        }
+    }
+
+    @MainActor
+    func stopReconnection() {
+        reconnectTimer?.invalidate()
+        reconnectTimer = nil
+        isReconnecting = false
+        reconnectAttempt = 0
     }
 
     // MARK: - Auto-Reconnect Persistence
@@ -101,9 +150,3 @@ final class CameraP2PStore {
         self.lastPairingPayload = payload
     }
 }
-
-// MARK: - Shared Types (re-exported for HaispaceCamera target)
-// Types below mirror those in HaispaceBooths — separate targets need separate definitions.
-
-// P2PConnectionState, P2PMode, SignalQuality — defined in CameraSharedTypes.swift
-// QRPairingPayload — defined in CameraSharedTypes.swift
