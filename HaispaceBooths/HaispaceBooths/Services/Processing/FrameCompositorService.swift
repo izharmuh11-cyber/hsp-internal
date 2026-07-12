@@ -11,8 +11,7 @@ import CoreImage
 import CoreImage.CIFilterBuiltins
 import UIKit
 
-@MainActor
-final class FrameCompositorService {
+final class FrameCompositorService: @unchecked Sendable {
     
     static let shared = FrameCompositorService()
     
@@ -28,8 +27,8 @@ final class FrameCompositorService {
             guard let self = self else { throw CompositorError.serviceUnavailable }
             
             // 1. Dapatkan full quality image
-            guard let photoData = photo.fullQualityData ?? photo.thumbnailData,
-                  let originalImage = CIImage(data: photoData) else {
+            let photoData = photo.fullQualityData ?? photo.thumbnailData
+            guard let originalImage = CIImage(data: photoData) else {
                 throw CompositorError.invalidPhotoData
             }
             

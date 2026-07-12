@@ -11,7 +11,7 @@ import CoreImage
 import CoreImage.CIFilterBuiltins
 import OSLog
 
-final class FilterService: Sendable {
+final class FilterService: @unchecked Sendable {
     
     // CoreImage context yang di-backing oleh Metal untuk GPU Rendering
     private let ciContext: CIContext
@@ -72,7 +72,7 @@ final class FilterService: Sendable {
             }
             
         } catch {
-            HaispaceLogger.error("Gagal apply LUT: \(error.localizedDescription)", category: "processing")
+            HaispaceLogger.error(error)
             return image
         }
     }
@@ -86,7 +86,7 @@ final class FilterService: Sendable {
     
     private func getLUTData(for url: URL) throws -> (Int, NSData) {
         let key = url.absoluteString as NSString
-        if let cached = lutCache.object(forKey: key) {
+        if lutCache.object(forKey: key) != nil {
             // Karena cache kita butuh dimensi juga, kita simpan struct kustom atau encode dimensinya.
             // Untuk simplicity di MVP, kita asumsikan dimension selalu = 33 jika di cache, 
             // ATAU kita tidak cache di MVP ini jika performa sudah cukup cepat.
