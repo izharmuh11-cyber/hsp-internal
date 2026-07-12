@@ -359,6 +359,9 @@ final class CameraAppState {
         case .sessionEnd:
             self.endSession()
             
+        case .focusPoint(let x, let y):
+            CameraCaptureService.shared.setFocusAndExposurePoint(x: x, y: y)
+            
         default:
             break
         }

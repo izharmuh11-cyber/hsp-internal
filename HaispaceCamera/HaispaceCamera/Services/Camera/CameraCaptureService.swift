@@ -108,6 +108,35 @@ final class CameraCaptureService: NSObject {
         HaispaceLogger.info("Memicu jepretan foto resolusi tinggi", category: "camera")
     }
     
+    /// Kunci Fokus dan Eksposur dari jarak jauh pada titik tertentu (0.0 - 1.0)
+    func setFocusAndExposurePoint(x: Float, y: Float) {
+        guard let deviceInput = captureSession.inputs.first as? AVCaptureDeviceInput else {
+            return
+        }
+        let device = deviceInput.device
+        
+        do {
+            try device.lockForConfiguration()
+            
+            let point = CGPoint(x: CGFloat(x), y: CGFloat(y))
+            
+            if device.isFocusPointOfInterestSupported && device.isFocusModeSupported(.autoFocus) {
+                device.focusPointOfInterest = point
+                device.focusMode = .autoFocus
+            }
+            
+            if device.isExposurePointOfInterestSupported && device.isExposureModeSupported(.autoExpose) {
+                device.exposurePointOfInterest = point
+                device.exposureMode = .autoExpose
+            }
+            
+            device.unlockForConfiguration()
+            HaispaceLogger.info("Remote focus & exposure lock set at: (\(x), \(y))", category: "camera")
+        } catch {
+            HaispaceLogger.error("Gagal melakukan remote focus & exposure: \(error)", category: "camera")
+        }
+    }
+    
     func stop() {
         stopOrientationTracking()
         if captureSession.isRunning {

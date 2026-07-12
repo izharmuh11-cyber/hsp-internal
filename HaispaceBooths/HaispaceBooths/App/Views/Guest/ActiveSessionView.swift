@@ -79,10 +79,36 @@ struct ActiveSessionView: View {
                         .opacity(0.5)
                         .ignoresSafeArea()
                     
-                    // Aliran video utama dengan aspek rasio dinamis (16:9 / 9:16)
-                    StreamingVideoView()
-                        .aspectRatio(isStreamLandscape ? 16.0 / 9.0 : 9.0 / 16.0, contentMode: .fit)
-                        .ignoresSafeArea()
+                    // Aliran video utama dengan aspek rasio dinamis (16:9 / 9:16) dan deteksi ketukan fokus (tap-to-focus)
+                    GeometryReader { geometry in
+                        StreamingVideoView()
+                            .gesture(
+                                DragGesture(minimumDistance: 0)
+                                    .onEnded { value in
+                                        guard localCountdown == 0 else { return }
+                                        
+                                        let width = geometry.size.width
+                                        let height = geometry.size.height
+                                        guard width > 0 && height > 0 else { return }
+                                        
+                                        // Koordinat ternormalisasi relative ke ukuran video view
+                                        let x = Float(value.location.x / width)
+                                        let y = Float(value.location.y / height)
+                                        
+                                        // Batasi koordinat agar berada dalam rentang [0.0, 1.0]
+                                        let cleanX = max(0.0, min(1.0, x))
+                                        let cleanY = max(0.0, min(1.0, y))
+                                        
+                                        Task {
+                                            await P2PMessageRouter.shared.route(.focusPoint(normalizedX: cleanX, normalizedY: cleanY))
+                                        }
+                                        
+                                        SessionFeedbackService.shared.triggerHaptic(style: .light)
+                                    }
+                            )
+                    }
+                    .aspectRatio(isStreamLandscape ? 16.0 / 9.0 : 9.0 / 16.0, contentMode: .fit)
+                    .ignoresSafeArea()
                     
                     // Corner Brackets Alignment Guide (Tampil tipis membantu tamu memposisikan diri)
                     CornerBracketsShape()
