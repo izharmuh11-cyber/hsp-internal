@@ -37,6 +37,7 @@ enum P2PMessage: Codable, Equatable {
     // MARK: Pairing Messages (Both directions)
     case pairingRequest(peerUUID: String, eventId: String, timestamp: Int64)
     case pairingAcknowledge(sessionToken: String)
+    case setZoom(factor: Double)
 }
 
 // MARK: - P2PMessageType (untuk filtering)
@@ -46,6 +47,7 @@ enum P2PMessageType: String, CaseIterable {
     case photoMetadata, photoPreview, photoFull, photoAck
     case cameraStatus, cameraReady, cameraError
     case pairingRequest, pairingAcknowledge, gestureDetected
+    case setZoom
 
     static func type(of message: P2PMessage) -> P2PMessageType {
         switch message {
@@ -66,6 +68,7 @@ enum P2PMessageType: String, CaseIterable {
         case .cameraError: return .cameraError
         case .pairingRequest: return .pairingRequest
         case .pairingAcknowledge: return .pairingAcknowledge
+        case .setZoom: return .setZoom
         }
     }
 }

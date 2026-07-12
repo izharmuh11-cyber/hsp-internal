@@ -362,6 +362,13 @@ final class CameraAppState {
         case .focusPoint(let x, let y):
             CameraCaptureService.shared.setFocusAndExposurePoint(x: x, y: y)
             
+        case .setZoom(let factor):
+            CameraCaptureService.shared.setZoom(factor: CGFloat(factor))
+            
+        case .setPortraitMode(let enabled):
+            CameraCaptureService.shared.isPortraitModeActive = enabled
+            HaispaceLogger.info("Portrait mode \(enabled ? "diaktifkan" : "dimatikan") secara remote", category: "camera")
+            
         default:
             break
         }

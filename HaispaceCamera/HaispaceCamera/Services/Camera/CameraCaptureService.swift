@@ -21,8 +21,10 @@ final class CameraCaptureService: NSObject {
     // Delegate untuk distribusi frame
     var onVideoFrameCaptured: ((CMSampleBuffer) -> Void)?
     var onPhotoCaptured: ((AVCapturePhoto) -> Void)?
-    
     private var isConfigured = false
+    
+    // Status Portrait Mode
+    var isPortraitModeActive = false
     
     private override init() {
         super.init()
@@ -71,6 +73,35 @@ final class CameraCaptureService: NSObject {
             captureSession.addInput(videoDeviceInput)
         }
         
+        // Konfigurasi fitur kamera bawaan iPhone (HDR, Low Light, Autofokus)
+        do {
+            try videoDevice.lockForConfiguration()
+            
+            // 1. Aktifkan Video HDR (Anti-Backlight & High Dynamic Range) untuk live preview
+            if videoDevice.activeFormat.isVideoHDRSupported {
+                videoDevice.isVideoHDREnabled = true
+                HaispaceLogger.info("Video HDR (Anti-Backlight) diaktifkan", category: "camera")
+            }
+            
+            // 2. Aktifkan Low Light Boost otomatis untuk ruangan redup
+            if videoDevice.isLowLightBoostSupported {
+                videoDevice.automaticallyEnablesLowLightBoostWhenAvailable = true
+                HaispaceLogger.info("Low Light Boost diaktifkan", category: "camera")
+            }
+            
+            // 3. Set Continuous Auto Focus & Exposure agar selalu stabil dan terang
+            if videoDevice.isFocusModeSupported(.continuousAutoFocus) {
+                videoDevice.focusMode = .continuousAutoFocus
+            }
+            if videoDevice.isExposureModeSupported(.continuousAutoExposure) {
+                videoDevice.exposureMode = .continuousAutoExposure
+            }
+            
+            videoDevice.unlockForConfiguration()
+        } catch {
+            HaispaceLogger.error("Gagal mengonfigurasi fitur kamera bawaan iPhone: \(error.localizedDescription)", category: "camera")
+        }
+        
         // Setup Video Output untuk live stream P2P
         videoOutput.setSampleBufferDelegate(self, queue: DispatchQueue(label: "id.haispaceproject.camera.videoQueue"))
         videoOutput.alwaysDiscardsLateVideoFrames = true
@@ -101,11 +132,24 @@ final class CameraCaptureService: NSObject {
     /// Trigger pemotretan kualitas tinggi (dipanggil saat menerima instruksi dari iPad)
     func captureHighQualityPhoto() {
         let photoSettings = AVCapturePhotoSettings()
-        // Note: isHighResolutionPhotoEnabled is deprecated in iOS 16+
         photoSettings.flashMode = .off // Flash menggunakan layar iPad, iPhone flash dimatikan
         
+        // Aktifkan data kedalaman (depth map) jika mode Portrait aktif dan didukung hardware
+        if isPortraitModeActive && photoOutput.isDepthDataDeliverySupported {
+            photoSettings.isDepthDataDeliveryEnabled = true
+            photoSettings.embedsDepthDataInPhoto = true
+            HaispaceLogger.info("Depth data delivery diaktifkan untuk jepretan Portrait", category: "camera")
+        }
+        
+        // Aktifkan pemrosesan gambar penuh Apple (Smart HDR, Deep Fusion, Neural Engine ISP)
+        if photoOutput.availablePhotoQualityPrioritizationPriorities.contains(.quality) {
+            photoSettings.photoQualityPrioritization = .quality
+        } else {
+            photoSettings.photoQualityPrioritization = .balanced
+        }
+        
         photoOutput.capturePhoto(with: photoSettings, delegate: self)
-        HaispaceLogger.info("Memicu jepretan foto resolusi tinggi", category: "camera")
+        HaispaceLogger.info("Memicu jepretan foto kualitas tinggi (Smart HDR/Deep Fusion)", category: "camera")
     }
     
     /// Kunci Fokus dan Eksposur dari jarak jauh pada titik tertentu (0.0 - 1.0)
@@ -193,6 +237,25 @@ final class CameraCaptureService: NSObject {
         // Perbarui orientasi koneksi foto (jepretan resolusi tinggi)
         if let photoConnection = photoOutput.connection(with: .video), photoConnection.isVideoOrientationSupported {
             photoConnection.videoOrientation = avOrientation
+        }
+    }
+    
+    /// Mengatur faktor perbesaran (zoom) kamera utama belakang
+    func setZoom(factor: CGFloat) {
+        // Ambil device back camera default
+        guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else { return }
+        do {
+            try device.lockForConfiguration()
+            defer { device.unlockForConfiguration() }
+            
+            let minZoom = device.minAvailableVideoZoomFactor
+            let maxZoom = min(device.maxAvailableVideoZoomFactor, 5.0) // Batasi maksimal 5x untuk kestabilan kualitas
+            let targetZoom = max(min(factor, maxZoom), minZoom)
+            
+            device.videoZoomFactor = targetZoom
+            HaispaceLogger.info("Zoom factor diubah menjadi \(targetZoom)x", category: "camera")
+        } catch {
+            HaispaceLogger.error("Gagal mengunci konfigurasi kamera untuk zoom: \(error.localizedDescription)", category: "camera")
         }
     }
 }

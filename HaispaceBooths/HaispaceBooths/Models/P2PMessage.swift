@@ -73,6 +73,9 @@ enum P2PMessage: Codable, Equatable {
 
     /// Konfirmasi pairing berhasil — dari iPad ke iPhone
     case pairingAcknowledge(sessionToken: String)
+    
+    /// Set zoom factor kamera iPhone secara remote
+    case setZoom(factor: Double)
 }
 
 // MARK: - P2PMessageType (untuk filtering)
@@ -96,6 +99,7 @@ enum P2PMessageType: String, CaseIterable {
     case pairingRequest
     case pairingAcknowledge
     case gestureDetected
+    case setZoom
 
     /// Tipe pesan dari P2PMessage
     static func type(of message: P2PMessage) -> P2PMessageType {
@@ -117,6 +121,7 @@ enum P2PMessageType: String, CaseIterable {
         case .cameraError: return .cameraError
         case .pairingRequest: return .pairingRequest
         case .pairingAcknowledge: return .pairingAcknowledge
+        case .setZoom: return .setZoom
         }
     }
 }

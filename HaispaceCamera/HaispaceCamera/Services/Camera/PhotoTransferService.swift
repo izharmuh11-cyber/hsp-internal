@@ -10,6 +10,7 @@ import Foundation
 import AVFoundation
 import UIKit
 import ImageIO
+import CoreImage
 
 actor PhotoTransferService {
     static let shared = PhotoTransferService()
@@ -27,8 +28,39 @@ actor PhotoTransferService {
     
     /// Dipanggil setiap kali iPhone selesai mengambil foto resolusi tinggi
     func handleNewCapture(photoId: String, capture: AVCapturePhoto, sortOrder: Int) async {
-        guard let data = capture.fileDataRepresentation() else {
-            HaispaceLogger.error("Gagal mendapatkan raw data foto dari jepretan", category: "camera")
+        var photoData: Data? = capture.fileDataRepresentation()
+        
+        // Cek jika mode Portrait aktif dan data kedalaman sensor tersedia
+        let isPortraitActive = await MainActor.run { CameraCaptureService.shared.isPortraitModeActive }
+        
+        if isPortraitActive,
+           let depthData = capture.depthData,
+           let rawData = photoData,
+           let ciImage = CIImage(data: rawData) {
+            
+            // Konfigurasi Apple Depth Blur Effect (Bokeh)
+            if let filter = CIFilter(name: "CIDepthBlurEffect") {
+                filter.setValue(ciImage, forKey: kCIInputImageKey)
+                filter.setValue(depthData, forKey: "inputDepthData")
+                // Focus area di tengah wajah (normalized rect)
+                filter.setValue(CIVector(cgRect: CGRect(x: 0.45, y: 0.45, width: 0.1, height: 0.1)), forKey: "inputFocusRect")
+                filter.setValue(2.0, forKey: "inputAperture") // Bukaan lensa f/2.0
+                
+                if let outputCIImage = filter.outputImage {
+                    let context = CIContext(options: nil)
+                    if let cgImage = context.createCGImage(outputCIImage, from: outputCIImage.extent) {
+                        let uiImage = UIImage(cgImage: cgImage)
+                        if let jpegData = uiImage.jpegData(compressionQuality: 0.9) {
+                            photoData = jpegData
+                            HaispaceLogger.info("Efek Bokeh Portrait berhasil diterapkan pada foto final", category: "camera")
+                        }
+                    }
+                }
+            }
+        }
+        
+        guard let data = photoData else {
+            HaispaceLogger.error("Gagal mendapatkan data gambar dari jepretan", category: "camera")
             return
         }
         
