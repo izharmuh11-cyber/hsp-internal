@@ -152,18 +152,33 @@ final class DeliveryStore {
     }
 
     private func startLocalServer(photos: [RenderedPhoto]) async {
-        // TODO: Fase 2 — implementasi Bonjour HTTP server lokal
         HaispaceLogger.info("Local network server dimulai", category: "delivery")
+        
+        do {
+            try BonjourDownloadServer.shared.start()
+        } catch {
+            HaispaceLogger.error("Gagal memulai BonjourDownloadServer: \(error)", category: "delivery")
+        }
+        
+        var hostedURLs: [String] = []
+        for photo in photos {
+            let url = BonjourDownloadServer.shared.hostPhoto(id: photo.id, data: photo.data)
+            HaispaceLogger.info("Foto di-host di local server: \(url)", category: "delivery")
+            hostedURLs.append(url)
+        }
+        
         await MainActor.run {
-            localServerPort = 8080 // Placeholder
-            localServerURL = "http://192.168.1.1:8080/photos/PLACEHOLDER"
-            status = .delivering
+            self.localServerPort = Int(BonjourDownloadServer.shared.port.rawValue)
+            self.localServerURL = hostedURLs.first
+            self.status = .delivering
         }
     }
 
     /// Reset state delivery (untuk sesi baru)
     @MainActor
     func reset() {
+        BonjourDownloadServer.shared.stop()
+        
         status = .idle
         selectedMethod = nil
         localServerURL = nil

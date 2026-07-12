@@ -35,7 +35,7 @@ final class QRISGeneratorService {
         postalCode: "12345"
     )
     
-    /// Men-generate raw QRIS string berdasarkan amount
+    /// Men-generate raw QRIS string berdasarkan amount secara dinamis
     static func generate(amount: Int, transactionId: String, config: MerchantConfig = defaultConfig) throws -> String {
         guard amount > 0 else { throw QRISGeneratorError.invalidMerchantData }
         
@@ -51,14 +51,17 @@ final class QRISGeneratorService {
         appendTLV(tag: "00", value: "01")
         
         // 01: Point of Initiation Method (11 = Static, 12 = Dynamic)
-        appendTLV(tag: "01", value: "12") // Dynamic karena ada amount & transaction ID
+        appendTLV(tag: "01", value: "12")
         
         // 26-51: Merchant Account Information
-        // ID.CO.QRIS.WWW (tag 26)
-        let nmidValue = "0014\(config.globalUniqueIdentifier)0118\(config.merchantId)0215\(config.merchantId)0303\(config.criteria)"
-        appendTLV(tag: "26", value: nmidValue)
+        var merchantAccountInfo = ""
+        merchantAccountInfo += "00\(String(format: "%02d", config.globalUniqueIdentifier.count))\(config.globalUniqueIdentifier)"
+        merchantAccountInfo += "01\(String(format: "%02d", config.merchantId.count))\(config.merchantId)"
+        merchantAccountInfo += "02\(String(format: "%02d", config.merchantId.count))\(config.merchantId)"
+        merchantAccountInfo += "03\(String(format: "%02d", config.criteria.count))\(config.criteria)"
+        appendTLV(tag: "26", value: merchantAccountInfo)
         
-        // 52: Merchant Category Code (5999 = Miscellaneous and Specialty Retail Stores)
+        // 52: Merchant Category Code
         appendTLV(tag: "52", value: "5999")
         
         // 53: Transaction Currency (360 = IDR)
@@ -80,12 +83,10 @@ final class QRISGeneratorService {
         appendTLV(tag: "61", value: config.postalCode)
         
         // 62: Additional Data Field (Transaction ID / Bill Number)
-        // Sub-tag 01 = Bill Number / Reference
         let billNumber = "01\(String(format: "%02d", transactionId.count))\(transactionId)"
         appendTLV(tag: "62", value: billNumber)
         
         // 63: CRC (Checksum)
-        // Panjang CRC selalu 4 digit hexa ("04")
         payload += "6304"
         
         // Hitung CRC16 dari payload sampai "6304"
@@ -93,6 +94,43 @@ final class QRISGeneratorService {
         payload += String(format: "%04X", crc)
         
         return payload
+    }
+    
+    /// Menginjeksi nominal ke dalam QRIS string EMVCo statis dan menghitung ulang CRC16
+    static func generate(from merchantString: String, amount: Int, transactionId: String) throws -> String {
+        guard amount > 0 else { throw QRISGeneratorError.invalidMerchantData }
+        var base = merchantString
+        
+        // 1. Ubah field "010211" (static) ke "010212" (dynamic)
+        base = base.replacingOccurrences(of: "010211", with: "010212")
+        
+        // 2. Inject field 54 (Transaction Amount) sebelum tag 58 (Country Code)
+        let amountStr = String(amount)
+        let amountField = "54\(String(format: "%02d", amountStr.count))\(amountStr)"
+        
+        if let range = base.range(of: "5802") {
+            base.insert(contentsOf: amountField, at: range.lowerBound)
+        } else {
+            throw QRISGeneratorError.invalidMerchantData
+        }
+        
+        // 3. Inject field 62 (Additional Data / Bill Number) sebelum tag 63 (CRC, "6304")
+        let billNumberVal = "01\(String(format: "%02d", transactionId.count))\(transactionId)"
+        let field62 = "62\(String(format: "%02d", billNumberVal.count))\(billNumberVal)"
+        
+        if let range = base.range(of: "6304") {
+            base.insert(contentsOf: field62, at: range.lowerBound)
+        }
+        
+        // Hapus 4 karakter CRC lama dan tambahkan prefix "6304"
+        let withoutCRC = String(base.dropLast(4))
+        let targetPayload = withoutCRC.hasSuffix("6304") ? withoutCRC : withoutCRC + "6304"
+        
+        // Hitung CRC16-CCITT
+        let crc = calculateCRC16(data: Array(targetPayload.utf8))
+        let crcHex = String(format: "%04X", crc)
+        
+        return targetPayload + crcHex
     }
     
     // MARK: - CRC16 CCITT-False Implementation

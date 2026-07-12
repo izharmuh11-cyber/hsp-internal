@@ -9,6 +9,7 @@
 
 import Foundation
 import UIKit
+import Observation
 
 // MARK: - PhotoQuality
 
@@ -22,7 +23,8 @@ enum PhotoQuality {
 
 /// Foto yang diambil iPhone dan diterima iPad via P2P.
 /// Bersifat mutable — di-upgrade dari thumbnail ke full quality saat transfer selesai.
-final class CapturedPhoto: Identifiable, ObservableObject {
+@Observable
+final class CapturedPhoto: Identifiable {
 
     // MARK: Identity
     let id: String              // UUID yang dibuat iPhone saat capture
@@ -30,11 +32,11 @@ final class CapturedPhoto: Identifiable, ObservableObject {
     let sortOrder: Int          // Urutan dalam sesi (foto ke-1, ke-2, dst)
 
     // MARK: Image Data
-    private(set) var thumbnailData: Data        // Selalu ada
-    private(set) var fullQualityData: Data?     // Nil sampai Channel 2 selesai
+    var thumbnailData: Data        // Selalu ada
+    var fullQualityData: Data?     // Nil sampai Channel 2 selesai
 
     // MARK: State
-    private(set) var quality: PhotoQuality = .thumbnail
+    var quality: PhotoQuality = .thumbnail
     var isSelected: Bool = false
 
     // MARK: Computed

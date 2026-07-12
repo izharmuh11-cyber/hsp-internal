@@ -171,12 +171,22 @@ final class P2PStore: @unchecked Sendable {
         HaispaceLogger.info("MPC service type set: \(mpcServiceType)", category: "p2p")
     }
 
+    private var outgoingMessageTask: Task<Void, Never>?
+
     /// Generate dan mulai timer regenerasi QR Payload untuk event aktif
     @MainActor
     func startGeneratingQRPayload(eventId: String, ip: String, port: Int) {
         activeEventId = eventId
         tcpRemoteIP = ip
         tcpLocalPort = port
+
+        setupConnectionCallbacks()
+        
+        // Mulai hosting network services secara paralel
+        Task {
+            await LocalTCPRouterService.shared.startHosting(port: port)
+            await MultipeerService.shared.startHosting(eventId: eventId, boothId: peerUUID)
+        }
 
         generateNewQRPayload()
 
@@ -187,6 +197,8 @@ final class P2PStore: @unchecked Sendable {
                 self?.generateNewQRPayload()
             }
         }
+        
+        startOutgoingMessageBroker()
     }
 
     @MainActor
@@ -195,6 +207,14 @@ final class P2PStore: @unchecked Sendable {
         qrRefreshTimer = nil
         currentQRPayload = nil
         activeEventId = nil
+        
+        outgoingMessageTask?.cancel()
+        outgoingMessageTask = nil
+        
+        Task {
+            await LocalTCPRouterService.shared.stopHosting()
+            await MultipeerService.shared.stopHosting()
+        }
     }
 
     @MainActor
@@ -207,5 +227,81 @@ final class P2PStore: @unchecked Sendable {
 
         currentQRPayload = QRPairingPayload(v: 1, peerId: peerUUID, ip: ip, port: port, eventId: eventId, ts: ts, sig: sig)
         HaispaceLogger.info("QR Payload diregenerate (expires in 5 min)", category: "p2p")
+    }
+
+    @MainActor
+    private func setupConnectionCallbacks() {
+        Task {
+            await LocalTCPRouterService.shared.registerConnectionStateCallback { [weak self] state in
+                Task { @MainActor in
+                    self?.connectionState = state
+                    if case .connected = state {
+                        self?.connectionMode = .localRouter
+                        self?.connectedPeerName = "iPhone (TCP)"
+                        HaispaceLogger.info("Koneksi P2P beralih ke mode: TCP Router", category: "p2p")
+                    }
+                }
+            }
+            
+            await MultipeerService.shared.registerConnectionStateCallback { [weak self] state in
+                Task { @MainActor in
+                    // TCP memiliki prioritas lebih tinggi. Jangan override jika TCP sudah terhubung.
+                    if self?.connectionMode != .localRouter || self?.connectionState != .connected {
+                        self?.connectionState = state
+                        if case .connected = state {
+                            self?.connectionMode = .multipeerConnectivity
+                            self?.connectedPeerName = "iPhone (MPC)"
+                            HaispaceLogger.info("Koneksi P2P beralih ke mode: MPC Direct", category: "p2p")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func startOutgoingMessageBroker() {
+        outgoingMessageTask?.cancel()
+        outgoingMessageTask = Task { [weak self] in
+            guard let self = self else { return }
+            
+            let messageTypes: [P2PMessageType] = [
+                .ping, .sessionStart, .triggerCapture, .sessionPause,
+                .sessionResume, .sessionEnd, .focusPoint, .photoAck
+            ]
+            
+            await withTaskGroup(of: Void.self) { group in
+                for type in messageTypes {
+                    group.addTask {
+                        for await message in await P2PMessageRouter.shared.messageStream(for: type) {
+                            guard !Task.isCancelled else { break }
+                            await self.sendOutgoing(message)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func sendOutgoing(_ message: P2PMessage) async {
+        guard let data = try? message.encode() else { return }
+        do {
+            let activeMode = await MainActor.run { self.connectionMode }
+            let isConnected = await MainActor.run { self.isConnected }
+            
+            guard isConnected else {
+                HaispaceLogger.warning("Gagal mengirim pesan \(P2PMessageType.type(of: message)) - P2P tidak terhubung", category: "p2p")
+                return
+            }
+            
+            if activeMode == .localRouter {
+                try await LocalTCPRouterService.shared.sendData(data)
+                HaispaceLogger.info("Pesan \(P2PMessageType.type(of: message)) terkirim via TCP", category: "p2p")
+            } else {
+                try await MultipeerService.shared.sendData(data)
+                HaispaceLogger.info("Pesan \(P2PMessageType.type(of: message)) terkirim via MPC", category: "p2p")
+            }
+        } catch {
+            HaispaceLogger.error("Gagal mengirim pesan \(P2PMessageType.type(of: message)): \(error)", category: "p2p")
+        }
     }
 }

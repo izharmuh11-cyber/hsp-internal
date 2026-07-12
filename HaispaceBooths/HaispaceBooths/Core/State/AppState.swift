@@ -184,6 +184,7 @@ extension AppState {
         state.boothConfig.activeEventDate = Date()
         state.boothConfig.activePackages = BoothPackage.mockPackages
         state.boothConfig.availableFrames = PhotoFrame.mockFrames
+        state.boothConfig.downloadedFrameIds = Set(PhotoFrame.mockFrames.map { $0.id })
 
         // Operator
         state.operatorState.currentOperator = .mockOperator

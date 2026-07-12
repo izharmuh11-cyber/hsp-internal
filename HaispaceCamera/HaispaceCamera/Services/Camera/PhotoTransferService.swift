@@ -9,6 +9,7 @@
 import Foundation
 import AVFoundation
 import UIKit
+import ImageIO
 
 actor PhotoTransferService {
     static let shared = PhotoTransferService()
@@ -64,11 +65,24 @@ actor PhotoTransferService {
         }
     }
     
+    /// Memulai kembali antrean pengiriman foto yang tertunda
+    func resumeTransferQueue() async {
+        guard !isProcessingQueue else { return }
+        await processFullQualityQueue()
+    }
+    
     private func processFullQualityQueue() async {
         isProcessingQueue = true
         defer { isProcessingQueue = false }
         
         while !fullQualityQueue.isEmpty {
+            // Cek status koneksi. Jika terputus, jeda pemrosesan antrean.
+            let isConnected = await P2PClientService.shared.isConnected()
+            guard isConnected else {
+                HaispaceLogger.warning("Menunda pengiriman full quality - P2P terputus", category: "p2p")
+                break
+            }
+            
             let nextTransfer = fullQualityQueue.removeFirst()
             
             // Kirim metadata terlebih dahulu
@@ -101,15 +115,38 @@ actor PhotoTransferService {
     }
     
     private func compressImage(data: Data, quality: CGFloat, maxBytes: Int) async -> Data {
-        // Implementasi sederhana kompresi JPEG menggunakan UIImage
-        // Seharusnya dijalankan di detached task karena berat
+        // Implementasi optimasi memori menggunakan ImageIO
         return await Task.detached(priority: .userInitiated) {
-            guard let image = UIImage(data: data),
-                  let compressedData = image.jpegData(compressionQuality: quality) else {
+            guard let imageSource = CGImageSourceCreateWithData(data as CFData, nil) else {
                 return data
             }
-            // Logic downscaling resolusi bisa ditambahkan di sini jika dibutuhkan
-            return compressedData
+            
+            // Definisikan opsi pembuatan thumbnail
+            let options: [CFString: Any] = [
+                kCGImageSourceCreateThumbnailFromImageAlways: true,
+                kCGImageSourceCreateThumbnailWithTransform: true,
+                kCGImageSourceThumbnailMaxPixelSize: 1024
+            ]
+            
+            guard let thumbnail = CGImageSourceCreateThumbnailAtIndex(imageSource, 0, options as CFDictionary) else {
+                return data
+            }
+            
+            let resultData = NSMutableData()
+            guard let destination = CGImageDestinationCreateWithData(resultData as CFMutableData, "public.jpeg" as CFString, 1, nil) else {
+                return data
+            }
+            
+            let compressionOptions: [CFString: Any] = [
+                kCGImageDestinationLossyCompressionQuality: quality
+            ]
+            
+            CGImageDestinationAddImage(destination, thumbnail, compressionOptions as CFDictionary)
+            guard CGImageDestinationFinalize(destination) else {
+                return data
+            }
+            
+            return resultData as Data
         }.value
     }
 }

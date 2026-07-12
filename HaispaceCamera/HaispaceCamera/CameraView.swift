@@ -189,7 +189,9 @@ private struct CameraStandbyView: View {
         }
         
         cameraState.p2p.lastPairingPayload = payload
-        P2PClientService.shared.connect(using: payload)
+        Task {
+            await P2PClientService.shared.connect(using: payload)
+        }
     }
 
     private func batteryIcon(_ level: Float) -> String {

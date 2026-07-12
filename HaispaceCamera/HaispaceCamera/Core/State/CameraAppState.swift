@@ -197,6 +197,26 @@ final class CameraAppState {
         UIDevice.current.isBatteryMonitoringEnabled = true
         batteryLevel = UIDevice.current.batteryLevel
         thermalState = CameraThermalState.from(ProcessInfo.processInfo.thermalState)
+        
+        // Setup connection callbacks
+        await P2PClientService.shared.registerConnectionStateCallback { [weak self] state in
+            Task { @MainActor in
+                self?.p2p.updateConnectionState(state)
+                switch state {
+                case .connected:
+                    self?.cameraStatus = .paired
+                    // Resume transfer queue!
+                    Task {
+                        await PhotoTransferService.shared.resumeTransferQueue()
+                    }
+                case .disconnected, .failed:
+                    self?.cameraStatus = .standby
+                default:
+                    break
+                }
+            }
+        }
+        
         HaispaceLogger.info("HaiCamera setup selesai", category: "app")
     }
 }

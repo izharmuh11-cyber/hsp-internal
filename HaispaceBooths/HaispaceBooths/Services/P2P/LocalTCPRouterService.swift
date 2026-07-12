@@ -15,8 +15,16 @@ actor LocalTCPRouterService {
     private var listener: NWListener?
     private var activeConnection: NWConnection?
     
-    var onConnectionStateChange: ((P2PConnectionState) -> Void)?
-    var onDataReceived: ((Data) -> Void)?
+    private var onConnectionStateChange: ((P2PConnectionState) -> Void)?
+    private var onDataReceived: ((Data) -> Void)?
+    
+    func registerConnectionStateCallback(_ callback: @escaping (P2PConnectionState) -> Void) {
+        self.onConnectionStateChange = callback
+    }
+    
+    func registerDataCallback(_ callback: @escaping (Data) -> Void) {
+        self.onDataReceived = callback
+    }
     
     // Default TCP Port untuk listener
     let defaultPort: NWEndpoint.Port = 55123
@@ -24,17 +32,24 @@ actor LocalTCPRouterService {
     private init() {}
     
     /// Memulai TCP Listener di iPad
-    func startHosting() {
+    func startHosting(port: Int? = nil) {
         guard listener == nil else { return }
         
+        let listenPort: NWEndpoint.Port
+        if let portVal = port, let p = NWEndpoint.Port(rawValue: UInt16(portVal)) {
+            listenPort = p
+        } else {
+            listenPort = defaultPort
+        }
+        
         do {
-            listener = try NWListener(using: .tcp, on: defaultPort)
+            listener = try NWListener(using: .tcp, on: listenPort)
             
             listener?.stateUpdateHandler = { [weak self] state in
                 Task {
                     switch state {
                     case .ready:
-                        HaispaceLogger.info("TCP Listener ready pada port 55123", category: "p2p")
+                        HaispaceLogger.info("TCP Listener ready pada port \(listenPort.rawValue)", category: "p2p")
                     case .failed(let error):
                         HaispaceLogger.error(error)
                         await self?.stopHosting()
@@ -82,7 +97,7 @@ actor LocalTCPRouterService {
                 case .ready:
                     await self?.onConnectionStateChange?(.connected)
                     HaispaceLogger.info("Koneksi TCP klien diterima", category: "p2p")
-                    await self?.receiveNextMessage(from: connection)
+                    await self?.startReading(from: connection)
                 case .failed(let error):
                     HaispaceLogger.warning("Koneksi TCP gagal: \(error)", category: "p2p")
                     await self?.onConnectionStateChange?(.disconnected)
@@ -100,28 +115,61 @@ actor LocalTCPRouterService {
         connection.start(queue: .global(qos: .userInteractive))
     }
     
-    private func receiveNextMessage(from connection: NWConnection) {
-        // Membaca framing data. 
-        // Implementasi sederhana: baca frame (karena TCP bersifat stream, idealnya pakai prefix panjang frame)
-        // Untuk MVP Fase 1, asumsikan payload terbungkus rapi (atau gunakan NWProtocolFramer di fase lanjut)
-        connection.receive(minimumIncompleteLength: 1, maximumLength: 10 * 1024 * 1024) { [weak self] content, _, isComplete, error in
-            Task {
-                if let data = content, !data.isEmpty {
-                    await self?.onDataReceived?(data)
+    private func startReading(from connection: NWConnection) {
+        Task { [weak self] in
+            do {
+                while true {
+                    // 1. Baca 4 byte header
+                    let headerData = try await readExactBytes(connection: connection, count: 4)
+                    guard headerData.count == 4 else { break }
                     
-                    if let message = try? P2PMessage.decode(from: data) {
-                        await P2PMessageRouter.shared.route(message)
+                    // Convert 4 bytes to UInt32 (big-endian)
+                    let length = headerData.withUnsafeBytes { $0.load(as: UInt32.self).bigEndian }
+                    guard length > 0 else { continue }
+                    
+                    // 2. Baca exact body
+                    let bodyData = try await readExactBytes(connection: connection, count: Int(length))
+                    guard bodyData.count == Int(length) else { break }
+                    
+                    // 3. Proses data
+                    if let self = self {
+                        await self.onDataReceived?(bodyData)
+                        if let message = try? P2PMessage.decode(from: bodyData) {
+                            await P2PMessageRouter.shared.route(message)
+                        }
                     }
                 }
-                
-                if error == nil && !isComplete {
-                    // Lanjut baca loop
-                    await self?.receiveNextMessage(from: connection)
-                } else {
-                    HaispaceLogger.warning("TCP Stream terhenti atau error.", category: "p2p")
-                }
+            } catch {
+                HaispaceLogger.warning("TCP Stream terhenti atau error: \(error)", category: "p2p")
+            }
+            
+            if let self = self {
+                await self.onConnectionStateChange?(.disconnected)
+                await self.clearConnection(ifMatches: connection)
             }
         }
+    }
+    
+    private func readExactBytes(connection: NWConnection, count: Int) async throws -> Data {
+        var accumulated = Data()
+        while accumulated.count < count {
+            let needed = count - accumulated.count
+            let chunk: Data = try await withCheckedThrowingContinuation { continuation in
+                connection.receive(minimumIncompleteLength: 1, maximumLength: needed) { content, _, isComplete, error in
+                    if let error = error {
+                        continuation.resume(throwing: error)
+                    } else if let content = content {
+                        continuation.resume(returning: content)
+                    } else if isComplete {
+                        continuation.resume(throwing: NSError(domain: "LocalTCPRouterService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Connection closed"]))
+                    } else {
+                        continuation.resume(throwing: NSError(domain: "LocalTCPRouterService", code: -2, userInfo: [NSLocalizedDescriptionKey: "No data received"]))
+                    }
+                }
+            }
+            accumulated.append(chunk)
+        }
+        return accumulated
     }
     
     func sendData(_ data: Data) throws {
@@ -129,7 +177,12 @@ actor LocalTCPRouterService {
             throw HaispaceError.p2pConnectionLost
         }
         
-        connection.send(content: data, completion: .contentProcessed({ error in
+        // Tambah header panjang data 4-byte (big-endian)
+        var length = UInt32(data.count).bigEndian
+        let header = Data(bytes: &length, count: 4)
+        let payload = header + data
+        
+        connection.send(content: payload, completion: .contentProcessed({ error in
             if let error = error {
                 HaispaceLogger.error(error)
             }

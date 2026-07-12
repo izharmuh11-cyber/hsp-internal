@@ -19,8 +19,16 @@ actor MultipeerService: NSObject {
     private var isAdvertising = false
 
     // State callback
-    var onConnectionStateChange: ((P2PConnectionState) -> Void)?
-    var onDataReceived: ((Data) -> Void)?
+    private var onConnectionStateChange: ((P2PConnectionState) -> Void)?
+    private var onDataReceived: ((Data) -> Void)?
+
+    func registerConnectionStateCallback(_ callback: @escaping (P2PConnectionState) -> Void) {
+        self.onConnectionStateChange = callback
+    }
+
+    func registerDataCallback(_ callback: @escaping (Data) -> Void) {
+        self.onDataReceived = callback
+    }
 
     private override init() {
         self.peerID = MCPeerID(displayName: "HaiBooth iPad")

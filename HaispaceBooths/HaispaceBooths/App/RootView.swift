@@ -184,11 +184,7 @@ private struct KioskRouterView: View {
             case .photoSelection:
                 PhotoSelectionView()
             case .frameSelection:
-                ZStack {
-                    Color.black.ignoresSafeArea()
-                    Text("TODO: Frame Selection View")
-                        .foregroundStyle(.white)
-                }
+                FrameSelectionView()
             case .payment:
                 PaymentView()
             case .processing:

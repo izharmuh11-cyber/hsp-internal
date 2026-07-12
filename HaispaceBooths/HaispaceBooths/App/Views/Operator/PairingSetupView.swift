@@ -226,8 +226,8 @@ struct PairingSetupView: View {
     private func setupQRGeneration() {
         // Buat dummy eventId jika tidak ada session, atau gunakan ID session aktif
         let eventId = appState.currentSession?.sessionId ?? "TEST-EVENT-\(Int.random(in: 1000...9999))"
-        // Ambil Local IP iPad. (Dalam environment riil, gunakan logic get IP, di sini fallback dummy / 0.0.0.0)
-        let localIp = "0.0.0.0"
+        // Ambil Local IP iPad via NetworkUtility, fallback ke 127.0.0.1 jika nil
+        let localIp = NetworkUtility.getWiFiAddress() ?? "127.0.0.1"
         let randomPort = Int.random(in: 50000...60000)
         
         appState.p2p.startGeneratingQRPayload(eventId: eventId, ip: localIp, port: randomPort)

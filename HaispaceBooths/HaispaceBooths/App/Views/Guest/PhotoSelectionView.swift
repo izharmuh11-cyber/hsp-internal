@@ -164,7 +164,7 @@ struct PhotoSelectionView: View {
 // MARK: - Photo Grid Item
 
 private struct PhotoGridItem: View {
-    @ObservedObject var photo: CapturedPhoto
+    let photo: CapturedPhoto
     let isSelected: Bool
     let action: () -> Void
     let onLongPress: () -> Void
