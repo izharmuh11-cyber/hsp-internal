@@ -76,6 +76,9 @@ enum P2PMessage: Codable, Equatable {
     
     /// Set zoom factor kamera iPhone secara remote
     case setZoom(factor: Double)
+    
+    /// Set portrait mode (bokeh) kamera secara remote
+    case setPortraitMode(enabled: Bool)
 }
 
 // MARK: - P2PMessageType (untuk filtering)
@@ -100,6 +103,7 @@ enum P2PMessageType: String, CaseIterable {
     case pairingAcknowledge
     case gestureDetected
     case setZoom
+    case setPortraitMode
 
     /// Tipe pesan dari P2PMessage
     static func type(of message: P2PMessage) -> P2PMessageType {
@@ -122,6 +126,7 @@ enum P2PMessageType: String, CaseIterable {
         case .pairingRequest: return .pairingRequest
         case .pairingAcknowledge: return .pairingAcknowledge
         case .setZoom: return .setZoom
+        case .setPortraitMode: return .setPortraitMode
         }
     }
 }

@@ -142,7 +142,7 @@ final class CameraCaptureService: NSObject {
         }
         
         // Aktifkan pemrosesan gambar penuh Apple (Smart HDR, Deep Fusion, Neural Engine ISP)
-        if photoOutput.availablePhotoQualityPrioritizationPriorities.contains(.quality) {
+        if photoOutput.supportedPhotoQualityPrioritizations.contains(.quality) {
             photoSettings.photoQualityPrioritization = .quality
         } else {
             photoSettings.photoQualityPrioritization = .balanced
