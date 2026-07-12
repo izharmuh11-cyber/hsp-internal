@@ -506,7 +506,6 @@ struct ActiveSessionView: View {
                     )
                     .padding(32)
                     .transition(.asymmetric(
-                        isMatching: { _ in true }, // Transition format for backward compatibility if needed, or simple scale
                         insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .scale(scale: 0.95).combined(with: .opacity)
                     ))
