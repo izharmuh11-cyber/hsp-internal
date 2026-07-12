@@ -221,6 +221,7 @@ final class CameraAppState {
                 case .disconnected:
                     self?.cameraStatus = .standby
                     self?.updateStreamingState()
+                    GitHubLogUploader.uploadLatestLog(eventName: "iphone_disconnected")
                     // Mulai proses menghubungkan kembali (auto-reconnect)
                     if let payload = self?.p2p.lastPairingPayload {
                         self?.p2p.startReconnection(payload: payload)
@@ -228,6 +229,8 @@ final class CameraAppState {
                 case .failed(let reason):
                     self?.cameraStatus = .standby
                     self?.updateStreamingState()
+                    let cleanErr = reason.replacingOccurrences(of: " ", with: "_")
+                    GitHubLogUploader.uploadLatestLog(eventName: "iphone_failed_\(cleanErr)")
                     // Haptic feedback error
                     let generator = UINotificationFeedbackGenerator()
                     generator.notificationOccurred(.error)

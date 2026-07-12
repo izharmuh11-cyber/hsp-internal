@@ -128,3 +128,44 @@ struct LocalLogWriter {
         return docsDir.appendingPathComponent("haispace_\(subsystem).log")
     }
 }
+
+// MARK: - GitHub Auto Log Uploader (Camera)
+
+struct GitHubLogUploader {
+    static func uploadLatestLog(eventName: String = "auto_event") {
+        guard let token = UserDefaults.standard.string(forKey: "github_pat"), !token.isEmpty else { return }
+        
+        let logContent = LocalLogWriter.readLogContent(subsystem: "camera")
+        guard !logContent.isEmpty && logContent != "Log file tidak ditemukan atau kosong." else { return }
+        
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyyMMdd-HHmmss"
+        let timestamp = formatter.string(from: Date())
+        
+        // Clean event name for safe filename
+        let cleanEvent = eventName.replacingOccurrences(of: " ", with: "_")
+            .replacingOccurrences(of: ":", with: "_")
+            
+        let filename = "iphone-log-\(timestamp)-\(cleanEvent).txt"
+        
+        let url = URL(string: "https://api.github.com/repos/izharmuh11-cyber/hsp-internal/contents/logs/\(filename)")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "PUT"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/vnd.github.v3+json", forHTTPHeaderField: "Accept")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let base64Content = Data(logContent.utf8).base64EncodedString()
+        let body: [String: Any] = [
+            "message": "Auto upload log from iPhone [\(cleanEvent)] at \(timestamp)",
+            "content": base64Content,
+            "branch": "main"
+        ]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        
+        URLSession.shared.dataTask(with: request) { _, _, _ in
+            // Silent background upload
+        }.resume()
+    }
+}
+
