@@ -19,14 +19,14 @@ actor P2PClientService: NSObject {
     // Fallback connection via Network framework
     private var tcpConnection: NWConnection?
     
-    private var onConnectionStateChange: ((P2PConnectionState) -> Void)?
-    private var onDataReceived: ((Data) -> Void)?
+    private var onConnectionStateChange: (@Sendable (P2PConnectionState) -> Void)?
+    private var onDataReceived: (@Sendable (Data) -> Void)?
     
-    func registerConnectionStateCallback(_ callback: @escaping (P2PConnectionState) -> Void) {
+    func registerConnectionStateCallback(_ callback: @escaping @Sendable (P2PConnectionState) -> Void) {
         self.onConnectionStateChange = callback
     }
     
-    func registerDataCallback(_ callback: @escaping (Data) -> Void) {
+    func registerDataCallback(_ callback: @escaping @Sendable (Data) -> Void) {
         self.onDataReceived = callback
     }
     
@@ -241,6 +241,35 @@ actor P2PClientService: NSObject {
                 throw NSError(domain: "P2PClientService", code: -1, userInfo: [NSLocalizedDescriptionKey: "P2P Connection Lost"])
             }
             try session.send(data, toPeers: session.connectedPeers, with: .reliable)
+        }
+    }
+    
+    /// Mengirim foto resolusi tinggi secara aman. Menggunakan TCP jika siap, atau fallbacks ke MPC sendResource untuk file besar.
+    func sendPhotoFull(id: String, data: Data) async throws {
+        if let tcpConnection = tcpConnection, tcpConnection.state == .ready {
+            let fullMsg = P2PMessage.photoFull(id: id, fullData: data)
+            try sendData(fullMsg.encode())
+        } else {
+            guard let session = session, !session.connectedPeers.isEmpty else {
+                throw NSError(domain: "P2PClientService", code: -1, userInfo: [NSLocalizedDescriptionKey: "P2P Connection Lost"])
+            }
+            
+            // Tulis data ke file temporer agar bisa dikirim via sendResource
+            let tempDir = FileManager.default.temporaryDirectory
+            let fileURL = tempDir.appendingPathComponent("\(id).jpg")
+            try data.write(to: fileURL)
+            
+            for peer in session.connectedPeers {
+                session.sendResource(at: fileURL, withName: id, toPeer: peer) { error in
+                    // Bersihkan file temporer
+                    try? FileManager.default.removeItem(at: fileURL)
+                    if let error = error {
+                        HaispaceLogger.error("Gagal mengirim resource MPC \(id): \(error.localizedDescription)", category: "p2p")
+                    } else {
+                        HaispaceLogger.info("Resource MPC terkirim: \(id)", category: "p2p")
+                    }
+                }
+            }
         }
     }
     

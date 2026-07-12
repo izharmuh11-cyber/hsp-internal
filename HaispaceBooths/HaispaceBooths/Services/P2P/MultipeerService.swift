@@ -19,14 +19,14 @@ actor MultipeerService: NSObject {
     private var isAdvertising = false
 
     // State callback
-    private var onConnectionStateChange: ((P2PConnectionState) -> Void)?
-    private var onDataReceived: ((Data) -> Void)?
+    private var onConnectionStateChange: (@Sendable (P2PConnectionState) -> Void)?
+    private var onDataReceived: (@Sendable (Data) -> Void)?
 
-    func registerConnectionStateCallback(_ callback: @escaping (P2PConnectionState) -> Void) {
+    func registerConnectionStateCallback(_ callback: @escaping @Sendable (P2PConnectionState) -> Void) {
         self.onConnectionStateChange = callback
     }
 
-    func registerDataCallback(_ callback: @escaping (Data) -> Void) {
+    func registerDataCallback(_ callback: @escaping @Sendable (Data) -> Void) {
         self.onDataReceived = callback
     }
 
@@ -114,7 +114,22 @@ extension MultipeerService: MCSessionDelegate {
 
     nonisolated func session(_ session: MCSession, didStartReceivingResourceWithName resourceName: String, fromPeer peerID: MCPeerID, with progress: Progress) {}
 
-    nonisolated func session(_ session: MCSession, didFinishReceivingResourceWithName resourceName: String, fromPeer peerID: MCPeerID, at localURL: URL?, withError error: Error?) {}
+    nonisolated func session(_ session: MCSession, didFinishReceivingResourceWithName resourceName: String, fromPeer peerID: MCPeerID, at localURL: URL?, withError error: Error?) {
+        guard error == nil, let localURL = localURL else {
+            HaispaceLogger.error("MPC gagal menerima resource: \(resourceName) - \(String(describing: error))", category: "p2p")
+            return
+        }
+        
+        do {
+            let data = try Data(contentsOf: localURL)
+            Task {
+                await P2PMessageRouter.shared.route(.photoFull(id: resourceName, fullData: data))
+                HaispaceLogger.info("MPC sukses menerima resource foto penuh: \(resourceName)", category: "p2p")
+            }
+        } catch {
+            HaispaceLogger.error("Gagal membaca resource MPC terunduh: \(error.localizedDescription)", category: "p2p")
+        }
+    }
 }
 
 // MARK: - MCNearbyServiceAdvertiserDelegate

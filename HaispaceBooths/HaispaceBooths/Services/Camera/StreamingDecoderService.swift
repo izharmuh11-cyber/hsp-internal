@@ -99,21 +99,27 @@ final class StreamingDecoderService {
         var avccNalu = Data(bytes: &length, count: 4)
         avccNalu.append(nalu.dropFirst(4))
         
-        var blockBuffer: CMBlockBuffer?
-        let status = avccNalu.withUnsafeBytes { buffer -> OSStatus in
-            guard let baseAddress = buffer.baseAddress else { return kCMBlockBufferNoErr }
-            return CMBlockBufferCreateWithMemoryBlock(
-                allocator: kCFAllocatorDefault,
-                memoryBlock: UnsafeMutableRawPointer(mutating: baseAddress),
-                blockLength: avccNalu.count,
-                blockAllocator: kCFAllocatorNull,
-                customBlockSource: nil,
-                offsetToData: 0,
-                dataLength: avccNalu.count,
-                flags: 0,
-                blockBufferOut: &blockBuffer
-            )
+        let memoryBlock = malloc(avccNalu.count)
+        guard let memoryBlock = memoryBlock else { return }
+        
+        avccNalu.withUnsafeBytes { buffer in
+            if let baseAddress = buffer.baseAddress {
+                memcpy(memoryBlock, baseAddress, avccNalu.count)
+            }
         }
+        
+        var blockBuffer: CMBlockBuffer?
+        let status = CMBlockBufferCreateWithMemoryBlock(
+            allocator: kCFAllocatorDefault,
+            memoryBlock: memoryBlock,
+            blockLength: avccNalu.count,
+            blockAllocator: kCFAllocatorMalloc, // CoreMedia akan me-release memori menggunakan free()
+            customBlockSource: nil,
+            offsetToData: 0,
+            dataLength: avccNalu.count,
+            flags: 0,
+            blockBufferOut: &blockBuffer
+        )
         
         guard status == kCMBlockBufferNoErr, let blockBuf = blockBuffer else { return }
         

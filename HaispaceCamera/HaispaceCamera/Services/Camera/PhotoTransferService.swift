@@ -99,9 +99,8 @@ actor PhotoTransferService {
                 // Beri jeda kecil agar iPad siap
                 try await Task.sleep(nanoseconds: 50_000_000) // 50ms
                 
-                // Kirim data penuh
-                let fullMsg = P2PMessage.photoFull(id: nextTransfer.photoId, fullData: nextTransfer.photoData)
-                try await P2PClientService.shared.sendData(fullMsg.encode())
+                // Kirim data penuh secara aman (TCP/MPC dual-mode send)
+                try await P2PClientService.shared.sendPhotoFull(id: nextTransfer.photoId, data: nextTransfer.photoData)
                 
                 HaispaceLogger.info("Full quality terkirim: \(nextTransfer.photoId)", category: "p2p")
             } catch {

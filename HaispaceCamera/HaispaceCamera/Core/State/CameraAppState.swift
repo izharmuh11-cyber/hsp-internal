@@ -69,6 +69,7 @@ enum CameraThermalState: Int {
 // MARK: - CameraAppState
 
 @Observable
+@MainActor
 final class CameraAppState {
 
     // MARK: State

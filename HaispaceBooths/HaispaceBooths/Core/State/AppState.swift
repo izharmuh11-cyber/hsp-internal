@@ -18,6 +18,7 @@ import UIKit
 // MARK: - AppState
 
 @Observable
+@MainActor
 final class AppState {
 
     // MARK: - Sub-Stores (semua diinisialisasi di sini)

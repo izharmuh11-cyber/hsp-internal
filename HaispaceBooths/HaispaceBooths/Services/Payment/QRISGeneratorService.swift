@@ -96,41 +96,110 @@ final class QRISGeneratorService {
         return payload
     }
     
+    struct TLV {
+        let tag: String
+        var value: String
+    }
+    
+    private static func parseTLV(_ string: String) -> [TLV] {
+        var tlvs: [TLV] = []
+        var index = string.startIndex
+        while index < string.endIndex {
+            // Baca Tag (2 karakter)
+            guard let nextTagIndex = string.index(index, offsetBy: 2, limitedBy: string.endIndex) else { break }
+            let tag = String(string[index..<nextTagIndex])
+            index = nextTagIndex
+            
+            // Baca Length (2 karakter)
+            guard let nextLengthIndex = string.index(index, offsetBy: 2, limitedBy: string.endIndex) else { break }
+            let lengthStr = String(string[index..<nextLengthIndex])
+            guard let length = Int(lengthStr) else { break }
+            index = nextLengthIndex
+            
+            // Baca Value (panjang karakter sesuai length)
+            guard let nextValueIndex = string.index(index, offsetBy: length, limitedBy: string.endIndex) else { break }
+            let value = String(string[index..<nextValueIndex])
+            index = nextValueIndex
+            
+            tlvs.append(TLV(tag: tag, value: value))
+        }
+        return tlvs
+    }
+    
+    private static func encodeTLV(_ tlvs: [TLV]) -> String {
+        var result = ""
+        for tlv in tlvs {
+            let lengthStr = String(format: "%02d", tlv.value.count)
+            result += tlv.tag + lengthStr + tlv.value
+        }
+        return result
+    }
+
     /// Menginjeksi nominal ke dalam QRIS string EMVCo statis dan menghitung ulang CRC16
     static func generate(from merchantString: String, amount: Int, transactionId: String) throws -> String {
         guard amount > 0 else { throw QRISGeneratorError.invalidMerchantData }
-        var base = merchantString
         
-        // 1. Ubah field "010211" (static) ke "010212" (dynamic)
-        base = base.replacingOccurrences(of: "010211", with: "010212")
+        // Parse raw merchant string ke struktur TLV
+        var tlvs = parseTLV(merchantString)
         
-        // 2. Inject field 54 (Transaction Amount) sebelum tag 58 (Country Code)
-        let amountStr = String(amount)
-        let amountField = "54\(String(format: "%02d", amountStr.count))\(amountStr)"
-        
-        if let range = base.range(of: "5802") {
-            base.insert(contentsOf: amountField, at: range.lowerBound)
+        // 1. Ubah Tag "01" (Point of Initiation Method) dari "11" (Static) ke "12" (Dynamic)
+        if let idx = tlvs.firstIndex(where: { $0.tag == "01" }) {
+            if tlvs[idx].value == "11" {
+                tlvs[idx].value = "12"
+            }
         } else {
-            throw QRISGeneratorError.invalidMerchantData
+            if let idx00 = tlvs.firstIndex(where: { $0.tag == "00" }) {
+                tlvs.insert(TLV(tag: "01", value: "12"), at: idx00 + 1)
+            } else {
+                tlvs.insert(TLV(tag: "01", value: "12"), at: 0)
+            }
         }
         
-        // 3. Inject field 62 (Additional Data / Bill Number) sebelum tag 63 (CRC, "6304")
+        // 2. Set/Update Tag "54" (Transaction Amount)
+        let amountStr = String(amount)
+        if let idx = tlvs.firstIndex(where: { $0.tag == "54" }) {
+            tlvs[idx].value = amountStr
+        } else {
+            // Sisipkan Tag 54 sebelum Tag 58 (Country Code) jika ada, jika tidak sebelum Tag 59, dll.
+            if let idx58 = tlvs.firstIndex(where: { $0.tag == "58" }) {
+                tlvs.insert(TLV(tag: "54", value: amountStr), at: idx58)
+            } else if let idx59 = tlvs.firstIndex(where: { $0.tag == "59" }) {
+                tlvs.insert(TLV(tag: "54", value: amountStr), at: idx59)
+            } else {
+                if let idx63 = tlvs.firstIndex(where: { $0.tag == "63" }) {
+                    tlvs.insert(TLV(tag: "54", value: amountStr), at: idx63)
+                } else {
+                    tlvs.append(TLV(tag: "54", value: amountStr))
+                }
+            }
+        }
+        
+        // 3. Set/Update Tag "62" (Additional Data / Bill Number)
         let billNumberVal = "01\(String(format: "%02d", transactionId.count))\(transactionId)"
-        let field62 = "62\(String(format: "%02d", billNumberVal.count))\(billNumberVal)"
-        
-        if let range = base.range(of: "6304") {
-            base.insert(contentsOf: field62, at: range.lowerBound)
+        if let idx = tlvs.firstIndex(where: { $0.tag == "62" }) {
+            tlvs[idx].value = billNumberVal
+        } else {
+            if let idx63 = tlvs.firstIndex(where: { $0.tag == "63" }) {
+                tlvs.insert(TLV(tag: "62", value: billNumberVal), at: idx63)
+            } else {
+                tlvs.append(TLV(tag: "62", value: billNumberVal))
+            }
         }
         
-        // Hapus 4 karakter CRC lama dan tambahkan prefix "6304"
-        let withoutCRC = String(base.dropLast(4))
-        let targetPayload = withoutCRC.hasSuffix("6304") ? withoutCRC : withoutCRC + "6304"
+        // 4. Hapus Tag 63 lama (jika ada) untuk dihitung ulang
+        tlvs.removeAll(where: { $0.tag == "63" })
+        
+        // Encode kembali seluruh TLV ke format String
+        var basePayload = encodeTLV(tlvs)
+        
+        // Tambahkan Tag 63 dengan length 04 untuk dihitung checksum-nya
+        basePayload += "6304"
         
         // Hitung CRC16-CCITT
-        let crc = calculateCRC16(data: Array(targetPayload.utf8))
+        let crc = calculateCRC16(data: Array(basePayload.utf8))
         let crcHex = String(format: "%04X", crc)
         
-        return targetPayload + crcHex
+        return basePayload + crcHex
     }
     
     // MARK: - CRC16 CCITT-False Implementation
