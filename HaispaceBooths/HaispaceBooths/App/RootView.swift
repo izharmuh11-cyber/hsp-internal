@@ -38,13 +38,13 @@ struct RootView: View {
             // App masih loading (setup belum selesai)
             SplashView()
 
+        } else if appState.license.status == .suspended || appState.license.status == .invalid(reason: .checksumMismatch) {
+            // Jailbreak terdeteksi atau lisensi dicabut (fatal)
+            FatalErrorPlaceholderView()
+
         } else if case .invalid = appState.license.status {
             // Lisensi tidak valid — perlu aktivasi
             LicensePlaceholderView()
-
-        } else if case .fatal = appState.license.status {
-            // Jailbreak terdeteksi atau lisensi dicabut
-            FatalErrorPlaceholderView()
 
         } else if !appState.auth.isLoggedIn {
             // Operator belum login
