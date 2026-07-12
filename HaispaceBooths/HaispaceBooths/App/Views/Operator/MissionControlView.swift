@@ -15,6 +15,9 @@ struct MissionControlView: View {
     // Animate slide in/out
     @State private var offset: CGFloat = 400
     
+    // Pairing setup presentation
+    @State private var isShowingPairingSetup = false
+    
     var body: some View {
         ZStack {
             // Invisible background to close when tapped outside
@@ -86,6 +89,9 @@ struct MissionControlView: View {
                 }
             }
         }
+        .fullScreenCover(isPresented: $isShowingPairingSetup) {
+            PairingSetupView()
+        }
     }
     
     private func close() {
@@ -131,6 +137,10 @@ struct MissionControlView: View {
                         appState.currentSession?.reset()
                         appState.navigateTo(.landing)
                         close()
+                    }
+                    
+                    ActionButton(title: "Pairing QR", icon: "qrcode.viewfinder", color: .purple) {
+                        isShowingPairingSetup = true
                     }
                     
                     ActionButton(title: "Pause", icon: "pause.fill", color: .orange) {

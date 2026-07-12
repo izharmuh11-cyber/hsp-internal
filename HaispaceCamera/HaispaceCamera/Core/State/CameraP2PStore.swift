@@ -23,7 +23,18 @@ final class CameraP2PStore {
 
     // QR Pairing state
     var isScanning: Bool = false    // Apakah sedang scan QR?
-    var lastPairingPayload: QRPairingPayload?
+    var lastPairingPayload: QRPairingPayload? {
+        didSet {
+            saveLastPayload()
+        }
+    }
+
+    // Auto-reconnect
+    private let payloadKey = "hs_last_qr_payload"
+
+    init() {
+        loadLastPayload()
+    }
 
     // MARK: Computed
 
@@ -68,6 +79,26 @@ final class CameraP2PStore {
     @MainActor
     func stopScanning() {
         isScanning = false
+    }
+
+    // MARK: - Auto-Reconnect Persistence
+
+    private func saveLastPayload() {
+        guard let payload = lastPairingPayload else {
+            UserDefaults.standard.removeObject(forKey: payloadKey)
+            return
+        }
+        if let data = try? JSONEncoder().encode(payload) {
+            UserDefaults.standard.set(data, forKey: payloadKey)
+        }
+    }
+
+    private func loadLastPayload() {
+        guard let data = UserDefaults.standard.data(forKey: payloadKey),
+              let payload = try? JSONDecoder().decode(QRPairingPayload.self, from: data) else {
+            return
+        }
+        self.lastPairingPayload = payload
     }
 }
 

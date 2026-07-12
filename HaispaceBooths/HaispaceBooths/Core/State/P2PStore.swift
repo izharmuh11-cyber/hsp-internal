@@ -100,6 +100,12 @@ final class P2PStore {
     var tcpLocalPort: Int?
     var tcpRemoteIP: String?
 
+    // QR Payload & UUID
+    let peerUUID = UUID().uuidString
+    var currentQRPayload: QRPairingPayload?
+    private var qrRefreshTimer: Timer?
+    private var activeEventId: String?
+
     // MARK: Computed
 
     var isConnected: Bool {
@@ -163,5 +169,43 @@ final class P2PStore {
         let shortEventId = String(eventId.replacingOccurrences(of: "-", with: "").prefix(maxEventIdLength))
         mpcServiceType = "\(prefix)\(shortEventId)"
         HaispaceLogger.info("MPC service type set: \(mpcServiceType)", category: "p2p")
+    }
+
+    /// Generate dan mulai timer regenerasi QR Payload untuk event aktif
+    @MainActor
+    func startGeneratingQRPayload(eventId: String, ip: String, port: Int) {
+        activeEventId = eventId
+        tcpRemoteIP = ip
+        tcpLocalPort = port
+
+        generateNewQRPayload()
+
+        qrRefreshTimer?.invalidate()
+        // Regenerate tiap 4 menit 50 detik agar tidak pernah expired (expiry adalah 5 menit)
+        qrRefreshTimer = Timer.scheduledTimer(withTimeInterval: 290.0, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                self?.generateNewQRPayload()
+            }
+        }
+    }
+
+    @MainActor
+    func stopGeneratingQRPayload() {
+        qrRefreshTimer?.invalidate()
+        qrRefreshTimer = nil
+        currentQRPayload = nil
+        activeEventId = nil
+    }
+
+    @MainActor
+    private func generateNewQRPayload() {
+        guard let eventId = activeEventId else { return }
+        let ip = tcpRemoteIP ?? "0.0.0.0"
+        let port = tcpLocalPort ?? 0
+        let ts = Int64(Date().timeIntervalSince1970)
+        let sig = QRPairingPayload.generateSignature(peerId: peerUUID, ip: ip, port: port, eventId: eventId, ts: ts)
+
+        currentQRPayload = QRPairingPayload(v: 1, peerId: peerUUID, ip: ip, port: port, eventId: eventId, ts: ts, sig: sig)
+        HaispaceLogger.info("QR Payload diregenerate (expires in 5 min)", category: "p2p")
     }
 }

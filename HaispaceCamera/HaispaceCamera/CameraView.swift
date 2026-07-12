@@ -101,10 +101,55 @@ private struct CameraStandbyView: View {
                         }
                     }
                 }
+                
+                Spacer().frame(height: 20)
+                
+                // Scan QR Button
+                Button {
+                    cameraState.p2p.startScanning()
+                } label: {
+                    HStack {
+                        Image(systemName: "qrcode.viewfinder")
+                        Text("Scan QR Pairing")
+                    }
+                    .font(.title2.bold())
+                    .frame(width: 250, height: 60)
+                    .background(Color.blue)
+                    .foregroundStyle(.white)
+                    .clipShape(Capsule())
+                }
+                
+                if cameraState.p2p.connectionState == .connecting || cameraState.p2p.connectionState == .scanning {
+                    ProgressView("Menghubungkan...")
+                        .tint(.white)
+                        .foregroundStyle(.white)
+                }
             }
             .padding(40)
         }
         .preferredColorScheme(.dark)
+        .fullScreenCover(isPresented: Bindable(cameraState.p2p).isScanning) {
+            QRScannerView { codeString in
+                cameraState.p2p.stopScanning()
+                handleScannedCode(codeString)
+            } onCancel: {
+                cameraState.p2p.stopScanning()
+            }
+            .ignoresSafeArea()
+        }
+    }
+    
+    private func handleScannedCode(_ codeString: String) {
+        // Coba decode JSON dari QR string
+        guard let data = codeString.data(using: .utf8),
+              let payload = try? JSONDecoder().decode(QRPairingPayload.self, from: data) else {
+            cameraState.p2p.updateConnectionState(.failed(reason: "Format QR Tidak Valid"))
+            return
+        }
+        
+        // Mulai koneksi via P2PClientService
+        cameraState.p2p.lastPairingPayload = payload
+        P2PClientService.shared.connect(using: payload)
     }
 
     private func batteryIcon(_ level: Float) -> String {

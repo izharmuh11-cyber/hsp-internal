@@ -26,14 +26,16 @@ actor P2PClientService: NSObject {
     }
     
     /// Mulai mencari iPad host berdasarkan QR Code Payload
-    func connect(using payload: QRPairingPayload) {
-        // Validasi Payload
-        guard !payload.isExpired else {
-            HaispaceLogger.warning("QR Code sudah expired", category: "p2p")
-            Task {
-                if let callback = await self.onConnectionStateChange { callback(.failed(reason: "QR Expired")) }
+    func connect(using payload: QRPairingPayload, isAutoReconnect: Bool = false) {
+        // Validasi Payload (Skip jika auto-reconnect karena payload lama pasti expired)
+        if !isAutoReconnect {
+            guard !payload.isExpired else {
+                HaispaceLogger.warning("QR Code sudah expired", category: "p2p")
+                Task {
+                    if let callback = await self.onConnectionStateChange { callback(.failed(reason: "QR Expired")) }
+                }
+                return
             }
-            return
         }
         
         let signature = QRPairingPayload.generateSignature(
@@ -56,6 +58,14 @@ actor P2PClientService: NSObject {
             if let callback = await self.onConnectionStateChange { callback(.scanning) }
         }
         
+        // TODO: Coba TCP Socket terlebih dahulu menggunakan payload.ip dan payload.port.
+        // Jika TCP gagal dalam 3 detik, fallback ke MultipeerConnectivity di bawah ini.
+        HaispaceLogger.info("Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)", category: "p2p")
+        
+        startMPCFallback(payload: payload)
+    }
+    
+    private func startMPCFallback(payload: QRPairingPayload) {
         // Setup Session
         session = MCSession(peer: peerID, securityIdentity: nil, encryptionPreference: .required)
         session?.delegate = self
@@ -68,7 +78,7 @@ actor P2PClientService: NSObject {
         browser?.startBrowsingForPeers()
         isBrowsing = true
         
-        HaispaceLogger.info("Mulai browse P2P untuk service: \(serviceType)", category: "p2p")
+        HaispaceLogger.info("Mulai browse P2P (MPC Fallback) untuk service: \(serviceType)", category: "p2p")
     }
     
     func disconnect() {
