@@ -684,7 +684,7 @@ struct ActiveSessionView: View {
                         HStack(spacing: 6) {
                             Image(systemName: "person.2.fill")
                                 .font(.system(size: 11, weight: .bold))
-                            Text("Antrian #\(String(format: "%03d", s.queueNumber ?? 1))")
+                            Text("Antrian #\(String(format: "%03d", s.guest.queueNumber))")
                                 .font(.system(size: 12, weight: .bold, design: .rounded))
                         }
                         .padding(.horizontal, 12)
