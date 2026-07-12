@@ -134,7 +134,7 @@ final class StreamingDecoderService {
         
         if sampleStatus == noErr, let sampleBuf = sampleBuffer {
             // Pastikan buffer siap dirender as soon as possible
-            if let attachments = CMSampleBufferGetSampleAttachmentsArray(sampleBuf, createIfNecessary: true) as? NSArray,
+            if let attachments = CMSampleBufferGetSampleAttachmentsArray(sampleBuf, createIfNecessary: true) as NSArray?,
                let dict = attachments.firstObject as? NSMutableDictionary {
                 dict[kCMSampleAttachmentKey_DisplayImmediately as String] = true
             }

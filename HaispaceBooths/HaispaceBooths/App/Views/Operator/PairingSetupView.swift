@@ -9,6 +9,7 @@ import CoreImage.CIFilterBuiltins
 
 struct PairingSetupView: View {
     @Environment(AppState.self) private var appState
+    @Environment(\.dismiss) private var dismiss
     
     // Timer state untuk visualisasi (max 5 menit / 300 detik)
     // Di P2PStore regenerasi di set ke 290 detik
@@ -115,7 +116,7 @@ struct PairingSetupView: View {
                 // Navigation Actions
                 HStack(spacing: 24) {
                     Button(role: .cancel) {
-                        appState.navigateTo(.missionControl)
+                        dismiss()
                     } label: {
                         Text("Kembali")
                             .font(.title3.bold())
@@ -126,7 +127,7 @@ struct PairingSetupView: View {
                     }
                     
                     Button {
-                        appState.navigateTo(.missionControl)
+                        dismiss()
                     } label: {
                         Text("Lanjutkan")
                             .font(.title3.bold())
@@ -156,7 +157,7 @@ struct PairingSetupView: View {
     
     private func setupQRGeneration() {
         // Buat dummy eventId jika tidak ada session, atau gunakan ID session aktif
-        let eventId = appState.currentSession?.id ?? "TEST-EVENT-\(Int.random(in: 1000...9999))"
+        let eventId = appState.currentSession?.sessionId ?? "TEST-EVENT-\(Int.random(in: 1000...9999))"
         // Ambil Local IP iPad. (Dalam environment riil, gunakan logic get IP, di sini fallback dummy / 0.0.0.0)
         let localIp = "0.0.0.0"
         let randomPort = Int.random(in: 50000...60000)

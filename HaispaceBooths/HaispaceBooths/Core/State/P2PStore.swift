@@ -82,7 +82,7 @@ enum SignalQuality {
 // MARK: - P2PStore
 
 @Observable
-final class P2PStore {
+final class P2PStore: @unchecked Sendable {
 
     // MARK: State
     var connectionState: P2PConnectionState = .disconnected
