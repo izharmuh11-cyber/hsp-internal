@@ -14,7 +14,7 @@ def sync_project(project_path, source_dir, target_name)
   # Find all .swift files in the source directory
   swift_files = []
   Find.find(File.expand_path(source_dir)) do |path|
-    swift_files << path if path =~ /.*\.swift$/
+    swift_files << path.gsub('\\', '/') if path =~ /.*\.swift$/
   end
   
   puts "Found #{swift_files.count} .swift files."
