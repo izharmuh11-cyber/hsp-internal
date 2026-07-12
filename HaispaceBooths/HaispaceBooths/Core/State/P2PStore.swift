@@ -246,7 +246,7 @@ final class P2PStore: @unchecked Sendable {
                     } else if case .disconnected = state {
                         GitHubLogUploader.uploadLatestLog(eventName: "tcp_disconnected")
                     } else if case .failed(let err) = state {
-                        let cleanErr = err.localizedDescription.replacingOccurrences(of: " ", with: "_")
+                        let cleanErr = err.replacingOccurrences(of: " ", with: "_")
                         GitHubLogUploader.uploadLatestLog(eventName: "tcp_failed_\(cleanErr)")
                     }
                 }
