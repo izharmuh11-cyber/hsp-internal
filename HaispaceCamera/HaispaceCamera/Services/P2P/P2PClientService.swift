@@ -91,9 +91,13 @@ actor P2PClientService: NSObject {
         self.cancelTimeoutTask()
         
         let timeoutTask = Task { [weak self] in
-            try? await Task.sleep(nanoseconds: 3_000_000_000) // 3 seconds
-            guard let self = self else { return }
-            await self.triggerFallback(payload: payload)
+            do {
+                try await Task.sleep(nanoseconds: 3_000_000_000) // 3 seconds
+                guard let self = self else { return }
+                await self.triggerFallback(payload: payload)
+            } catch {
+                // Task was cancelled, do nothing
+            }
         }
         self.tcpTimeoutTask = timeoutTask
         
