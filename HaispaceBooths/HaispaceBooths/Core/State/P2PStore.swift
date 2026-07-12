@@ -206,14 +206,18 @@ final class P2PStore: @unchecked Sendable {
         qrRefreshTimer?.invalidate()
         qrRefreshTimer = nil
         currentQRPayload = nil
-        activeEventId = nil
         
-        outgoingMessageTask?.cancel()
-        outgoingMessageTask = nil
-        
-        Task {
-            await LocalTCPRouterService.shared.stopHosting()
-            await MultipeerService.shared.stopHosting()
+        if !isConnected {
+            activeEventId = nil
+            outgoingMessageTask?.cancel()
+            outgoingMessageTask = nil
+            
+            Task {
+                await LocalTCPRouterService.shared.stopHosting()
+                await MultipeerService.shared.stopHosting()
+            }
+        } else {
+            HaispaceLogger.info("Koneksi aktif terdeteksi. Menjaga hosting TCP & MPC tetap berjalan.", category: "p2p")
         }
     }
 
