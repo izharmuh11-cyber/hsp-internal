@@ -100,8 +100,9 @@ extension MultipeerService: MCSessionDelegate {
         Task {
             await self.onDataReceived?(data)
             
-            // Coba decode data sebagai P2PMessage dan arahkan ke router
-            if let message = try? P2PMessage.decode(from: data) {
+            if data.count > 4 && data[0] == 0 && data[1] == 0 && data[2] == 0 && data[3] == 1 {
+                await StreamingDecoderService.shared.enqueue(nalu: data)
+            } else if let message = try? P2PMessage.decode(from: data) {
                 await P2PMessageRouter.shared.route(message)
             }
         }

@@ -199,6 +199,8 @@ final class CameraAppState {
         batteryLevel = UIDevice.current.batteryLevel
         thermalState = CameraThermalState.from(ProcessInfo.processInfo.thermalState)
         
+        setupCameraPipeline()
+        
         // Setup connection callbacks
         await P2PClientService.shared.registerConnectionStateCallback { [weak self] state in
             Task { @MainActor in
@@ -206,6 +208,7 @@ final class CameraAppState {
                 switch state {
                 case .connected:
                     self?.cameraStatus = .paired
+                    self?.updateStreamingState()
                     // Haptic feedback sukses
                     let generator = UINotificationFeedbackGenerator()
                     generator.notificationOccurred(.success)
@@ -216,12 +219,14 @@ final class CameraAppState {
                     }
                 case .disconnected:
                     self?.cameraStatus = .standby
+                    self?.updateStreamingState()
                     // Mulai proses menghubungkan kembali (auto-reconnect)
                     if let payload = self?.p2p.lastPairingPayload {
                         self?.p2p.startReconnection(payload: payload)
                     }
                 case .failed(let reason):
                     self?.cameraStatus = .standby
+                    self?.updateStreamingState()
                     // Haptic feedback error
                     let generator = UINotificationFeedbackGenerator()
                     generator.notificationOccurred(.error)
@@ -238,7 +243,82 @@ final class CameraAppState {
             }
         }
         
+        // Setup data message callback
+        await P2PClientService.shared.registerDataCallback { [weak self] data in
+            guard let message = try? P2PMessage.decode(from: data) else { return }
+            Task { @MainActor in
+                self?.handleIncomingMessage(message)
+            }
+        }
+        
         HaispaceLogger.info("HaiCamera setup selesai", category: "app")
+    }
+    
+    @MainActor
+    private func setupCameraPipeline() {
+        // Setup capture service callbacks
+        CameraCaptureService.shared.onVideoFrameCaptured = { sampleBuffer in
+            Task {
+                if let formatDesc = CMSampleBufferGetFormatDescription(sampleBuffer) {
+                    let dimensions = CMVideoFormatDescriptionGetDimensions(formatDesc)
+                    await VideoEncoderService.shared.configure(width: dimensions.width, height: dimensions.height)
+                }
+                await VideoEncoderService.shared.encode(sampleBuffer: sampleBuffer)
+            }
+        }
+        
+        CameraCaptureService.shared.onPhotoCaptured = { photo in
+            Task {
+                let photoId = UUID().uuidString
+                await PhotoTransferService.shared.handleNewCapture(photoId: photoId, capture: photo)
+            }
+        }
+        
+        // Setup encoder callback
+        Task {
+            await VideoEncoderService.shared.setOnNALUReady { nalu in
+                Task {
+                    if await P2PClientService.shared.isConnected() {
+                        try? await P2PClientService.shared.sendData(nalu)
+                    }
+                }
+            }
+        }
+    }
+    
+    @MainActor
+    func updateStreamingState() {
+        switch cameraStatus {
+        case .paired, .sessionActive:
+            CameraCaptureService.shared.configureAndStart()
+        default:
+            CameraCaptureService.shared.stop()
+        }
+    }
+    
+    @MainActor
+    private func handleIncomingMessage(_ message: P2PMessage) {
+        switch message {
+        case .sessionStart(let config):
+            let cameraSession = CameraSessionInfo(
+                sessionId: config.sessionId,
+                packageDuration: config.totalDurationSeconds,
+                intervalSeconds: config.intervalSeconds,
+                photoCapturedCount: 0,
+                remainingSeconds: config.totalDurationSeconds
+            )
+            self.startSession(cameraSession)
+            
+        case .triggerCapture(_, let index):
+            HaispaceLogger.info("Menerima trigger jepret dari iPad (indeks: \(index))", category: "camera")
+            CameraCaptureService.shared.captureHighQualityPhoto()
+            
+        case .sessionEnd:
+            self.endSession()
+            
+        default:
+            break
+        }
     }
 }
 

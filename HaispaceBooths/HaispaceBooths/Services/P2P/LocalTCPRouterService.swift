@@ -134,7 +134,9 @@ actor LocalTCPRouterService {
                     // 3. Proses data
                     if let self = self {
                         await self.onDataReceived?(bodyData)
-                        if let message = try? P2PMessage.decode(from: bodyData) {
+                        if bodyData.count > 4 && bodyData[0] == 0 && bodyData[1] == 0 && bodyData[2] == 0 && bodyData[3] == 1 {
+                            await StreamingDecoderService.shared.enqueue(nalu: bodyData)
+                        } else if let message = try? P2PMessage.decode(from: bodyData) {
                             await P2PMessageRouter.shared.route(message)
                         }
                     }

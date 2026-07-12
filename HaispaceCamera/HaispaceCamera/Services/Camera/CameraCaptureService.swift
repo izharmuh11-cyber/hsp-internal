@@ -29,7 +29,15 @@ final class CameraCaptureService: NSObject {
     }
     
     func configureAndStart() {
-        guard !isConfigured else { return }
+        if isConfigured {
+            if !captureSession.isRunning {
+                Task.detached(priority: .userInitiated) {
+                    await self.captureSession.startRunning()
+                    HaispaceLogger.info("Camera capture session started (re-use)", category: "camera")
+                }
+            }
+            return
+        }
         
         // Membutuhkan izin kamera
         AVCaptureDevice.requestAccess(for: .video) { [weak self] granted in
@@ -101,7 +109,7 @@ final class CameraCaptureService: NSObject {
     func stop() {
         if captureSession.isRunning {
             captureSession.stopRunning()
-            isConfigured = false
+            HaispaceLogger.info("Camera capture session stopped", category: "camera")
         }
     }
 }

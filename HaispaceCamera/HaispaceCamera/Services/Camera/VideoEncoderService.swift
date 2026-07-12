@@ -20,6 +20,10 @@ actor VideoEncoderService {
     
     private init() {}
     
+    func setOnNALUReady(_ callback: @escaping (Data) -> Void) {
+        self.onNALUReady = callback
+    }
+    
     func configure(width: Int32, height: Int32) {
         guard !isConfigured else { return }
         
