@@ -11,10 +11,12 @@ struct LogViewerSheet: View {
     
     var body: some View {
         NavigationStack {
-            VStack {
+            VStack(spacing: 16) {
                 if logContent.isEmpty {
+                    Spacer()
                     Text("Log kosong atau tidak dapat dimuat.")
                         .foregroundStyle(.secondary)
+                    Spacer()
                 } else {
                     ScrollView {
                         Text(logContent)
@@ -22,6 +24,42 @@ struct LogViewerSheet: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding()
                     }
+                    .background(Color.black.opacity(0.2))
+                    .cornerRadius(12)
+                    .padding(.horizontal)
+                    
+                    // Tombol Aksi Utama yang Sangat Jelas di Bagian Bawah
+                    HStack(spacing: 16) {
+                        Button {
+                            UIPasteboard.general.string = logContent
+                        } label: {
+                            HStack {
+                                Image(systemName: "doc.on.doc.fill")
+                                Text("Salin Log")
+                            }
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(Color.blue.opacity(0.2))
+                            .foregroundStyle(.blue)
+                            .cornerRadius(12)
+                        }
+                        
+                        ShareLink(item: logContent) {
+                            HStack {
+                                Image(systemName: "square.and.arrow.up.fill")
+                                Text("Bagikan Log (Teks)")
+                            }
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(Color.green.opacity(0.2))
+                            .foregroundStyle(.green)
+                            .cornerRadius(12)
+                        }
+                    }
+                    .padding(.horizontal)
+                    .padding(.bottom, 16)
                 }
             }
             .navigationTitle("Log Sistem")
@@ -31,20 +69,6 @@ struct LogViewerSheet: View {
                     Button("Hapus Log", role: .destructive) {
                         LocalLogWriter.clearLog()
                         logContent = ""
-                    }
-                }
-                
-                ToolbarItem(placement: .topBarTrailing) {
-                    HStack(spacing: 16) {
-                        Button {
-                            UIPasteboard.general.string = logContent
-                        } label: {
-                            Image(systemName: "doc.on.doc")
-                        }
-                        
-                        ShareLink(item: logContent) {
-                            Image(systemName: "square.and.arrow.up")
-                        }
                     }
                 }
                 
