@@ -17,6 +17,7 @@ struct PairingSetupView: View {
     @State private var timer: Timer?
     
     @State private var isAnimating = false
+    @State private var isShowingLogViewer = false
     
     var body: some View {
         ZStack {
@@ -196,6 +197,27 @@ struct PairingSetupView: View {
                 }
                 .padding(.bottom, 60)
             }
+        }
+        .overlay(alignment: .topTrailing) {
+            Button {
+                isShowingLogViewer = true
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "doc.text.magnifyingglass")
+                    Text("Log Sistem")
+                        .font(.subheadline.weight(.semibold))
+                }
+                .foregroundStyle(.white.opacity(0.7))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(.ultraThinMaterial)
+                .clipShape(Capsule())
+            }
+            .padding(.top, 24)
+            .padding(.trailing, 32)
+        }
+        .sheet(isPresented: $isShowingLogViewer) {
+            LogViewerSheet()
         }
         .onAppear {
             isAnimating = true
