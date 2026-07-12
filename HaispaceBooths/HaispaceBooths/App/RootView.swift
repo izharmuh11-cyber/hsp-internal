@@ -23,44 +23,52 @@ struct RootView: View {
 
     var body: some View {
         Group {
-            if !appState.isAppReady {
-                // App masih loading (setup belum selesai)
-                SplashView()
-
-            } else if case .invalid = appState.license.status {
-                // Lisensi tidak valid — perlu aktivasi
-                LicensePlaceholderView()
-
-            } else if case .fatal = appState.license.status {
-                // Jailbreak terdeteksi atau lisensi dicabut
-                FatalErrorPlaceholderView()
-
-            } else if !appState.auth.isLoggedIn {
-                // Operator belum login
-                LoginPlaceholderView()
-
-            } else if !appState.boothConfig.isConfigured {
-                // Booth belum dikonfigurasi (pilih event)
-                BoothSetupPlaceholderView()
-
-            } else {
-                // Semua siap — tampilkan kiosk view
-                KioskRouterView()
-            }
-            
-            // MARK: - Operator Overlays
-            if appState.operatorState.isVerifyingPIN {
-                PINEntryView()
-                    .zIndex(100) // Paling atas
-            } else if appState.operatorState.isMissionControlVisible {
-                MissionControlView()
-                    .zIndex(99)
-            }
+            mainContent
+            operatorOverlay
         }
         .animation(.easeInOut(duration: 0.3), value: appState.auth.isLoggedIn)
         .animation(.easeInOut(duration: 0.3), value: appState.isAppReady)
         .animation(.spring, value: appState.operatorState.isVerifyingPIN)
         .animation(.spring, value: appState.operatorState.isMissionControlVisible)
+    }
+    
+    @ViewBuilder
+    private var mainContent: some View {
+        if !appState.isAppReady {
+            // App masih loading (setup belum selesai)
+            SplashView()
+
+        } else if case .invalid = appState.license.status {
+            // Lisensi tidak valid — perlu aktivasi
+            LicensePlaceholderView()
+
+        } else if case .fatal = appState.license.status {
+            // Jailbreak terdeteksi atau lisensi dicabut
+            FatalErrorPlaceholderView()
+
+        } else if !appState.auth.isLoggedIn {
+            // Operator belum login
+            LoginPlaceholderView()
+
+        } else if !appState.boothConfig.isConfigured {
+            // Booth belum dikonfigurasi (pilih event)
+            BoothSetupPlaceholderView()
+
+        } else {
+            // Semua siap — tampilkan kiosk view
+            KioskRouterView()
+        }
+    }
+    
+    @ViewBuilder
+    private var operatorOverlay: some View {
+        if appState.operatorState.isVerifyingPIN {
+            PINEntryView()
+                .zIndex(100) // Paling atas
+        } else if appState.operatorState.isMissionControlVisible {
+            MissionControlView()
+                .zIndex(99)
+        }
     }
 }
 
