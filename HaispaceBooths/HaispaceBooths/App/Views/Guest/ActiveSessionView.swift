@@ -61,6 +61,11 @@ struct ActiveSessionView: View {
     @State private var recommendedZoom: ZoomRecommendation? = nil
     @State private var isStreamLandscape: Bool = true
     
+    // Visual AE/AF Focus Indicator & Aurora States
+    @State private var focusTapPoint: CGPoint? = nil
+    @State private var showFocusIndicator: Bool = false
+    @State private var animateAurora: Bool = false
+    
     // Timer sesi dari SessionStore
     private var session: SessionStore? {
         appState.currentSession
@@ -68,7 +73,21 @@ struct ActiveSessionView: View {
     
     var body: some View {
         ZStack {
+            // Dynamic moving aurora background
             Color.black.ignoresSafeArea()
+            
+            ZStack {
+                RadialGradient(colors: [Color(hex: "#7C5CFC").opacity(0.12), .clear], center: .center, startRadius: 10, endRadius: 350)
+                    .scaleEffect(animateAurora ? 1.25 : 0.8)
+                    .offset(x: animateAurora ? -100 : 100, y: animateAurora ? -50 : 50)
+                
+                RadialGradient(colors: [Color(hex: "#00D9A0").opacity(0.08), .clear], center: .center, startRadius: 10, endRadius: 300)
+                    .scaleEffect(animateAurora ? 0.8 : 1.25)
+                    .offset(x: animateAurora ? 120 : -120, y: animateAurora ? 80 : -80)
+            }
+            .ignoresSafeArea()
+            .blur(radius: 40)
+            .allowsHitTesting(false)
             
             HStack(spacing: 0) {
                 // Main camera preview area
@@ -103,12 +122,42 @@ struct ActiveSessionView: View {
                                             await P2PMessageRouter.shared.route(.focusPoint(normalizedX: cleanX, normalizedY: cleanY))
                                         }
                                         
+                                        // Tampilkan indikator fokus visual kuning
+                                        self.focusTapPoint = value.location
+                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                                            self.showFocusIndicator = true
+                                        }
+                                        
+                                        // Sembunyikan setelah 1 detik
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                                            withAnimation(.easeOut(duration: 0.3)) {
+                                                self.showFocusIndicator = false
+                                            }
+                                        }
+                                        
                                         SessionFeedbackService.shared.triggerHaptic(style: .light)
                                     }
                             )
                     }
                     .aspectRatio(isStreamLandscape ? 16.0 / 9.0 : 9.0 / 16.0, contentMode: .fit)
-                    .ignoresSafeArea()
+                                    .ignoresSafeArea()
+                                    
+                                    // Visual AE/AF Focus Indicator (Pulsing yellow square)
+                                    if let focusPoint = focusTapPoint, showFocusIndicator {
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(Color(red: 255/255, green: 215/255, blue: 0/255), lineWidth: 1.5)
+                                            .frame(width: 60, height: 60)
+                                            .position(focusPoint)
+                                            .scaleEffect(showFocusIndicator ? 1.0 : 1.4)
+                                            .opacity(showFocusIndicator ? 1.0 : 0.0)
+                                            .overlay(
+                                                Circle()
+                                                    .fill(Color(red: 255/255, green: 215/255, blue: 0/255))
+                                                    .frame(width: 4, height: 4)
+                                                    .position(focusPoint)
+                                            )
+                                            .allowsHitTesting(false)
+                                    }
                     
                     // Corner Brackets Alignment Guide (Tampil tipis membantu tamu memposisikan diri)
                     CornerBracketsShape()
@@ -313,6 +362,14 @@ struct ActiveSessionView: View {
                 }
                 .frame(width: 140)
                 .background(.ultraThinMaterial)
+                .overlay(
+                    HStack {
+                        Rectangle()
+                            .fill(LinearGradient(colors: [.white.opacity(0.15), .clear], startPoint: .top, endPoint: .bottom))
+                            .frame(width: 1)
+                        Spacer()
+                    }
+                )
                 .ignoresSafeArea(edges: .vertical)
                 .transition(.move(edge: .trailing).combined(with: .opacity))
             }
@@ -408,6 +465,11 @@ struct ActiveSessionView: View {
                     self.currentPoseCategory = category
                     self.recommendedZoom = zoom
                 }
+            }
+            
+            // Mulai animasi aurora latar belakang
+            withAnimation(.easeInOut(duration: 8.0).repeatForever(autoreverses: true)) {
+                self.animateAurora = true
             }
             
             // Set callback untuk deteksi aspek rasio aliran video

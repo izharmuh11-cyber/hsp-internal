@@ -69,6 +69,14 @@ struct PoseGuidePanel: View {
             Rectangle()
                 .fill(.ultraThinMaterial)
                 .colorScheme(.dark)
+                .overlay(
+                    HStack {
+                        Rectangle()
+                            .fill(LinearGradient(colors: [.white.opacity(0.15), .clear], startPoint: .top, endPoint: .bottom))
+                            .frame(width: 1)
+                        Spacer()
+                    }
+                )
                 .ignoresSafeArea()
         )
     }
