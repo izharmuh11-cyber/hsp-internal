@@ -1,29 +1,22 @@
 // MissionControlView.swift
 // HaispaceBooths — App/Views/Operator
 //
-// Sidebar rahasia untuk operator (Mission Control).
-// Menampilkan status P2P, baterai, dan kontrol operasional.
-// Data finansial tidak ditampilkan di sini.
-//
-// Ref: docs/design/15_operator_panel.md
+// Sidebar panel kontrol utama untuk operator booth.
+// Menggunakan desain premium "Apple Control Center" dengan visual kelas dunia.
 
 import SwiftUI
 
 struct MissionControlView: View {
     @Environment(AppState.self) private var appState
+    @Environment(\.dismiss) private var dismiss
     
-    // Animate slide in/out
     @State private var offset: CGFloat = 400
-    
-    // Pairing setup presentation
     @State private var isShowingPairingSetup = false
-    
-    // Log viewer presentation
     @State private var isShowingLogViewer = false
     
     var body: some View {
         ZStack {
-            // Invisible background to close when tapped outside
+            // Background overlay (frosted glass behind sidebar)
             Color.black.opacity(0.4)
                 .ignoresSafeArea()
                 .onTapGesture {
@@ -33,23 +26,28 @@ struct MissionControlView: View {
             HStack {
                 Spacer()
                 
-                // Sidebar Content
+                // Sidebar Content (macOS Control Center Style)
                 VStack(alignment: .leading, spacing: 20) {
                     // Header
                     HStack {
+                        Image(systemName: "slider.horizontal.3")
+                            .font(.title3.bold())
+                            .foregroundStyle(Color(hex: "#7C5CFC"))
+                        
                         Text("MISSION CONTROL")
-                            .font(.headline)
-                            .foregroundStyle(.white.opacity(0.8))
+                            .font(.system(.headline, design: .rounded))
                             .tracking(2)
+                            .foregroundStyle(.white)
                         
                         Spacer()
                         
                         Button(action: close) {
                             Image(systemName: "xmark.circle.fill")
-                                .font(.title)
-                                .foregroundStyle(.white.opacity(0.5))
+                                .font(.title2)
+                                .foregroundStyle(.white.opacity(0.3))
                         }
                     }
+                    .padding(.bottom, 8)
                     
                     ScrollView(showsIndicators: false) {
                         scrollContent
@@ -57,33 +55,39 @@ struct MissionControlView: View {
                     
                     Spacer()
                     
-                    // Logout
+                    // Logout Shift Button
                     Button(action: {
                         appState.operatorState.swapOperator()
                     }) {
                         HStack {
                             Image(systemName: "arrow.rectangle.portrait.and.arrow.right")
+                                .font(.headline)
                             Text("Logout Shift")
+                                .font(.system(.headline, design: .rounded))
                         }
                         .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.red.opacity(0.2))
+                        .frame(height: 52)
+                        .background(Color.red.opacity(0.15))
                         .foregroundStyle(.red)
-                        .cornerRadius(12)
+                        .clipShape(Capsule())
                     }
                 }
                 .padding(24)
-                .frame(width: 400)
+                .frame(width: 420)
                 .frame(maxHeight: .infinity)
                 .background(
-                    Color(hex: "#1A1A24")
+                    Color(hex: "#0A0A10")
                         .opacity(0.95)
                         .ignoresSafeArea()
                 )
                 .overlay(
-                    Rectangle()
-                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                        .ignoresSafeArea()
+                    HStack {
+                        Rectangle()
+                            .fill(LinearGradient(colors: [Color.white.opacity(0.08), .clear], startPoint: .leading, endPoint: .trailing))
+                            .frame(width: 1)
+                        Spacer()
+                    }
+                    .ignoresSafeArea()
                 )
                 .offset(x: offset)
                 .onAppear {
@@ -112,17 +116,17 @@ struct MissionControlView: View {
     
     @ViewBuilder
     private var scrollContent: some View {
-        VStack(alignment: .leading, spacing: 32) {
+        VStack(alignment: .leading, spacing: 24) {
             
             // 1. STATUS PERANGKAT
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 12) {
                 SectionHeader(title: "STATUS PERANGKAT", icon: "antenna.radiowaves.left.and.right")
                 
-                HStack {
+                HStack(spacing: 12) {
                     StatusCard(
                         title: "HaiCamera",
                         value: "\(Int((appState.p2p.connectedPeerBatteryLevel ?? 0) * 100))%",
-                        icon: "iphone",
+                        icon: (appState.p2p.connectedPeerBatteryLevel ?? 0) > 0.2 ? "battery.100" : "battery.25",
                         color: (appState.p2p.connectedPeerBatteryLevel ?? 0) > 0.2 ? .green : .red
                     )
                     
@@ -136,10 +140,10 @@ struct MissionControlView: View {
             }
             
             // 2. QUICK ACTIONS
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 12) {
                 SectionHeader(title: "QUICK ACTIONS", icon: "bolt.fill")
                 
-                HStack(spacing: 12) {
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     ActionButton(title: "Reset Sesi", icon: "arrow.counterclockwise", color: .red) {
                         appState.currentSession?.reset()
                         appState.navigateTo(.landing)
@@ -163,7 +167,7 @@ struct MissionControlView: View {
             }
             
             // 3. FRAME AKTIF
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 12) {
                 SectionHeader(title: "FRAME AKTIF", icon: "photo.on.rectangle")
                 
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -171,39 +175,57 @@ struct MissionControlView: View {
                         FrameThumbnail(name: "Classic", isSelected: true)
                         FrameThumbnail(name: "Floral", isSelected: false)
                         
-                        // Tombol Impor
+                        // Import Button
                         Button(action: {}) {
-                            VStack {
+                            VStack(spacing: 8) {
                                 Image(systemName: "plus")
+                                    .font(.headline)
                                 Text("Impor")
-                                    .font(.caption)
+                                    .font(.caption.bold())
                             }
                             .frame(width: 80, height: 100)
-                            .background(Color.white.opacity(0.1))
-                            .cornerRadius(12)
-                            .foregroundStyle(.white)
+                            .background(Color.white.opacity(0.06))
+                            .cornerRadius(16)
+                            .foregroundStyle(.white.opacity(0.6))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                            )
                         }
                     }
+                    .padding(.vertical, 4)
                 }
             }
             
             // 4. KONTROL KAMERA
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 12) {
                 SectionHeader(title: "KONTROL KAMERA", icon: "camera.aperture")
                 
-                HStack(spacing: 16) {
-                    Button("Lock AE/AF") {
-                        // P2P trigger lock
+                VStack(spacing: 16) {
+                    HStack {
+                        Text("Lock AE/AF")
+                            .font(.system(.subheadline, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.8))
+                        
+                        Spacer()
+                        
+                        Button("Kunci") {
+                            // P2P trigger lock
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(Color(hex: "#7C5CFC"))
+                        .clipShape(Capsule())
                     }
-                    .buttonStyle(.bordered)
-                    .tint(.yellow)
                     
-                    Spacer()
+                    Divider()
+                        .background(Color.white.opacity(0.1))
                     
-                    HStack(spacing: 0) {
-                        Text("Zoom:")
-                            .foregroundStyle(.white.opacity(0.7))
-                            .padding(.trailing, 8)
+                    HStack {
+                        Text("Zoom")
+                            .font(.system(.subheadline, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.8))
+                        
+                        Spacer()
                         
                         Picker("Zoom", selection: .constant(1)) {
                             Text("1x").tag(1)
@@ -211,13 +233,20 @@ struct MissionControlView: View {
                             Text("3x").tag(3)
                         }
                         .pickerStyle(.segmented)
-                        .frame(width: 150)
+                        .frame(width: 160)
                     }
                 }
+                .padding(16)
+                .background(Color.white.opacity(0.05))
+                .cornerRadius(16)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                )
             }
             
             // 5. DIAGNOSTIK & LOGS
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 12) {
                 SectionHeader(title: "DIAGNOSTIK & LOGS", icon: "doc.text.magnifyingglass")
                 
                 HStack(spacing: 12) {
@@ -228,8 +257,9 @@ struct MissionControlView: View {
                             Image(systemName: "doc.plaintext")
                             Text("Lihat Log")
                         }
+                        .font(.system(.headline, design: .rounded))
                         .frame(maxWidth: .infinity)
-                        .padding()
+                        .frame(height: 48)
                         .background(Color.blue.opacity(0.15))
                         .foregroundStyle(.blue)
                         .cornerRadius(12)
@@ -240,8 +270,9 @@ struct MissionControlView: View {
                             Image(systemName: "square.and.arrow.up")
                             Text("Bagikan Log")
                         }
+                        .font(.system(.headline, design: .rounded))
                         .frame(maxWidth: .infinity)
-                        .padding()
+                        .frame(height: 48)
                         .background(Color.green.opacity(0.15))
                         .foregroundStyle(.green)
                         .cornerRadius(12)
@@ -259,12 +290,15 @@ private struct SectionHeader: View {
     let icon: String
     
     var body: some View {
-        HStack {
+        HStack(spacing: 8) {
             Image(systemName: icon)
+                .foregroundStyle(Color(hex: "#7C5CFC"))
             Text(title)
+                .foregroundStyle(.white.opacity(0.4))
+                .font(.system(size: 13, weight: .bold, design: .rounded))
+                .tracking(1.5)
         }
-        .font(.subheadline.bold())
-        .foregroundStyle(Color(hex: "#F5A623"))
+        .padding(.leading, 4)
     }
 }
 
@@ -275,22 +309,33 @@ private struct StatusCard: View {
     let color: Color
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Image(systemName: icon)
+                    .font(.title3)
                     .foregroundStyle(color)
+                Spacer()
+            }
+            
+            VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.caption)
-                    .foregroundStyle(.white.opacity(0.6))
+                    .foregroundStyle(.white.opacity(0.5))
+                
+                Text(value)
+                    .font(.system(.title3, design: .rounded))
+                    .bold()
+                    .foregroundStyle(.white)
             }
-            Text(value)
-                .font(.title2.bold())
-                .foregroundStyle(.white)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
+        .padding(16)
         .background(Color.white.opacity(0.05))
-        .cornerRadius(12)
+        .cornerRadius(16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+        )
     }
 }
 
@@ -302,17 +347,18 @@ private struct ActionButton: View {
     
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 8) {
+            HStack(spacing: 10) {
                 Image(systemName: icon)
-                    .font(.title2)
+                    .font(.headline)
                 Text(title)
-                    .font(.caption)
+                    .font(.system(.subheadline, design: .rounded))
+                    .bold()
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
-            .background(color.opacity(0.15))
+            .frame(maxWidth: .infinity, alignment: .center)
+            .frame(height: 52)
+            .background(color.opacity(0.12))
             .foregroundStyle(color)
-            .cornerRadius(12)
+            .cornerRadius(16)
         }
     }
 }
@@ -322,17 +368,19 @@ private struct FrameThumbnail: View {
     let isSelected: Bool
     
     var body: some View {
-        VStack {
+        VStack(spacing: 8) {
             Rectangle()
-                .fill(Color.gray.opacity(0.3))
+                .fill(Color.white.opacity(0.08))
                 .frame(width: 80, height: 100)
                 .overlay(
-                    isSelected ? RoundedRectangle(cornerRadius: 12).stroke(Color.green, lineWidth: 2) : nil
+                    isSelected ? RoundedRectangle(cornerRadius: 16).stroke(Color(hex: "#00D9A0"), lineWidth: 2.5) : nil
                 )
-                .cornerRadius(12)
+                .cornerRadius(16)
+                .shadow(color: isSelected ? Color(hex: "#00D9A0").opacity(0.2) : .clear, radius: 8)
+            
             Text(name)
-                .font(.caption)
-                .foregroundStyle(isSelected ? .green : .white.opacity(0.6))
+                .font(.caption.bold())
+                .foregroundStyle(isSelected ? Color(hex: "#00D9A0") : .white.opacity(0.5))
         }
     }
 }

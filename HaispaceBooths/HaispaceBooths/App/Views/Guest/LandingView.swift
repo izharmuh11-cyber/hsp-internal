@@ -2,56 +2,60 @@
 // HaispaceBooths — App/Views/Guest
 //
 // Layar standby awal (idle). Menampilkan branding Haispace dan instruksi tap.
-// Menggunakan desain "Cinematic Luxury Dark".
+// Menggunakan desain "Cinematic Luxury Dark" dengan standar visual premium Apple.
 
 import SwiftUI
 
 struct LandingView: View {
     @Environment(AppState.self) private var appState
     
+    @State private var isAnimating = false
     @State private var isPulsing = false
-    @State private var gradientRotation: Double = 0
     
     var body: some View {
         ZStack {
             // Background Terdalam
-            Color(hex: "#080810").ignoresSafeArea()
+            Color(hex: "#05050C").ignoresSafeArea()
             
-            // Aurora / Gradient Mesh Animation
-            AngularGradient(
-                gradient: Gradient(colors: [Color(hex: "#F5A623"), Color(hex: "#7C5CFC"), Color(hex: "#4F46E5"), Color(hex: "#F5A623")]),
-                center: .center,
-                angle: .degrees(gradientRotation)
-            )
-            .opacity(0.15)
-            .blur(radius: 80)
-            .ignoresSafeArea()
-            .onAppear {
-                withAnimation(.linear(duration: 20).repeatForever(autoreverses: false)) {
-                    gradientRotation = 360
-                }
-            }
+            // Premium Moving Ambient Glows (Apple TV Style)
+            Circle()
+                .fill(Color(hex: "#7C5CFC").opacity(0.18))
+                .blur(radius: 90)
+                .frame(width: 450, height: 450)
+                .offset(x: isAnimating ? 250 : -250, y: isAnimating ? -200 : 200)
             
-            VStack(spacing: 60) {
+            Circle()
+                .fill(Color(hex: "#00D9A0").opacity(0.12))
+                .blur(radius: 95)
+                .frame(width: 350, height: 350)
+                .offset(x: isAnimating ? -250 : 250, y: isAnimating ? 200 : -200)
+            
+            Circle()
+                .fill(Color(hex: "#4F46E5").opacity(0.15))
+                .blur(radius: 80)
+                .frame(width: 400, height: 400)
+                .offset(x: isAnimating ? 150 : -150, y: isAnimating ? 150 : -150)
+            
+            VStack(spacing: 50) {
                 Spacer()
                 
                 // Branding Header
-                VStack(spacing: 16) {
+                VStack(spacing: 20) {
                     Text("H A I S P A C E")
-                        .font(.system(size: 52, weight: .heavy, design: .rounded))
-                        .tracking(8)
+                        .font(.system(size: 64, weight: .heavy, design: .rounded))
+                        .tracking(10)
                         .foregroundStyle(.white)
-                        .shadow(color: Color(hex: "#7C5CFC").opacity(0.5), radius: 20, x: 0, y: 0)
+                        .shadow(color: Color(hex: "#7C5CFC").opacity(0.4), radius: 30)
                     
                     Text("The Premium Photobooth Experience")
-                        .font(.system(size: 20, weight: .regular, design: .default))
-                        .foregroundStyle(.white.opacity(0.6))
-                        .tracking(2)
+                        .font(.system(size: 20, weight: .medium, design: .default))
+                        .foregroundStyle(.white.opacity(0.5))
+                        .tracking(4)
                 }
                 
                 Spacer()
                 
-                // Call to Action
+                // Call to Action (Glassmorphism Buttons)
                 if appState.p2p.isConnected {
                     Button(action: {
                         withAnimation(.spring) {
@@ -60,30 +64,28 @@ struct LandingView: View {
                     }) {
                         VStack(spacing: 12) {
                             Image(systemName: "hand.tap.fill")
-                                .font(.system(size: 32))
+                                .font(.system(size: 36))
+                                .foregroundStyle(LinearGradient(colors: [Color(hex: "#7C5CFC"), Color(hex: "#00D9A0")], startPoint: .topLeading, endPoint: .bottomTrailing))
                             
                             Text("Sentuh untuk Mulai")
-                                .font(.system(size: 24, weight: .bold))
+                                .font(.system(size: 24, weight: .bold, design: .rounded))
+                                .foregroundStyle(.white)
                         }
-                        .padding(.vertical, 24)
-                        .padding(.horizontal, 48)
-                        .background(
-                            RoundedRectangle(cornerRadius: 30)
-                                .fill(Color(white: 1.0, opacity: 0.05))
-                        )
+                        .padding(.vertical, 28)
+                        .padding(.horizontal, 64)
+                        .background(.ultraThinMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
                         .overlay(
-                            RoundedRectangle(cornerRadius: 30)
+                            RoundedRectangle(cornerRadius: 32, style: .continuous)
                                 .stroke(
-                                    LinearGradient(colors: [Color(hex: "#F5A623"), Color(hex: "#7C5CFC")], startPoint: .topLeading, endPoint: .bottomTrailing),
-                                    lineWidth: 2
+                                    LinearGradient(colors: [.white.opacity(0.25), .white.opacity(0.05)], startPoint: .topLeading, endPoint: .bottomTrailing),
+                                    lineWidth: 1.5
                                 )
-                                .opacity(isPulsing ? 1.0 : 0.3)
                         )
-                        .foregroundColor(.white)
-                        .shadow(color: Color(hex: "#7C5CFC").opacity(isPulsing ? 0.6 : 0.2), radius: isPulsing ? 20 : 10)
+                        .shadow(color: Color(hex: "#7C5CFC").opacity(isPulsing ? 0.35 : 0.15), radius: isPulsing ? 25 : 15, y: 10)
                     }
                     .onAppear {
-                        withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
+                        withAnimation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true)) {
                             isPulsing = true
                         }
                     }
@@ -93,39 +95,56 @@ struct LandingView: View {
                     }) {
                         VStack(spacing: 12) {
                             Image(systemName: "camera.badge.ellipsis")
-                                .font(.system(size: 32))
+                                .font(.system(size: 36))
+                                .foregroundStyle(Color.orange)
                             
                             Text("Hubungkan Kamera")
-                                .font(.system(size: 24, weight: .bold))
+                                .font(.system(size: 24, weight: .bold, design: .rounded))
+                                .foregroundStyle(.white)
                         }
-                        .padding(.vertical, 24)
-                        .padding(.horizontal, 48)
-                        .background(
-                            RoundedRectangle(cornerRadius: 30)
-                                .fill(Color.orange.opacity(0.1))
-                        )
+                        .padding(.vertical, 28)
+                        .padding(.horizontal, 64)
+                        .background(.ultraThinMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
                         .overlay(
-                            RoundedRectangle(cornerRadius: 30)
-                                .stroke(Color.orange, lineWidth: 2)
+                            RoundedRectangle(cornerRadius: 32, style: .continuous)
+                                .stroke(
+                                    LinearGradient(colors: [Color.orange.opacity(0.4), .white.opacity(0.1)], startPoint: .topLeading, endPoint: .bottomTrailing),
+                                    lineWidth: 1.5
+                                )
                         )
-                        .foregroundColor(.orange)
-                        .shadow(color: Color.orange.opacity(0.4), radius: 15)
+                        .shadow(color: Color.orange.opacity(0.2), radius: 20, y: 10)
                     }
-                    .transition(.scale)
+                    .transition(.scale.combined(with: .opacity))
                 }
                 
-                Spacer().frame(height: 40)
+                Spacer()
                 
-                // Status Indikator (untuk operator)
-                HStack(spacing: 8) {
+                // Status Indikator (Dynamic Island style pill at the bottom)
+                HStack(spacing: 10) {
                     Circle()
-                        .fill(appState.p2p.connectionState == .connected ? .green : .orange)
+                        .fill(appState.p2p.connectionState == .connected ? Color.green : Color.orange)
                         .frame(width: 8, height: 8)
-                    Text(appState.p2p.connectionState == .connected ? "Kamera Siap" : "Menunggu Kamera...")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.4))
+                        .shadow(color: appState.p2p.connectionState == .connected ? Color.green : Color.orange, radius: 4)
+                    
+                    Text(appState.p2p.connectionState == .connected ? "Kamera Terhubung" : "Menunggu Sambungan Kamera")
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.6))
                 }
-                .padding(.bottom, 20)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 10)
+                .background(.ultraThinMaterial)
+                .clipShape(Capsule())
+                .overlay(
+                    Capsule()
+                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                )
+                .padding(.bottom, 32)
+            }
+        }
+        .onAppear {
+            withAnimation(.easeInOut(duration: 6).repeatForever(autoreverses: true)) {
+                isAnimating = true
             }
         }
     }
