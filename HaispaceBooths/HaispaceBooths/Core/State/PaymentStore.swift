@@ -144,7 +144,7 @@ final class PaymentStore {
             } catch {
                 HaispaceLogger.error(error)
                 await MainActor.run {
-                    self.status = .failed
+                    self.status = .failed(error.localizedDescription)
                 }
             }
         }

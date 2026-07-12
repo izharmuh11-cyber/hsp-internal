@@ -108,9 +108,9 @@ struct MissionControlView: View {
                 HStack {
                     StatusCard(
                         title: "HaiCamera",
-                        value: "\(Int(appState.p2p.iphoneBatteryLevel * 100))%",
+                        value: "\(Int((appState.p2p.connectedPeerBatteryLevel ?? 0) * 100))%",
                         icon: "iphone",
-                        color: appState.p2p.iphoneBatteryLevel > 0.2 ? .green : .red
+                        color: (appState.p2p.connectedPeerBatteryLevel ?? 0) > 0.2 ? .green : .red
                     )
                     
                     StatusCard(
