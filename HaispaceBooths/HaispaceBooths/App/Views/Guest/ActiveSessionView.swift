@@ -4,10 +4,8 @@
 // Layar sesi aktif pemotretan. Menampilkan live view dari iPhone
 // dengan countdown timer sinkron dan animasi flash shutter.
 
-import UIKit
 import SwiftUI
 import AVFoundation
-import AudioToolbox
 
 // MARK: - Streaming Video View (UIViewRepresentable)
 
@@ -359,11 +357,11 @@ struct ActiveSessionView: View {
                     
                     // Audio & Haptic feedback per detik countdown
                     if i == 1 {
-                        UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
-                        AudioServicesPlaySystemSound(SystemSoundID(1057)) // Beep
+                        SessionFeedbackService.shared.triggerHaptic(style: .heavy)
+                        SessionFeedbackService.shared.playCountdownTick()
                     } else {
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                        AudioServicesPlaySystemSound(SystemSoundID(1057)) // Beep
+                        SessionFeedbackService.shared.triggerHaptic(style: .medium)
+                        SessionFeedbackService.shared.playCountdownTick()
                     }
                 }
                 try? await Task.sleep(for: .seconds(1))
@@ -375,8 +373,8 @@ struct ActiveSessionView: View {
                 }
                 
                 // Suara Shutter & Heavy haptic saat memotret
-                AudioServicesPlaySystemSound(SystemSoundID(1108)) // Shutter click sound
-                UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+                SessionFeedbackService.shared.playShutterClick()
+                SessionFeedbackService.shared.triggerHaptic(style: .heavy)
                 
                 triggerCapture(replacePhotoId: replacePhotoId, sortOrder: sortOrder)
                 isCapturing = false

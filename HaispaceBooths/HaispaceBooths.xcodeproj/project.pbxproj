@@ -35,6 +35,7 @@
 		636E4DF4B79B910EBCABE27E /* FilterService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F20432D927303C3859E7A97 /* FilterService.swift */; };
 		688E4D3DAD0D9C5E20B9DA99 /* QRISGeneratorService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9FD4F898EB7A82BCB2C8D46 /* QRISGeneratorService.swift */; };
 		69F94A378128D777841DB422 /* CoreDataService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C59B4359803B91C0BD635CF2 /* CoreDataService.swift */; };
+		69F94A378128D777841DB423 /* SessionFeedbackService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C59B4359803B91C0BD635CF3 /* SessionFeedbackService.swift */; };
 		7115457CA83F4B47BE4D7D15 /* CapturedPhoto.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34ED45879A5906A3E3F82381 /* CapturedPhoto.swift */; };
 		7E44470283CB194155BAF355 /* FilterSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71A849A999647B8DB0C4739F /* FilterSelectionView.swift */; };
 		873944C0A56EECBCF6C86FFB /* P2PMessageRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 640F48279B0E6F7604AD706C /* P2PMessageRouter.swift */; };
@@ -114,6 +115,7 @@
 		C2E54487AEFE80E630C986AE /* NetworkUtility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NetworkUtility.swift; path = HaispaceBooths/Core/Network/NetworkUtility.swift; sourceTree = SOURCE_ROOT; };
 		C56240518E463A1920894C93 /* GuestInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = GuestInfo.swift; path = HaispaceBooths/Models/GuestInfo.swift; sourceTree = SOURCE_ROOT; };
 		C59B4359803B91C0BD635CF2 /* CoreDataService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CoreDataService.swift; path = HaispaceBooths/Services/Database/CoreDataService.swift; sourceTree = SOURCE_ROOT; };
+		C59B4359803B91C0BD635CF3 /* SessionFeedbackService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SessionFeedbackService.swift; path = HaispaceBooths/Services/Utility/SessionFeedbackService.swift; sourceTree = SOURCE_ROOT; };
 		C9C948A7AF25277B22C90702 /* PINEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PINEntryView.swift; path = HaispaceBooths/App/Views/Operator/PINEntryView.swift; sourceTree = SOURCE_ROOT; };
 		CEBA47C793B7C8DC8423CFCD /* RenderedPhoto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RenderedPhoto.swift; path = HaispaceBooths/Models/RenderedPhoto.swift; sourceTree = SOURCE_ROOT; };
 		D07E43039D5E64878E2A8F08 /* PaymentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PaymentView.swift; path = HaispaceBooths/App/Views/Guest/PaymentView.swift; sourceTree = SOURCE_ROOT; };
@@ -209,6 +211,7 @@
 				57E0484DB96158A01FFDE9A0 /* BackgroundSyncClient.swift */,
 				86C5404BA169BFA248F6FC05 /* CoreDataSchema.swift */,
 				C59B4359803B91C0BD635CF2 /* CoreDataService.swift */,
+				C59B4359803B91C0BD635CF3 /* SessionFeedbackService.swift */,
 				E2B8472B98693D947C717F0B /* BonjourDownloadServer.swift */,
 				9F484B76A261A92EC5BEF870 /* LocalTCPRouterService.swift */,
 				14A24D8C81575E82EDA3A1DA /* MultipeerService.swift */,
@@ -332,6 +335,7 @@
 				DAD944329986DA19591A6748 /* BackgroundSyncClient.swift in Sources */,
 				879B4B1B89D4BA900DA7137D /* CoreDataSchema.swift in Sources */,
 				69F94A378128D777841DB422 /* CoreDataService.swift in Sources */,
+				69F94A378128D777841DB423 /* SessionFeedbackService.swift in Sources */,
 				3C4440858942246225BBC7BF /* BonjourDownloadServer.swift in Sources */,
 				111840BCBCE3837BD63131A2 /* LocalTCPRouterService.swift in Sources */,
 				B55F45068E6F499C9EE935C0 /* MultipeerService.swift in Sources */,
