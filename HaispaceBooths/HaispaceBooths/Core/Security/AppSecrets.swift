@@ -5,7 +5,7 @@
 // Idealnya menggunakan CI/CD untuk menyuntikkan secrets.
 
 import Foundation
-import CommonCrypto
+import CryptoKit
 
 struct AppSecrets {
     static let qrPayloadSharedSecret = "hs_qr_secret_2026_x1y2z3"
@@ -18,16 +18,8 @@ struct HMACSHA256 {
             return ""
         }
         
-        var macData = [UInt8](repeating: 0, count: Int(CC_SHA256_DIGEST_LENGTH))
-        messageData.withUnsafeBytes { messageBytes in
-            keyData.withUnsafeBytes { keyBytes in
-                CCHmac(CCHmacAlgorithm(kCCHmacAlgSHA256),
-                       keyBytes.baseAddress, keyData.count,
-                       messageBytes.baseAddress, messageData.count,
-                       &macData)
-            }
-        }
-        
-        return macData.map { String(format: "%02x", $0) }.joined()
+        let symmetricKey = SymmetricKey(data: keyData)
+        let signature = HMAC<SHA256>.authenticationCode(for: messageData, using: symmetricKey)
+        return signature.compactMap { String(format: "%02x", $0) }.joined()
     }
 }
