@@ -1,258 +1,241 @@
+// CameraView.swift
+// HaispaceCamera
+//
+// Root view iPhone — menampilkan layar yang sesuai berdasarkan camera state.
+// Saat sesi aktif: LAYAR HITAM PENUH (tidak ada UI yang terlihat).
+// Saat standby: Tampilkan status minimal untuk operator.
+//
+// Ref: docs/design/22_haicamera_ux.md — Zero Chrome Camera Mode
+
 import SwiftUI
-import AVFoundation
 
-// MARK: - Camera View Model
-class CameraViewModel: NSObject, ObservableObject {
-    @Published var isSessionRunning = false
-    @Published var permissionGranted = false
-    @Published var capturedImage: UIImage?
-    @Published var countdown: Int? = nil
-    @Published var isCapturing = false
+// MARK: - Camera View
 
-    let session = AVCaptureSession()
-    private var photoOutput = AVCapturePhotoOutput()
-    private var countdownTimer: Timer?
-
-    override init() {
-        super.init()
-        checkPermission()
-    }
-
-    func checkPermission() {
-        switch AVCaptureDevice.authorizationStatus(for: .video) {
-        case .authorized:
-            permissionGranted = true
-            setupSession()
-        case .notDetermined:
-            AVCaptureDevice.requestAccess(for: .video) { [weak self] granted in
-                DispatchQueue.main.async {
-                    self?.permissionGranted = granted
-                    if granted { self?.setupSession() }
-                }
-            }
-        default:
-            permissionGranted = false
-        }
-    }
-
-    func setupSession() {
-        session.beginConfiguration()
-        session.sessionPreset = .photo
-
-        // Gunakan kamera belakang (kualitas terbaik untuk photobooth)
-        guard let device = AVCaptureDevice.default(.builtInWideAngleCamera,
-                                                    for: .video,
-                                                    position: .back),
-              let input = try? AVCaptureDeviceInput(device: device),
-              session.canAddInput(input) else {
-            session.commitConfiguration()
-            return
-        }
-
-        session.addInput(input)
-
-        if session.canAddOutput(photoOutput) {
-            session.addOutput(photoOutput)
-            photoOutput.maxPhotoQualityPrioritization = .quality
-        }
-
-        session.commitConfiguration()
-
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            self?.session.startRunning()
-            DispatchQueue.main.async {
-                self?.isSessionRunning = true
-            }
-        }
-    }
-
-    // MARK: - Countdown & Capture
-    func startCountdown() {
-        guard !isCapturing else { return }
-        isCapturing = true
-        countdown = 3
-
-        countdownTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] timer in
-            guard let self = self else { timer.invalidate(); return }
-            if let current = self.countdown {
-                if current <= 1 {
-                    timer.invalidate()
-                    self.countdown = nil
-                    self.capturePhoto()
-                } else {
-                    self.countdown = current - 1
-                }
-            }
-        }
-    }
-
-    private func capturePhoto() {
-        let settings = AVCapturePhotoSettings()
-        settings.photoQualityPrioritization = .quality
-        photoOutput.capturePhoto(with: settings, delegate: self)
-    }
-
-    func resetCapture() {
-        capturedImage = nil
-        isCapturing = false
-        countdown = nil
-    }
-}
-
-// MARK: - Photo Capture Delegate
-extension CameraViewModel: AVCapturePhotoCaptureDelegate {
-    func photoOutput(_ output: AVCapturePhotoOutput,
-                     didFinishProcessingPhoto photo: AVCapturePhoto,
-                     error: Error?) {
-        guard error == nil,
-              let data = photo.fileDataRepresentation(),
-              let image = UIImage(data: data) else { return }
-        DispatchQueue.main.async {
-            self.capturedImage = image
-            self.isCapturing = false
-        }
-    }
-}
-
-// MARK: - Camera Preview Layer
-struct CameraPreview: UIViewRepresentable {
-    let session: AVCaptureSession
-
-    func makeUIView(context: Context) -> UIView {
-        let view = UIView(frame: .zero)
-        let previewLayer = AVCaptureVideoPreviewLayer(session: session)
-        previewLayer.videoGravity = .resizeAspectFill
-        previewLayer.frame = UIScreen.main.bounds
-        view.layer.addSublayer(previewLayer)
-        return view
-    }
-
-    func updateUIView(_ uiView: UIView, context: Context) {
-        if let layer = uiView.layer.sublayers?.first as? AVCaptureVideoPreviewLayer {
-            layer.frame = uiView.bounds
-        }
-    }
-}
-
-// MARK: - Camera View UI
 struct CameraView: View {
-    @StateObject private var viewModel = CameraViewModel()
+
+    @Environment(CameraAppState.self) private var cameraState
+
+    var body: some View {
+        Group {
+            switch cameraState.cameraStatus {
+
+            case .standby:
+                // Layar minimal — menunggu pairing
+                CameraStandbyView()
+
+            case .paired:
+                // Terhubung ke iPad — menunggu perintah sesi
+                CameraPairedView()
+
+            case .sessionActive:
+                // LAYAR HITAM — kamera mengambil foto di background
+                CameraBlackScreenView()
+
+            case .sessionEnded:
+                // Layar selesai — transisi kembali ke paired
+                CameraSessionEndedView()
+
+            case .error(let msg):
+                CameraErrorView(message: msg)
+            }
+        }
+        .animation(.easeInOut(duration: 0.5), value: cameraState.isSessionActive)
+    }
+}
+
+// MARK: - Standby View (Belum Paired)
+
+private struct CameraStandbyView: View {
+    @Environment(CameraAppState.self) private var cameraState
 
     var body: some View {
         ZStack {
-            // Background hitam
             Color.black.ignoresSafeArea()
 
-            if viewModel.permissionGranted {
-                // Live Preview
-                CameraPreview(session: viewModel.session)
-                    .ignoresSafeArea()
+            VStack(spacing: 32) {
+                // Logo minimal
+                VStack(spacing: 8) {
+                    Image(systemName: "camera.circle.fill")
+                        .font(.system(size: 64))
+                        .foregroundStyle(.white.opacity(0.8))
+                        .symbolEffect(.pulse, options: .repeating)
 
-                // Overlay UI
-                VStack {
-                    // Header
-                    HStack {
-                        Text("HAISPACE")
-                            .font(.system(size: 14, weight: .black, design: .rounded))
-                            .foregroundColor(.white)
-                            .tracking(6)
-                        Spacer()
-                        Text("CAMERA")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(.white.opacity(0.6))
-                            .tracking(4)
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.top, 60)
-
-                    Spacer()
-
-                    // Countdown
-                    if let count = viewModel.countdown {
-                        Text("\(count)")
-                            .font(.system(size: 120, weight: .black, design: .rounded))
-                            .foregroundColor(.white)
-                            .shadow(color: .black.opacity(0.5), radius: 20)
-                            .transition(.scale)
-                            .animation(.spring(response: 0.3), value: count)
-                    }
-
-                    Spacer()
-
-                    // Captured Photo Preview
-                    if let image = viewModel.capturedImage {
-                        Image(uiImage: image)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(height: 120)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.white, lineWidth: 2)
-                            )
-                            .padding(.bottom, 8)
-                    }
-
-                    // Bottom Controls
-                    HStack(spacing: 40) {
-                        // Retake Button
-                        if viewModel.capturedImage != nil {
-                            Button {
-                                viewModel.resetCapture()
-                            } label: {
-                                Image(systemName: "arrow.counterclockwise")
-                                    .font(.system(size: 22, weight: .medium))
-                                    .foregroundColor(.white)
-                                    .frame(width: 56, height: 56)
-                                    .background(.ultraThinMaterial)
-                                    .clipShape(Circle())
-                            }
-                        }
-
-                        // Shutter Button
-                        Button {
-                            if viewModel.capturedImage == nil {
-                                viewModel.startCountdown()
-                            }
-                        } label: {
-                            ZStack {
-                                Circle()
-                                    .fill(Color.white)
-                                    .frame(width: 80, height: 80)
-                                Circle()
-                                    .stroke(Color.white.opacity(0.4), lineWidth: 3)
-                                    .frame(width: 92, height: 92)
-                            }
-                        }
-                        .disabled(viewModel.isCapturing || viewModel.capturedImage != nil)
-                        .opacity(viewModel.isCapturing ? 0.5 : 1.0)
-                    }
-                    .padding(.bottom, 50)
+                    Text("HaiCamera")
+                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
                 }
 
-            } else {
-                // Permission Denied State
-                VStack(spacing: 20) {
-                    Image(systemName: "camera.fill")
-                        .font(.system(size: 60))
-                        .foregroundColor(.white.opacity(0.3))
-                    Text("Izin Kamera Diperlukan")
-                        .font(.title2.bold())
-                        .foregroundColor(.white)
-                    Text("Buka Settings → Privacy → Camera\ndan izinkan Haispace Camera")
-                        .multilineTextAlignment(.center)
-                        .foregroundColor(.white.opacity(0.6))
-                        .font(.body)
-                    Button("Buka Settings") {
-                        if let url = URL(string: UIApplication.openSettingsURLString) {
-                            UIApplication.shared.open(url)
+                // Status
+                VStack(spacing: 8) {
+                    HStack(spacing: 8) {
+                        Circle()
+                            .fill(.orange)
+                            .frame(width: 8, height: 8)
+                        Text("Menunggu pairing dengan HaiBooth (iPad)")
+                            .font(.callout)
+                            .foregroundStyle(.white.opacity(0.7))
+                    }
+
+                    Text("Buka HaiBooth → Setup → Scan QR")
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.4))
+                }
+
+                // Battery & Thermal status (untuk operator)
+                HStack(spacing: 24) {
+                    HStack(spacing: 4) {
+                        Image(systemName: batteryIcon(cameraState.batteryLevel))
+                            .foregroundStyle(batteryColor(cameraState.batteryLevel))
+                        Text("\(Int(cameraState.batteryLevel * 100))%")
+                            .font(.caption)
+                            .foregroundStyle(.white.opacity(0.5))
+                    }
+
+                    if cameraState.thermalState != .nominal {
+                        HStack(spacing: 4) {
+                            Image(systemName: "thermometer.medium")
+                                .foregroundStyle(.orange)
+                            Text(cameraState.thermalState.displayText)
+                                .font(.caption)
+                                .foregroundStyle(.orange)
                         }
                     }
-                    .buttonStyle(.borderedProminent)
                 }
-                .padding()
+            }
+            .padding(40)
+        }
+        .preferredColorScheme(.dark)
+    }
+
+    private func batteryIcon(_ level: Float) -> String {
+        switch level {
+        case 0.0..<0.1: return "battery.0"
+        case 0.1..<0.3: return "battery.25"
+        case 0.3..<0.6: return "battery.50"
+        case 0.6..<0.9: return "battery.75"
+        default: return "battery.100"
+        }
+    }
+
+    private func batteryColor(_ level: Float) -> Color {
+        switch level {
+        case 0.0..<0.15: return .red
+        case 0.15..<0.30: return .orange
+        default: return .white.opacity(0.5)
+        }
+    }
+}
+
+// MARK: - Paired View (Terhubung, Menunggu Sesi)
+
+private struct CameraPairedView: View {
+    @Environment(CameraAppState.self) private var cameraState
+
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            VStack(spacing: 20) {
+                // Status indicator
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(.green)
+                        .frame(width: 10, height: 10)
+                        .shadow(color: .green, radius: 4)
+                    Text("Terhubung ke HaiBooth")
+                        .font(.callout)
+                        .foregroundStyle(.white.opacity(0.8))
+                }
+
+                Image(systemName: "camera.fill")
+                    .font(.system(size: 48))
+                    .foregroundStyle(.white.opacity(0.6))
+
+                Text("Siap")
+                    .font(.system(size: 28, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.8))
+
+                Text("Menunggu sesi dimulai dari iPad")
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.4))
+
+                // Signal quality
+                HStack(spacing: 6) {
+                    Image(systemName: cameraState.p2p.signalQuality.sfSymbol)
+                    Text("\(cameraState.p2p.latencyMs)ms")
+                }
+                .font(.caption2)
+                .foregroundStyle(.white.opacity(0.3))
             }
         }
         .preferredColorScheme(.dark)
     }
+}
+
+// MARK: - Black Screen (Sesi Aktif — TIDAK ADA UI)
+
+private struct CameraBlackScreenView: View {
+    var body: some View {
+        Color.black
+            .ignoresSafeArea()
+    }
+}
+
+// MARK: - Session Ended View
+
+private struct CameraSessionEndedView: View {
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+            VStack(spacing: 16) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 48))
+                    .foregroundStyle(.green)
+                    .symbolEffect(.bounce, value: true)
+                Text("Sesi Selesai")
+                    .font(.title2.bold())
+                    .foregroundStyle(.white.opacity(0.8))
+                Text("Kembali ke mode standby...")
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.4))
+            }
+        }
+    }
+}
+
+// MARK: - Error View
+
+private struct CameraErrorView: View {
+    let message: String
+
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+            VStack(spacing: 16) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 48))
+                    .foregroundStyle(.red)
+                Text("Terjadi Kesalahan")
+                    .font(.title2.bold())
+                    .foregroundStyle(.white.opacity(0.8))
+                Text(message)
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.5))
+                    .multilineTextAlignment(.center)
+            }
+            .padding(40)
+        }
+    }
+}
+
+// MARK: - Previews
+
+#Preview("Standby") {
+    CameraView()
+        .environment(CameraAppState.preview)
+}
+
+#Preview("Black Screen — Sesi Aktif") {
+    CameraView()
+        .environment(CameraAppState.previewActive)
 }

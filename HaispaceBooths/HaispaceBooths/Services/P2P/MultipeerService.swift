@@ -1,0 +1,122 @@
+// MultipeerService.swift
+// HaispaceBooths — Services/P2P
+//
+// Layanan Apple Multipeer Connectivity (MPC) untuk Direct P2P.
+// Digunakan sebagai metode komunikasi utama tanpa router eksternal.
+//
+// Ref: docs/design/08_p2p_communication.md
+
+import Foundation
+import MultipeerConnectivity
+import OSLog
+
+actor MultipeerService: NSObject {
+    static let shared = MultipeerService()
+
+    private let peerID: MCPeerID
+    private var session: MCSession?
+    private var advertiser: MCNearbyServiceAdvertiser?
+    private var isAdvertising = false
+
+    // State callback
+    var onConnectionStateChange: ((P2PConnectionState) -> Void)?
+    var onDataReceived: ((Data) -> Void)?
+
+    private override init() {
+        self.peerID = MCPeerID(displayName: UIDevice.current.name)
+        super.init()
+    }
+
+    /// Mulai advertising sebagai host iPad
+    func startHosting(eventId: String, boothId: String) {
+        guard !isAdvertising else { return }
+
+        // Mencegah clash dengan booth lain (maks 15 karakter)
+        let safeEventId = String(eventId.prefix(8))
+        let serviceType = "hs-\(safeEventId)"
+
+        session = MCSession(peer: peerID, securityIdentity: nil, encryptionPreference: .required)
+        session?.delegate = self
+
+        advertiser = MCNearbyServiceAdvertiser(
+            peer: peerID,
+            discoveryInfo: ["booth": boothId],
+            serviceType: serviceType
+        )
+        advertiser?.delegate = self
+        advertiser?.startAdvertisingPeer()
+        isAdvertising = true
+        
+        onConnectionStateChange?(.scanning)
+        HaispaceLogger.info("Memulai MPC advertising dengan serviceType: \(serviceType)", category: "p2p")
+    }
+
+    func stopHosting() {
+        advertiser?.stopAdvertisingPeer()
+        session?.disconnect()
+        advertiser = nil
+        session = nil
+        isAdvertising = false
+        onConnectionStateChange?(.disconnected)
+        HaispaceLogger.info("MPC hosting dihentikan", category: "p2p")
+    }
+
+    func sendData(_ data: Data) throws {
+        guard let session = session, !session.connectedPeers.isEmpty else {
+            throw HaispaceError.p2pConnectionLost
+        }
+        try session.send(data, toPeers: session.connectedPeers, with: .reliable)
+    }
+}
+
+// MARK: - MCSessionDelegate
+
+extension MultipeerService: MCSessionDelegate {
+    nonisolated func session(_ session: MCSession, peer peerID: MCPeerID, didChange state: MCSessionState) {
+        Task {
+            switch state {
+            case .connected:
+                await self.onConnectionStateChange?(.connected)
+                HaispaceLogger.info("MPC terhubung ke: \(peerID.displayName)", category: "p2p")
+            case .connecting:
+                await self.onConnectionStateChange?(.connecting)
+            case .notConnected:
+                await self.onConnectionStateChange?(.disconnected)
+                HaispaceLogger.warning("MPC terputus dari: \(peerID.displayName)", category: "p2p")
+            @unknown default:
+                break
+            }
+        }
+    }
+
+    nonisolated func session(_ session: MCSession, didReceive data: Data, fromPeer peerID: MCPeerID) {
+        Task {
+            await self.onDataReceived?(data)
+            
+            // Coba decode data sebagai P2PMessage dan arahkan ke router
+            if let message = try? P2PMessage.decode(from: data) {
+                await P2PMessageRouter.shared.route(message)
+            }
+        }
+    }
+
+    nonisolated func session(_ session: MCSession, didReceive stream: InputStream, withName streamName: String, fromPeer peerID: MCPeerID) {
+        // Digunakan untuk stream file/video berukuran sangat besar (bila tidak memakai chunk)
+    }
+
+    nonisolated func session(_ session: MCSession, didStartReceivingResourceWithName resourceName: String, fromPeer peerID: MCPeerID, with progress: Progress) {}
+
+    nonisolated func session(_ session: MCSession, didFinishReceivingResourceWithName resourceName: String, fromPeer peerID: MCPeerID, at localURL: URL?, withError error: Error?) {}
+}
+
+// MARK: - MCNearbyServiceAdvertiserDelegate
+
+extension MultipeerService: MCNearbyServiceAdvertiserDelegate {
+    nonisolated func advertiser(_ advertiser: MCNearbyServiceAdvertiser, didReceiveInvitationFromPeer peerID: MCPeerID, withContext context: Data?, invitationHandler: @escaping (Bool, MCSession?) -> Void) {
+        Task {
+            HaispaceLogger.info("Menerima MPC invitation dari: \(peerID.displayName)", category: "p2p")
+            // Otomatis accept koneksi dari aplikasi HaispaceCamera (Validasi tambahan bisa via token)
+            await invitationHandler(true, self.session)
+        }
+    }
+}

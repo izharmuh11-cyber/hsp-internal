@@ -2,47 +2,63 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- Bundle Identity -->
+	<key>CFBundleIdentifier</key>
+	<string>id.haispaceproject.camera</string>
+	<key>CFBundleName</key>
+	<string>HaiCamera</string>
 	<key>CFBundleDisplayName</key>
-	<string>HSP Camera</string>
+	<string>HaiCamera</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.1.0</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
-	<key>CFBundleIdentifier</key>
-	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-	<key>CFBundleInfoDictionaryVersion</key>
-	<string>6.0</string>
-	<key>CFBundleName</key>
-	<string>$(PRODUCT_NAME)</string>
-	<key>CFBundlePackageType</key>
-	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
-	<key>CFBundleShortVersionString</key>
-	<string>$(MARKETING_VERSION)</string>
-	<key>CFBundleVersion</key>
-	<string>$(CURRENT_PROJECT_VERSION)</string>
-	<key>LSRequiresIPhoneOS</key>
-	<true/>
-	<key>NSCameraUsageDescription</key>
-	<string>Haispace Camera membutuhkan akses kamera untuk mengambil foto photobooth.</string>
-	<key>UIApplicationSceneManifest</key>
-	<dict>
-		<key>UIApplicationSupportsMultipleScenes</key>
-		<false/>
-	</dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>id</string>
+
+	<!-- Platform -->
+	<key>MinimumOSVersion</key>
+	<string>17.0</string>
 	<key>UIDeviceFamily</key>
 	<array>
-		<integer>1</integer>
+		<integer>1</integer><!-- iPhone only -->
 	</array>
-	<key>UILaunchScreen</key>
-	<dict/>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+
+	<!-- Privacy Descriptions (wajib Apple) -->
+	<key>NSCameraUsageDescription</key>
+	<string>HaiCamera membutuhkan akses kamera belakang untuk mengambil foto berkualitas tinggi saat sesi photobooth.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>HaiCamera membutuhkan akses jaringan lokal untuk mentransfer foto ke HaiBooth (iPad) secara offline.</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>HaiCamera menggunakan Bluetooth untuk discovery dan pairing instan dengan HaiBooth (iPad).</string>
+
+	<!-- Bonjour Services -->
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_haibooth._tcp</string>
+	</array>
+
+	<!-- ATS: Allow local network communication -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+
+	<!-- Kiosk: Disable auto-lock -->
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
 		<string>armv7</string>
 	</array>
-	<key>UISupportedInterfaceOrientations</key>
-	<array>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-	</array>
-	<key>UIUserInterfaceStyle</key>
-	<string>Dark</string>
 </dict>
 </plist>

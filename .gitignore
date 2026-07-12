@@ -60,3 +60,10 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
+
+# ============================================================
+# Internal Design Documents — DO NOT UPLOAD TO GITHUB
+# Berisi strategi produk, model bisnis, dan ide yang bersifat
+# rahasia. Hanya untuk konsumsi internal & AI Agent lokal.
+# ============================================================
+docs/design/

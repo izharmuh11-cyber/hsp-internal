@@ -2,52 +2,110 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- Bundle Identity -->
+	<key>CFBundleIdentifier</key>
+	<string>id.haispaceproject.booth</string>
+	<key>CFBundleName</key>
+	<string>HaiBooth</string>
 	<key>CFBundleDisplayName</key>
-	<string>HSP Booth</string>
+	<string>HaiBooth</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.1.0</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
-	<key>CFBundleIdentifier</key>
-	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-	<key>CFBundleInfoDictionaryVersion</key>
-	<string>6.0</string>
-	<key>CFBundleName</key>
-	<string>$(PRODUCT_NAME)</string>
-	<key>CFBundlePackageType</key>
-	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
-	<key>CFBundleShortVersionString</key>
-	<string>$(MARKETING_VERSION)</string>
-	<key>CFBundleVersion</key>
-	<string>$(CURRENT_PROJECT_VERSION)</string>
-	<key>LSRequiresIPhoneOS</key>
-	<true/>
-	<key>UIApplicationSceneManifest</key>
-	<dict>
-		<key>UIApplicationSupportsMultipleScenes</key>
-		<false/>
-	</dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>id</string>
+
+	<!-- Platform -->
+	<key>MinimumOSVersion</key>
+	<string>17.0</string>
 	<key>UIDeviceFamily</key>
 	<array>
-		<integer>2</integer>
+		<integer>2</integer><!-- iPad only -->
 	</array>
-	<key>UILaunchScreen</key>
-	<dict/>
-	<key>UIRequiredDeviceCapabilities</key>
+	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
-		<string>armv7</string>
-	</array>
-	<key>UISupportedInterfaceOrientations</key>
-	<array>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+		<string>UIInterfaceOrientationPortrait</string>
 	</array>
-	<key>UIUserInterfaceStyle</key>
-	<string>Dark</string>
-    <key>NSLocalNetworkUsageDescription</key>
-    <string>Haispace Booth membutuhkan akses jaringan lokal untuk terhubung dengan iPhone kamera secara langsung.</string>
-    <key>NSBonjourServices</key>
-    <array>
-        <string>_hsp-booth._tcp</string>
-        <string>_hsp-booth._udp</string>
-    </array>
+
+	<!-- Kiosk Mode: Selalu fullscreen -->
+	<key>UIStatusBarHidden</key>
+	<false/>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<false/>
+
+	<!-- Privacy Descriptions (wajib Apple) -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>HaiBooth membutuhkan akses jaringan lokal untuk berbagi foto dengan iPhone kamera dan untuk pengiriman foto ke tamu via WiFi lokal.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>HaiBooth membutuhkan kamera untuk scan QR Code pairing dengan HaiCamera.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>HaiBooth akan menyimpan foto hasil sesi ke galeri Anda.</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>HaiBooth menggunakan Bluetooth untuk menghubungkan iPhone kamera tanpa WiFi tambahan.</string>
+	<key>NFCReaderUsageDescription</key>
+	<string>HaiBooth tidak menggunakan NFC.</string>
+
+	<!-- Background Modes -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>background-processing</string><!-- BGProcessingTask untuk license heartbeat -->
+		<string>remote-notification</string><!-- Push notification untuk license update -->
+		<string>fetch</string><!-- BGAppRefreshTask backup -->
+	</array>
+
+	<!-- Background Task Identifiers -->
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>id.haispaceproject.booth.license-check</string>
+		<string>id.haispaceproject.booth.photo-upload</string>
+	</array>
+
+	<!-- URL Session Background Identifier -->
+	<key>NSURLSessionIdentifier</key>
+	<string>id.haispaceproject.booth.photo-upload</string>
+
+	<!-- Bonjour Services (untuk local network photo sharing) -->
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_haibooth._tcp</string>
+	</array>
+
+	<!-- ATS: Allow local network communication -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<!-- Hanya untuk development — hapus di production -->
+			<key>localhost</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
+		</dict>
+	</dict>
+
+	<!-- Kiosk: Nonaktifkan auto-lock via entitlement (jika diperlukan) -->
+	<!-- UIApplicationExitsOnSuspend tidak digunakan di iOS 13+ -->
+
+	<!-- App Icon -->
+	<key>CFBundleIcons~ipad</key>
+	<dict>
+		<key>CFBundlePrimaryIcon</key>
+		<dict>
+			<key>CFBundleIconFiles</key>
+			<array>
+				<string>AppIcon</string>
+			</array>
+		</dict>
+	</dict>
 </dict>
 </plist>
