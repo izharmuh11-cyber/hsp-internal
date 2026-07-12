@@ -251,11 +251,9 @@ final class P2PStore: @unchecked Sendable {
                         self.connectedPeerName = "iPhone (TCP)"
                         HaispaceLogger.info("Koneksi P2P beralih ke mode: TCP Router", category: "p2p")
                     } else if case .disconnected = state {
-                        self.connectionMode = .none
                         self.connectedPeerName = ""
                         GitHubLogUploader.uploadLatestLog(eventName: "tcp_disconnected")
                     } else if case .failed(let err) = state {
-                        self.connectionMode = .none
                         self.connectedPeerName = ""
                         let cleanErr = err.replacingOccurrences(of: " ", with: "_")
                         GitHubLogUploader.uploadLatestLog(eventName: "tcp_failed_\(cleanErr)")
@@ -278,11 +276,9 @@ final class P2PStore: @unchecked Sendable {
                         self.connectedPeerName = "iPhone (MPC)"
                         HaispaceLogger.info("Koneksi P2P beralih ke mode: MPC Direct", category: "p2p")
                     } else if case .disconnected = state {
-                        self.connectionMode = .none
                         self.connectedPeerName = ""
                         GitHubLogUploader.uploadLatestLog(eventName: "mpc_disconnected")
                     } else if case .failed(let err) = state {
-                        self.connectionMode = .none
                         self.connectedPeerName = ""
                         let cleanErr = err.replacingOccurrences(of: " ", with: "_")
                         GitHubLogUploader.uploadLatestLog(eventName: "mpc_failed_\(cleanErr)")
