@@ -255,7 +255,11 @@ actor P2PClientService: NSObject {
             guard let session = session, !session.connectedPeers.isEmpty else {
                 throw NSError(domain: "P2PClientService", code: -1, userInfo: [NSLocalizedDescriptionKey: "P2P Connection Lost"])
             }
-            try session.send(data, toPeers: session.connectedPeers, with: .reliable)
+            
+            // Cek apakah data adalah video frame (dimulai dengan start code 0x00000001)
+            let isVideoFrame = data.count > 4 && data[0] == 0 && data[1] == 0 && data[2] == 0 && data[3] == 1
+            let mode: MCSessionSendDataMode = isVideoFrame ? .unreliable : .reliable
+            try session.send(data, toPeers: session.connectedPeers, with: mode)
         }
     }
     
