@@ -151,7 +151,10 @@ struct GitHubLogUploader {
             
         let filename = "iphone-log-\(timestamp)-\(cleanEvent).txt"
         
-        let url = URL(string: "https://api.github.com/repos/izharmuh11-cyber/hsp-internal/contents/logs/\(filename)")!
+        guard let url = URL(string: "https://api.github.com/repos/izharmuh11-cyber/hsp-internal/contents/logs/\(filename)") else {
+            HaispaceLogger.error("Gagal membuat URL untuk upload log: \(filename)", category: "logging")
+            return
+        }
         var request = URLRequest(url: url)
         request.httpMethod = "PUT"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")

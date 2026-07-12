@@ -83,68 +83,101 @@ actor VideoEncoderService {
     
     // Dipanggil oleh outputCallback C-function
     nonisolated func handleEncodedSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
-        Task {
-            guard let attachments = CMSampleBufferGetSampleAttachmentsArray(sampleBuffer, createIfNecessary: false) as? [[CFString: Any]],
-                  let attachment = attachments.first else { return }
+        guard let attachments = CMSampleBufferGetSampleAttachmentsArray(sampleBuffer, createIfNecessary: false) as? [[CFString: Any]],
+              let attachment = attachments.first else { return }
+        
+        let isKeyframe = attachment[kCMSampleAttachmentKey_NotSync] == nil
+        var nalus: [Data] = []
+        
+        // 1. Ekstrak SPS & PPS jika ini keyframe (secara synchronous)
+        if isKeyframe, let formatDesc = CMSampleBufferGetFormatDescription(sampleBuffer) {
+            var spsSize: Int = 0
+            var spsCount: Int = 0
+            var ppsSize: Int = 0
+            var ppsCount: Int = 0
             
-            let isKeyframe = attachment[kCMSampleAttachmentKey_NotSync] == nil
+            var spsPointer: UnsafePointer<UInt8>?
+            var ppsPointer: UnsafePointer<UInt8>?
             
-            // Ekstrak SPS & PPS jika ini keyframe
-            if isKeyframe, let formatDesc = CMSampleBufferGetFormatDescription(sampleBuffer) {
-                var spsSize: Int = 0
-                var spsCount: Int = 0
-                var ppsSize: Int = 0
-                var ppsCount: Int = 0
+            if CMVideoFormatDescriptionGetH264ParameterSetAtIndex(formatDesc, parameterSetIndex: 0, parameterSetPointerOut: &spsPointer, parameterSetSizeOut: &spsSize, parameterSetCountOut: &spsCount, nalUnitHeaderLengthOut: nil) == noErr,
+               CMVideoFormatDescriptionGetH264ParameterSetAtIndex(formatDesc, parameterSetIndex: 1, parameterSetPointerOut: &ppsPointer, parameterSetSizeOut: &ppsSize, parameterSetCountOut: &ppsCount, nalUnitHeaderLengthOut: nil) == noErr {
                 
-                var spsPointer: UnsafePointer<UInt8>?
-                var ppsPointer: UnsafePointer<UInt8>?
+                if let spsPtr = spsPointer, let ppsPtr = ppsPointer {
+                    let startCode = Data([0x00, 0x00, 0x00, 0x01])
+                    let spsData = startCode + Data(bytes: spsPtr, count: spsSize)
+                    let ppsData = startCode + Data(bytes: ppsPtr, count: ppsSize)
+                    nalus.append(spsData)
+                    nalus.append(ppsData)
+                }
+            }
+        }
+        
+        // 2. Ekstrak NALU dari block buffer (secara synchronous)
+        if let dataBuffer = CMSampleBufferGetDataBuffer(sampleBuffer) {
+            var contiguousBuffer: CMBlockBuffer?
+            let isRangeContiguous = CMBlockBufferIsRangeContiguous(dataBuffer, atOffset: 0, length: 0)
+            let contStatus: OSStatus
+            if !isRangeContiguous {
+                contStatus = CMBlockBufferCreateContiguous(
+                    allocator: kCFAllocatorDefault,
+                    sourceBuffer: dataBuffer,
+                    blockAllocator: kCFAllocatorDefault,
+                    customBlockSource: nil,
+                    offsetToData: 0,
+                    dataLength: 0,
+                    flags: 0,
+                    blockBufferOut: &contiguousBuffer
+                )
+            } else {
+                contiguousBuffer = dataBuffer
+                contStatus = noErr
+            }
+            
+            if contStatus == noErr, let contBuf = contiguousBuffer {
+                var length: Int = 0
+                var dataPointer: UnsafeMutablePointer<Int8>?
                 
-                if CMVideoFormatDescriptionGetH264ParameterSetAtIndex(formatDesc, parameterSetIndex: 0, parameterSetPointerOut: &spsPointer, parameterSetSizeOut: &spsSize, parameterSetCountOut: &spsCount, nalUnitHeaderLengthOut: nil) == noErr,
-                   CMVideoFormatDescriptionGetH264ParameterSetAtIndex(formatDesc, parameterSetIndex: 1, parameterSetPointerOut: &ppsPointer, parameterSetSizeOut: &ppsSize, parameterSetCountOut: &ppsCount, nalUnitHeaderLengthOut: nil) == noErr {
-                    
-                    if let spsPtr = spsPointer, let ppsPtr = ppsPointer {
-                        let spsData = Data(bytes: spsPtr, count: spsSize)
-                        let ppsData = Data(bytes: ppsPtr, count: ppsSize)
+                if CMBlockBufferGetDataPointer(contBuf, atOffset: 0, lengthAtOffsetOut: nil, totalLengthOut: &length, dataPointerOut: &dataPointer) == noErr {
+                    if let ptr = dataPointer {
+                        var bufferOffset = 0
+                        let startCode = Data([0x00, 0x00, 0x00, 0x01])
                         
-                        await dispatchNALU(data: spsData, isSPS: true)
-                        await dispatchNALU(data: ppsData, isPPS: true)
+                        while bufferOffset < length - 4 {
+                            var naluLength: UInt32 = 0
+                            memcpy(&naluLength, ptr + bufferOffset, 4)
+                            naluLength = CFSwapInt32BigToHost(naluLength)
+                            
+                            guard naluLength > 0 else {
+                                bufferOffset += 4
+                                continue
+                            }
+                            
+                            guard bufferOffset + 4 + Int(naluLength) <= length else {
+                                break
+                            }
+                            
+                            var naluData = Data(startCode)
+                            naluData.append(Data(bytes: ptr + bufferOffset + 4, count: Int(naluLength)))
+                            nalus.append(naluData)
+                            
+                            bufferOffset += Int(4 + naluLength)
+                        }
                     }
                 }
             }
-            
-            // Ekstrak NALU
-            guard let dataBuffer = CMSampleBufferGetDataBuffer(sampleBuffer) else { return }
-            var length: Int = 0
-            var dataPointer: UnsafeMutablePointer<Int8>?
-            
-            if CMBlockBufferGetDataPointer(dataBuffer, atOffset: 0, lengthAtOffsetOut: nil, totalLengthOut: &length, dataPointerOut: &dataPointer) == noErr {
-                if let ptr = dataPointer {
-                    var bufferOffset = 0
-                    let startCode = Data([0x00, 0x00, 0x00, 0x01])
-                    
-                    while bufferOffset < length - 4 {
-                        var naluLength: UInt32 = 0
-                        memcpy(&naluLength, ptr + bufferOffset, 4)
-                        naluLength = CFSwapInt32BigToHost(naluLength)
-                        
-                        var naluData = Data(startCode)
-                        naluData.append(Data(bytes: ptr + bufferOffset + 4, count: Int(naluLength)))
-                        
-                        await dispatchNALU(data: naluData, isSPS: false, isPPS: false)
-                        bufferOffset += Int(4 + naluLength)
-                    }
-                }
+        }
+        
+        // 3. Kirim data yang sudah aman disalin secara asynchronous
+        guard !nalus.isEmpty else { return }
+        Task {
+            for nalu in nalus {
+                await dispatchNALU(data: nalu)
             }
         }
     }
     
-    private func dispatchNALU(data: Data, isSPS: Bool = false, isPPS: Bool = false) {
-        var finalData = data
-        if isSPS || isPPS {
-            let startCode = Data([0x00, 0x00, 0x00, 0x01])
-            finalData = startCode + data
-        }
-        onNALUReady?(finalData)
+    private func dispatchNALU(data: Data) {
+        onNALUReady?(data)
     }
 }
 

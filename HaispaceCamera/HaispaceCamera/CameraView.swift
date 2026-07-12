@@ -563,7 +563,11 @@ private struct CameraLogViewerSheet: View {
         let timestamp = formatter.string(from: Date())
         let filename = "iphone-log-\(timestamp).txt"
         
-        let url = URL(string: "https://api.github.com/repos/izharmuh11-cyber/hsp-internal/contents/logs/\(filename)")!
+        guard let url = URL(string: "https://api.github.com/repos/izharmuh11-cyber/hsp-internal/contents/logs/\(filename)") else {
+            uploadMessage = "Gagal membuat URL untuk upload log."
+            isUploading = false
+            return
+        }
         var request = URLRequest(url: url)
         request.httpMethod = "PUT"
         request.setValue("Bearer \(githubPAT)", forHTTPHeaderField: "Authorization")
