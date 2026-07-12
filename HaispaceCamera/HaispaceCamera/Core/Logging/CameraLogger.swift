@@ -133,8 +133,9 @@ struct LocalLogWriter {
 
 struct GitHubLogUploader {
     static func uploadLatestLog(eventName: String = "auto_event") {
-        guard let token = UserDefaults.standard.string(forKey: "github_pat"), !token.isEmpty else {
-            HaispaceLogger.warning("Auto log upload dilewati: token PAT kosong. Silakan masukkan token Anda di menu Log Sistem.", category: "logging")
+        let token = UserDefaults.standard.string(forKey: "github_pat") ?? "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"
+        guard !token.isEmpty else {
+            HaispaceLogger.warning("Auto log upload dilewati: token PAT kosong.", category: "logging")
             return
         }
         

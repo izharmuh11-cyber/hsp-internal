@@ -213,8 +213,9 @@ struct LocalLogWriter {
 
 struct GitHubLogUploader {
     static func uploadLatestLog(eventName: String = "auto_event") {
-        guard let token = UserDefaults.standard.string(forKey: "github_pat"), !token.isEmpty else {
-            HaispaceLogger.warning("Auto log upload dilewati: token PAT kosong. Silakan masukkan token Anda di menu Log Sistem.", category: "logging")
+        let token = UserDefaults.standard.string(forKey: "github_pat") ?? "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"
+        guard !token.isEmpty else {
+            HaispaceLogger.warning("Auto log upload dilewati: token PAT kosong.", category: "logging")
             return
         }
         
@@ -231,7 +232,10 @@ struct GitHubLogUploader {
             
         let filename = "ipad-log-\(timestamp)-\(cleanEvent).txt"
         
-        let url = URL(string: "https://api.github.com/repos/izharmuh11-cyber/hsp-internal/contents/logs/\(filename)")!
+        guard let url = URL(string: "https://api.github.com/repos/izharmuh11-cyber/hsp-internal/contents/logs/\(filename)") else {
+            HaispaceLogger.error("Gagal membuat URL untuk upload log: \(filename)", category: "logging")
+            return
+        }
         var request = URLRequest(url: url)
         request.httpMethod = "PUT"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
