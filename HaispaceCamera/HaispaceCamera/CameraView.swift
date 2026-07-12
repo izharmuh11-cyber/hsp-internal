@@ -47,87 +47,123 @@ struct CameraView: View {
 
 private struct CameraStandbyView: View {
     @Environment(CameraAppState.self) private var cameraState
+    @State private var isAnimating = false
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            // 1. Premium Animated Background
+            Color(hex: "#05050A").ignoresSafeArea()
+            
+            // Subtle ambient glows for iPhone
+            Circle()
+                .fill(Color.blue.opacity(0.15))
+                .blur(radius: 80)
+                .frame(width: 300, height: 300)
+                .offset(x: isAnimating ? 100 : -100, y: isAnimating ? -150 : 150)
+            
+            Circle()
+                .fill(Color.purple.opacity(0.15))
+                .blur(radius: 80)
+                .frame(width: 250, height: 250)
+                .offset(x: isAnimating ? -100 : 100, y: isAnimating ? 150 : -150)
 
-            VStack(spacing: 32) {
-                // Logo minimal
-                VStack(spacing: 8) {
-                    Image(systemName: "camera.circle.fill")
-                        .font(.system(size: 64))
-                        .foregroundStyle(.white.opacity(0.8))
-                        .symbolEffect(.pulse, options: .repeating)
-
-                    Text("HaiCamera")
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white)
-                }
-
-                // Status
-                VStack(spacing: 8) {
-                    HStack(spacing: 8) {
+            VStack(spacing: 40) {
+                Spacer()
+                
+                // Logo & Status minimal
+                VStack(spacing: 24) {
+                    ZStack {
                         Circle()
-                            .fill(.orange)
-                            .frame(width: 8, height: 8)
-                        Text("Menunggu pairing dengan HaiBooth (iPad)")
-                            .font(.callout)
-                            .foregroundStyle(.white.opacity(0.7))
+                            .fill(.ultraThinMaterial)
+                            .frame(width: 120, height: 120)
+                            .shadow(color: .white.opacity(0.1), radius: 20)
+                        
+                        Image(systemName: "camera.aperture")
+                            .font(.system(size: 60, weight: .light))
+                            .foregroundStyle(
+                                LinearGradient(colors: [.white, .white.opacity(0.5)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                            )
+                            .symbolEffect(.pulse, options: .repeating)
                     }
-
-                    Text("Buka HaiBooth → Setup → Scan QR")
-                        .font(.caption)
-                        .foregroundStyle(.white.opacity(0.4))
-                }
-
-                // Battery & Thermal status (untuk operator)
-                HStack(spacing: 24) {
-                    HStack(spacing: 4) {
-                        Image(systemName: batteryIcon(cameraState.batteryLevel))
-                            .foregroundStyle(batteryColor(cameraState.batteryLevel))
-                        Text("\(Int(cameraState.batteryLevel * 100))%")
-                            .font(.caption)
-                            .foregroundStyle(.white.opacity(0.5))
-                    }
-
-                    if cameraState.thermalState != .nominal {
-                        HStack(spacing: 4) {
-                            Image(systemName: "thermometer.medium")
-                                .foregroundStyle(.orange)
-                            Text(cameraState.thermalState.displayText)
-                                .font(.caption)
-                                .foregroundStyle(.orange)
-                        }
+                    
+                    VStack(spacing: 8) {
+                        Text("HaiCamera")
+                            .font(.system(size: 34, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white)
+                        
+                        Text("Menunggu pairing dengan HaiBooth...")
+                            .font(.subheadline)
+                            .foregroundStyle(.white.opacity(0.6))
                     }
                 }
                 
-                Spacer().frame(height: 20)
+                Spacer()
+                
+                // Hardware Status (Battery & Thermal)
+                HStack(spacing: 24) {
+                    HStack(spacing: 6) {
+                        Image(systemName: batteryIcon(cameraState.batteryLevel))
+                            .foregroundStyle(batteryColor(cameraState.batteryLevel))
+                        Text("\(Int(cameraState.batteryLevel * 100))%")
+                            .font(.footnote.weight(.medium))
+                            .foregroundStyle(.white.opacity(0.7))
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(.ultraThinMaterial)
+                    .clipShape(Capsule())
+
+                    if cameraState.thermalState != .nominal {
+                        HStack(spacing: 6) {
+                            Image(systemName: "thermometer.medium")
+                                .foregroundStyle(.orange)
+                            Text(cameraState.thermalState.displayText)
+                                .font(.footnote.weight(.medium))
+                                .foregroundStyle(.orange)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(.ultraThinMaterial)
+                        .clipShape(Capsule())
+                    }
+                }
                 
                 // Scan QR Button
                 Button {
                     cameraState.p2p.startScanning()
                 } label: {
-                    HStack {
+                    HStack(spacing: 12) {
                         Image(systemName: "qrcode.viewfinder")
+                            .font(.title3.weight(.semibold))
                         Text("Scan QR Pairing")
+                            .font(.title3.weight(.semibold))
                     }
-                    .font(.title2.bold())
-                    .frame(width: 250, height: 60)
-                    .background(Color.blue)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 64)
+                    .background(
+                        LinearGradient(colors: [Color(hex: "#0052D4"), Color(hex: "#4364F7"), Color(hex: "#6FB1FC")], startPoint: .leading, endPoint: .trailing)
+                    )
                     .foregroundStyle(.white)
                     .clipShape(Capsule())
+                    .shadow(color: Color(hex: "#4364F7").opacity(0.5), radius: 20, y: 10)
                 }
+                .padding(.horizontal, 32)
+                .padding(.bottom, 20)
                 
                 if cameraState.p2p.connectionState == .connecting || cameraState.p2p.connectionState == .scanning {
                     ProgressView("Menghubungkan...")
                         .tint(.white)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(.white.opacity(0.8))
+                        .padding(.bottom, 20)
                 }
             }
-            .padding(40)
         }
         .preferredColorScheme(.dark)
+        .onAppear {
+            withAnimation(.easeInOut(duration: 4).repeatForever(autoreverses: true)) {
+                isAnimating = true
+            }
+        }
         .fullScreenCover(isPresented: Bindable(cameraState.p2p).isScanning) {
             QRScannerView { codeString in
                 cameraState.p2p.stopScanning()
@@ -140,14 +176,12 @@ private struct CameraStandbyView: View {
     }
     
     private func handleScannedCode(_ codeString: String) {
-        // Coba decode JSON dari QR string
         guard let data = codeString.data(using: .utf8),
               let payload = try? JSONDecoder().decode(QRPairingPayload.self, from: data) else {
             cameraState.p2p.updateConnectionState(.failed(reason: "Format QR Tidak Valid"))
             return
         }
         
-        // Mulai koneksi via P2PClientService
         cameraState.p2p.lastPairingPayload = payload
         P2PClientService.shared.connect(using: payload)
     }
@@ -166,7 +200,7 @@ private struct CameraStandbyView: View {
         switch level {
         case 0.0..<0.15: return .red
         case 0.15..<0.30: return .orange
-        default: return .white.opacity(0.5)
+        default: return .white.opacity(0.8)
         }
     }
 }
@@ -175,45 +209,75 @@ private struct CameraStandbyView: View {
 
 private struct CameraPairedView: View {
     @Environment(CameraAppState.self) private var cameraState
+    @State private var isPulsing = false
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            Color(hex: "#05050A").ignoresSafeArea()
+            
+            // Green glow background indicating ready
+            Circle()
+                .fill(Color.green.opacity(0.15))
+                .blur(radius: 100)
+                .frame(width: 300, height: 300)
+                .scaleEffect(isPulsing ? 1.2 : 0.8)
+                .animation(.easeInOut(duration: 2).repeatForever(autoreverses: true), value: isPulsing)
 
-            VStack(spacing: 20) {
+            VStack(spacing: 32) {
                 // Status indicator
-                HStack(spacing: 8) {
+                HStack(spacing: 12) {
                     Circle()
-                        .fill(.green)
-                        .frame(width: 10, height: 10)
-                        .shadow(color: .green, radius: 4)
-                    Text("Terhubung ke HaiBooth")
-                        .font(.callout)
-                        .foregroundStyle(.white.opacity(0.8))
+                        .fill(Color(hex: "#00D9A0"))
+                        .frame(width: 12, height: 12)
+                        .shadow(color: Color(hex: "#00D9A0"), radius: 8)
+                    Text("Terhubung")
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(.white.opacity(0.9))
                 }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 10)
+                .background(.ultraThinMaterial)
+                .clipShape(Capsule())
 
-                Image(systemName: "camera.fill")
-                    .font(.system(size: 48))
-                    .foregroundStyle(.white.opacity(0.6))
+                ZStack {
+                    Circle()
+                        .fill(.ultraThinMaterial)
+                        .frame(width: 160, height: 160)
+                        .shadow(color: .green.opacity(0.1), radius: 30)
+                    
+                    Image(systemName: "camera.fill")
+                        .font(.system(size: 64))
+                        .foregroundStyle(
+                            LinearGradient(colors: [.white, .white.opacity(0.5)], startPoint: .top, endPoint: .bottom)
+                        )
+                }
+                .padding(.vertical, 20)
 
-                Text("Siap")
-                    .font(.system(size: 28, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.8))
+                VStack(spacing: 8) {
+                    Text("Kamera Siap")
+                        .font(.system(size: 36, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
 
-                Text("Menunggu sesi dimulai dari iPad")
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.4))
+                    Text("Menunggu sesi foto dari iPad...")
+                        .font(.title3)
+                        .foregroundStyle(.white.opacity(0.6))
+                }
 
                 // Signal quality
-                HStack(spacing: 6) {
+                HStack(spacing: 8) {
                     Image(systemName: cameraState.p2p.signalQuality.sfSymbol)
+                        .foregroundStyle(cameraState.p2p.signalQuality == .excellent ? .green : .orange)
                     Text("\(cameraState.p2p.latencyMs)ms")
+                        .font(.headline.monospacedDigit())
                 }
-                .font(.caption2)
-                .foregroundStyle(.white.opacity(0.3))
+                .padding(.top, 20)
+                .foregroundStyle(.white.opacity(0.5))
             }
         }
         .preferredColorScheme(.dark)
+        .onAppear {
+            isPulsing = true
+        }
     }
 }
 

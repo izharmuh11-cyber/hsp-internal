@@ -16,132 +16,189 @@ struct PairingSetupView: View {
     @State private var remainingSeconds: Int = 290
     @State private var timer: Timer?
     
+    @State private var isAnimating = false
+    
     var body: some View {
         ZStack {
-            Color(hex: "#080810").ignoresSafeArea()
+            // 1. Premium Animated Background
+            Color(hex: "#05050A").ignoresSafeArea()
             
-            VStack(spacing: 40) {
-                
+            // Subtle ambient glows
+            Circle()
+                .fill(Color.blue.opacity(0.15))
+                .blur(radius: 120)
+                .frame(width: 500, height: 500)
+                .offset(x: isAnimating ? 200 : -200, y: isAnimating ? -200 : 200)
+            
+            Circle()
+                .fill(Color.purple.opacity(0.15))
+                .blur(radius: 120)
+                .frame(width: 400, height: 400)
+                .offset(x: isAnimating ? -300 : 300, y: isAnimating ? 300 : -300)
+            
+            VStack(spacing: 50) {
                 // Header
-                VStack(spacing: 12) {
-                    Text("Setup Kamera (HaiCamera)")
-                        .font(.system(size: 36, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white)
+                VStack(spacing: 16) {
+                    Text("Hubungkan Kamera")
+                        .font(.system(size: 42, weight: .bold, design: .rounded))
+                        .foregroundStyle(
+                            LinearGradient(colors: [.white, .white.opacity(0.8)], startPoint: .top, endPoint: .bottom)
+                        )
+                        .shadow(color: .white.opacity(0.1), radius: 10, y: 5)
                     
-                    Text("Buka aplikasi HaiCamera di iPhone dan scan QR Code di bawah ini.")
+                    Text("Arahkan HaiCamera ke kode di bawah ini untuk memulai.")
                         .font(.title3)
-                        .foregroundStyle(.white.opacity(0.7))
+                        .foregroundStyle(.white.opacity(0.6))
                 }
-                .padding(.top, 40)
+                .padding(.top, 60)
                 
-                // QR Code Container
+                // QR Code / Success Container
                 ZStack {
-                    RoundedRectangle(cornerRadius: 32)
-                        .fill(Color.white)
-                        .frame(width: 400, height: 480)
-                        .shadow(color: Color(hex: "#00D9A0").opacity(appState.p2p.isConnected ? 0.6 : 0), radius: 30)
+                    // Glassmorphism Card
+                    RoundedRectangle(cornerRadius: 48, style: .continuous)
+                        .fill(.ultraThinMaterial)
+                        .frame(width: 440, height: 520)
+                        .shadow(color: appState.p2p.isConnected ? Color.green.opacity(0.3) : Color.black.opacity(0.5), radius: 40, y: 20)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 48, style: .continuous)
+                                .stroke(LinearGradient(
+                                    colors: [.white.opacity(0.2), .white.opacity(0.0)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ), lineWidth: 1)
+                        )
                     
-                    VStack(spacing: 24) {
+                    VStack(spacing: 32) {
                         if appState.p2p.isConnected {
-                            // Tampilan Sukses Terhubung
-                            VStack(spacing: 16) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .font(.system(size: 80))
-                                    .foregroundStyle(.green)
-                                    .symbolEffect(.bounce, value: true)
+                            // Connected State
+                            VStack(spacing: 24) {
+                                ZStack {
+                                    Circle()
+                                        .fill(Color.green.opacity(0.1))
+                                        .frame(width: 160, height: 160)
+                                    
+                                    Image(systemName: "checkmark")
+                                        .font(.system(size: 64, weight: .bold))
+                                        .foregroundStyle(.green)
+                                }
+                                .scaleEffect(appState.p2p.isConnected ? 1 : 0.5)
+                                .animation(.spring(response: 0.5, dampingFraction: 0.6).delay(0.1), value: appState.p2p.isConnected)
                                 
-                                Text("Terhubung!")
-                                    .font(.title.bold())
-                                    .foregroundStyle(.black)
-                                
-                                if let name = appState.p2p.connectedPeerName {
-                                    Text(name)
-                                        .font(.subheadline)
-                                        .foregroundStyle(.gray)
+                                VStack(spacing: 8) {
+                                    Text("Berhasil Terhubung")
+                                        .font(.title.bold())
+                                        .foregroundStyle(.primary)
+                                    
+                                    if let name = appState.p2p.connectedPeerName {
+                                        Text(name)
+                                            .font(.headline)
+                                            .foregroundStyle(.secondary)
+                                    }
                                 }
                             }
-                            .transition(.scale.combined(with: .opacity))
+                            .transition(.asymmetric(
+                                insertion: .scale(scale: 0.8).combined(with: .opacity),
+                                removal: .opacity
+                            ))
                             
                         } else {
-                            // Tampilan QR Code
-                            if let payload = appState.p2p.currentQRPayload,
-                               let qrImage = generateQRCode(from: payload) {
-                                
-                                Image(uiImage: qrImage)
-                                    .interpolation(.none)
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 280, height: 280)
-                                    .id(payload.ts) // Memicu re-render otomatis saat ts berubah
-                                    .transition(.opacity)
-                                
-                            } else {
-                                ProgressView()
-                                    .controlSize(.large)
-                                    .frame(width: 280, height: 280)
-                            }
-                            
-                            // Visual Countdown
-                            VStack(spacing: 8) {
-                                Text("Kode QR akan diperbarui dalam:")
-                                    .font(.caption)
-                                    .foregroundStyle(.gray)
-                                
-                                HStack(spacing: 6) {
-                                    Image(systemName: "clock.arrow.circlepath")
-                                        .foregroundStyle(remainingSeconds < 30 ? .red : .orange)
-                                    Text(formatTime(remainingSeconds))
-                                        .font(.headline.monospacedDigit())
-                                        .foregroundStyle(remainingSeconds < 30 ? .red : .black)
+                            // Scanning State
+                            VStack(spacing: 32) {
+                                if let payload = appState.p2p.currentQRPayload,
+                                   let qrImage = generateQRCode(from: payload) {
+                                    
+                                    ZStack {
+                                        // Pulse rings
+                                        Circle()
+                                            .stroke(Color.blue.opacity(0.3), lineWidth: 2)
+                                            .frame(width: 320, height: 320)
+                                            .scaleEffect(isAnimating ? 1.2 : 0.8)
+                                            .opacity(isAnimating ? 0 : 1)
+                                            .animation(.easeOut(duration: 2).repeatForever(autoreverses: false), value: isAnimating)
+                                        
+                                        Image(uiImage: qrImage)
+                                            .interpolation(.none)
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: 260, height: 260)
+                                            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                                            .shadow(color: .black.opacity(0.2), radius: 20, y: 10)
+                                    }
+                                    .id(payload.ts)
+                                    .transition(.opacity.animation(.easeInOut))
+                                    
+                                } else {
+                                    ProgressView()
+                                        .controlSize(.large)
+                                        .tint(.white)
+                                        .frame(width: 260, height: 260)
                                 }
+                                
+                                // Beautiful Timer Pill
+                                HStack(spacing: 8) {
+                                    Image(systemName: "arrow.triangle.2.circlepath")
+                                        .font(.subheadline.weight(.semibold))
+                                    Text(formatTime(remainingSeconds))
+                                        .font(.subheadline.weight(.bold).monospacedDigit())
+                                }
+                                .foregroundStyle(remainingSeconds < 30 ? Color.red : Color.secondary)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(Color(UIColor.systemBackground).opacity(0.1))
+                                .clipShape(Capsule())
                             }
                         }
                     }
                 }
-                .animation(.spring, value: appState.p2p.isConnected)
-                
-                // Status Bar
-                HStack(spacing: 12) {
-                    Circle()
-                        .fill(appState.p2p.isConnected ? .green : .orange)
-                        .frame(width: 12, height: 12)
-                    
-                    Text(appState.p2p.connectionState.displayText)
-                        .font(.headline)
-                        .foregroundStyle(.white)
-                }
                 
                 Spacer()
                 
-                // Navigation Actions
-                HStack(spacing: 24) {
-                    Button(role: .cancel) {
-                        dismiss()
-                    } label: {
-                        Text("Kembali")
-                            .font(.title3.bold())
-                            .frame(width: 200, height: 60)
-                            .foregroundStyle(.white)
-                            .background(Color.white.opacity(0.1))
-                            .clipShape(Capsule())
+                // Status Bar & Action
+                VStack(spacing: 24) {
+                    // Status Badge
+                    HStack(spacing: 12) {
+                        Circle()
+                            .fill(appState.p2p.isConnected ? Color.green : Color.orange)
+                            .frame(width: 8, height: 8)
+                            .shadow(color: appState.p2p.isConnected ? Color.green : Color.orange, radius: 4)
+                        
+                        Text(appState.p2p.connectionState.displayText)
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(.white.opacity(0.7))
                     }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .background(.ultraThinMaterial)
+                    .clipShape(Capsule())
                     
-                    Button {
-                        dismiss()
-                    } label: {
-                        Text("Lanjutkan")
-                            .font(.title3.bold())
-                            .frame(width: 200, height: 60)
-                            .foregroundStyle(.black)
-                            .background(appState.p2p.isConnected ? Color(hex: "#00D9A0") : Color.gray)
-                            .clipShape(Capsule())
+                    // Buttons
+                    HStack(spacing: 20) {
+                        Button(action: { dismiss() }) {
+                            Text("Batal")
+                                .font(.title3.weight(.semibold))
+                                .frame(width: 180, height: 56)
+                                .foregroundStyle(.white)
+                                .background(.ultraThinMaterial)
+                                .clipShape(Capsule())
+                        }
+                        
+                        Button(action: { dismiss() }) {
+                            Text("Selesai")
+                                .font(.title3.weight(.semibold))
+                                .frame(width: 180, height: 56)
+                                .foregroundStyle(appState.p2p.isConnected ? .black : .white.opacity(0.3))
+                                .background(appState.p2p.isConnected ? Color(hex: "#00D9A0") : Color.white.opacity(0.1))
+                                .clipShape(Capsule())
+                        }
+                        .disabled(!appState.p2p.isConnected)
+                        .animation(.easeInOut, value: appState.p2p.isConnected)
                     }
-                    .disabled(!appState.p2p.isConnected)
                 }
-                .padding(.bottom, 40)
+                .padding(.bottom, 60)
             }
         }
         .onAppear {
+            isAnimating = true
             setupQRGeneration()
         }
         .onDisappear {
