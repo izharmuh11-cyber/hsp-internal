@@ -77,8 +77,14 @@ actor LocalTCPRouterService {
                     await self?.onConnectionStateChange?(.connected)
                     HaispaceLogger.info("Koneksi TCP klien diterima", category: "p2p")
                     await self?.receiveNextMessage(from: connection)
-                case .failed(let error), .cancelled:
-                    HaispaceLogger.warning("Koneksi TCP terputus: \(error)", category: "p2p")
+                case .failed(let error):
+                    HaispaceLogger.warning("Koneksi TCP gagal: \(error)", category: "p2p")
+                    await self?.onConnectionStateChange?(.disconnected)
+                    if self?.activeConnection === connection {
+                        self?.activeConnection = nil
+                    }
+                case .cancelled:
+                    HaispaceLogger.warning("Koneksi TCP dibatalkan", category: "p2p")
                     await self?.onConnectionStateChange?(.disconnected)
                     if self?.activeConnection === connection {
                         self?.activeConnection = nil

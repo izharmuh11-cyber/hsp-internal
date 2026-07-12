@@ -92,7 +92,7 @@ final class PoseIntelligenceService: @unchecked Sendable {
                     completion(count, category, zoom)
                 }
             } catch {
-                HaispaceLogger.error("Vision AI Error: \(error)", category: "ai")
+                HaispaceLogger.error(error)
                 await MainActor.run {
                     self.isAnalyzing = false
                     completion(0, .waiting, nil)

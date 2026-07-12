@@ -261,11 +261,7 @@ private struct PolaroidMockView: View {
     }
 }
 
-// Enum Addon placeholder
-enum AddonType {
-    case boomerang
-    case timelapse
-}
+// Enum Addon placeholder removed (defined in BoothPackage.swift)
 
 #Preview {
     PackageSelectionView()

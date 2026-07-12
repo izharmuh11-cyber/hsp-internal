@@ -146,7 +146,8 @@ final class AppState {
 
 extension AppState {
 
-    /// Mock AppState untuk SwiftUI Preview
+    /// Mock AppState untuk SwiftUI Previews
+    @MainActor
     static var preview: AppState {
         let state = AppState()
 
@@ -179,6 +180,7 @@ extension AppState {
     }
 
     /// Mock AppState dengan sesi aktif — untuk preview halaman dalam sesi
+    @MainActor
     static var previewWithActiveSession: AppState {
         let state = preview
 
@@ -189,7 +191,7 @@ extension AppState {
         session.status = .photoSelection
         let mockPhotos = CapturedPhoto.mockPhotos(count: 5)
         for photo in mockPhotos {
-            session.photos.capturedPhotos.append(photo)
+            session.photos.addPhotoForPreview(photo)
         }
         // Pilih 3 foto pertama
         session.photos.selectedPhotoIds = Set(mockPhotos.prefix(3).map { $0.id })

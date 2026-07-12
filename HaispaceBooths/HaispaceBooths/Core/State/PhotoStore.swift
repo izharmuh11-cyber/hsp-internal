@@ -123,4 +123,10 @@ final class PhotoStore {
         selectedFilterName = nil
         HaispaceLogger.info("PhotoStore di-reset", category: "photo")
     }
+
+    // MARK: - Previews Helper
+
+    func addPhotoForPreview(_ photo: CapturedPhoto) {
+        capturedPhotos.append(photo)
+    }
 }

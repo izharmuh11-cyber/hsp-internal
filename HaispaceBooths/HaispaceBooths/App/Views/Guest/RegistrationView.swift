@@ -186,9 +186,10 @@ struct RegistrationView: View {
     private func submit() {
         let finalName = guestName.trimmingCharacters(in: .whitespacesAndNewlines)
         appState.pendingGuest = GuestInfo(
-            id: UUID().uuidString,
-            displayName: finalName.isEmpty ? "Guest" : finalName,
-            instagramHandle: instagramHandle.isEmpty ? nil : instagramHandle
+            name: finalName.isEmpty ? "Guest" : finalName,
+            instagram: instagramHandle.isEmpty ? nil : instagramHandle,
+            phoneNumber: nil,
+            queueNumber: Int.random(in: 100...999)
         )
         
         withAnimation(.spring) {

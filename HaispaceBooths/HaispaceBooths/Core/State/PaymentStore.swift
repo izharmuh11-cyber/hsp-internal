@@ -128,6 +128,7 @@ final class PaymentStore {
         status = .generatingQRIS
 
         Task {
+            do {
                 let payload = try QRISGeneratorService.generate(
                     amount: self.amount,
                     transactionId: self.transactionId ?? UUID().uuidString
@@ -140,6 +141,11 @@ final class PaymentStore {
                     self.status = .waitingForPayment
                 }
                 HaispaceLogger.info("QRIS generated — transaction: \(String(describing: self.transactionId))", category: "payment")
+            } catch {
+                HaispaceLogger.error("Failed to generate QRIS: \(error)", category: "payment")
+                await MainActor.run {
+                    self.status = .failed
+                }
             }
         }
     }

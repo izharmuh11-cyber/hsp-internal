@@ -177,7 +177,7 @@ final class SessionStore {
 
     /// Reset paksa oleh operator (semua foto hilang)
     @MainActor
-    func forceReset() {
+    func reset() {
         sessionTimerTask?.cancel()
         captureTimerTask?.cancel()
         photos.reset()
@@ -203,7 +203,7 @@ final class SessionStore {
 
             // Dengarkan pesan photo (Channel 1: Thumbnail & Channel 2: Full)
             Task {
-                for await message in P2PMessageRouter.shared.messageStream(for: .photoPreview) {
+                for await message in await P2PMessageRouter.shared.messageStream(for: .photoPreview) {
                     guard case .photoPreview(let id, let thumbnailData) = message else { continue }
                     await MainActor.run {
                         let thumbnail = PhotoThumbnail(photoId: id, data: thumbnailData, capturedAt: Date(), sortOrder: self.photos.capturedCount)
@@ -213,7 +213,7 @@ final class SessionStore {
             }
             
             Task {
-                for await message in P2PMessageRouter.shared.messageStream(for: .photoFull) {
+                for await message in await P2PMessageRouter.shared.messageStream(for: .photoFull) {
                     guard case .photoFull(let id, let fullData) = message else { continue }
                     await MainActor.run {
                         self.photos.upgradeToFullQuality(photoId: id, fullData: fullData)
@@ -254,7 +254,7 @@ final class SessionStore {
     // MARK: - Helper
 
     private func calculateTotalAmount() -> Int {
-        var total = package_.price
+        let total = package_.price
         // TODO: Fase 2 — tambahkan harga add-on yang dipilih
         return total
     }

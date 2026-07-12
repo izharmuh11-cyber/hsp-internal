@@ -150,7 +150,7 @@ struct FilterSelectionView: View {
         
         // Render in background
         Task.detached {
-            let filteredCI = filterService.applyLUT(to: base, lutURL: filterOption.lutURL, intensity: intensity)
+            let filteredCI = await filterService.applyLUT(to: base, lutURL: filterOption.lutURL, intensity: intensity)
             if let cgImage = filterService.render(filteredCI) {
                 let uiImage = UIImage(cgImage: cgImage)
                 await MainActor.run {

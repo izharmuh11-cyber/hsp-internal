@@ -136,7 +136,7 @@ struct ActiveSessionView: View {
                         Spacer()
                         
                         // Small pip thumbnail foto terakhir (Opsional)
-                        if let lastPhotoId = session?.photos.capturedPhotos.last?.id {
+                        if session?.photos.capturedPhotos.last?.id != nil {
                             // Dummy PIP indicator
                             RoundedRectangle(cornerRadius: 8)
                                 .fill(Color.white.opacity(0.2))
@@ -234,7 +234,8 @@ struct ActiveSessionView: View {
         
         // 2. Kirim perintah trigger ke iPhone via P2P
         Task {
-            await P2PMessageRouter.shared.route(.triggerCapture)
+            let index = appState.currentSession?.photos.capturedCount ?? 0
+            await P2PMessageRouter.shared.route(.triggerCapture(poseId: nil, captureIndex: index))
         }
     }
 }
