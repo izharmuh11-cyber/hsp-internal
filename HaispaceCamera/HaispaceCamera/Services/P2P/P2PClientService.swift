@@ -104,7 +104,7 @@ actor P2PClientService: NSObject {
 extension P2PClientService: MCSessionDelegate {
     nonisolated func session(_ session: MCSession, peer peerID: MCPeerID, didChange state: MCSessionState) {
         Task {
-            let callback = self.onConnectionStateChange
+            let callback = await self.onConnectionStateChange
             switch state {
             case .connected:
                 callback?(.connected)
