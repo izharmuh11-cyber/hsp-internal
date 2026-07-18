@@ -9,9 +9,6 @@
 import Foundation
 import AVFoundation
 import UIKit
-import Vision
-import CoreImage
-import CoreImage.CIFilterBuiltins
 
 final class CameraCaptureService: NSObject {
     static let shared = CameraCaptureService()
@@ -35,26 +32,6 @@ final class CameraCaptureService: NSObject {
     // Status Portrait Mode
     nonisolated(unsafe) var isPortraitModeActive = false
     nonisolated(unsafe) var isSessionActive = false
-    
-    // MARK: - Live Bokeh (Vision + CoreImage Pipeline)
-    // VNGeneratePersonSegmentationRequest: AI segmentasi orang vs background per frame
-    // qualityLevel .balanced = ~5ms/frame di iPhone 14, cukup untuk 30fps stream
-    private let segmentationRequest: VNGeneratePersonSegmentationRequest = {
-        let req = VNGeneratePersonSegmentationRequest()
-        req.qualityLevel = .balanced
-        req.outputPixelFormat = kCVPixelFormatType_OneComponent8
-        return req
-    }()
-    // Cache mask terakhir — tidak perlu update setiap frame untuk efek smooth
-    nonisolated(unsafe) private var lastSegmentationMask: CIImage? = nil
-    nonisolated(unsafe) private var bokehFrameCount: Int = 0
-    // Update mask setiap 3 frame = ~10x/detik pada 30fps, cukup halus untuk bokeh
-    private let bokehMaskInterval = 3
-    // CIContext dengan GPU Metal acceleration
-    private lazy var ciContext: CIContext = CIContext(options: [
-        .useSoftwareRenderer: false,
-        .workingColorSpace: CGColorSpaceCreateDeviceRGB() as Any
-    ])
     
     private override init() {
         super.init()
@@ -207,6 +184,10 @@ final class CameraCaptureService: NSObject {
     }
     
     /// Kunci Fokus dan Eksposur dari jarak jauh pada titik tertentu (0.0 - 1.0)
+    /// PENTING: Menggunakan .continuousAutoFocus + focusPointOfInterest — bukan .autoFocus!
+    /// .autoFocus adalah one-shot dan mengunci fokus selamanya. 
+    /// .continuousAutoFocus + pointOfInterest = kamera fokus ke titik itu lalu terus tracking subyek,
+    /// persis seperti perilaku tap-to-focus di native Camera app iPhone.
     func setFocusAndExposurePoint(x: Float, y: Float) {
         guard let deviceInput = captureSession.inputs.first as? AVCaptureDeviceInput else {
             return
@@ -218,20 +199,22 @@ final class CameraCaptureService: NSObject {
             
             let point = CGPoint(x: CGFloat(x), y: CGFloat(y))
             
-            if device.isFocusPointOfInterestSupported && device.isFocusModeSupported(.autoFocus) {
+            // Set fokus ke titik yang ditentukan, lalu lanjut tracking otomatis
+            if device.isFocusPointOfInterestSupported && device.isFocusModeSupported(.continuousAutoFocus) {
                 device.focusPointOfInterest = point
-                device.focusMode = .autoFocus
+                device.focusMode = .continuousAutoFocus
             }
             
-            if device.isExposurePointOfInterestSupported && device.isExposureModeSupported(.autoExpose) {
+            // Set eksposur ke titik yang ditentukan, lalu lanjut auto-adjust otomatis
+            if device.isExposurePointOfInterestSupported && device.isExposureModeSupported(.continuousAutoExposure) {
                 device.exposurePointOfInterest = point
-                device.exposureMode = .autoExpose
+                device.exposureMode = .continuousAutoExposure
             }
             
             device.unlockForConfiguration()
-            HaispaceLogger.info("Remote focus & exposure lock set at: (\(x), \(y))", category: "camera")
+            HaispaceLogger.info("[Focus] Continuous focus & exposure set at: (\(x), \(y))", category: "camera")
         } catch {
-            HaispaceLogger.error("Gagal melakukan remote focus & exposure: \(error)", category: "camera")
+            HaispaceLogger.error("[Focus] Gagal set focus point: \(error)", category: "camera")
         }
     }
     
@@ -372,19 +355,32 @@ final class CameraCaptureService: NSObject {
         }
     }
     
-    /// Mengaktifkan atau mematikan mode Portrait (Live Bokeh via Vision AI)
+    /// Mengaktifkan atau mematikan mode Portrait menggunakan iOS 17 native Portrait Effect.
+    /// AVCaptureDevice.portraitEffectEnabled adalah hardware-accelerated Neural Engine API
+    /// yang sama persis digunakan oleh FaceTime, Camera Video mode, dan Studio Light pada iPhone.
+    /// Ini jauh lebih efisien dan natural dibandingkan Vision AI + CoreImage manual.
     func setPortraitMode(enabled: Bool) {
-        // isPortraitModeActive dibaca dari videoQueue (captureOutput) — set langsung tanpa dispatch
-        // aman karena nonisolated(unsafe) dan perubahan boolean adalah atomic write pada platform 64-bit
         isPortraitModeActive = enabled
-        if enabled {
-            // Reset cache mask agar segmentasi segar dimulai ulang
-            lastSegmentationMask = nil
-            bokehFrameCount = 0
-            HaispaceLogger.info("[PortraitMode] AKTIF — Live Bokeh (Vision AI) dimulai", category: "camera")
-        } else {
-            lastSegmentationMask = nil
-            HaispaceLogger.info("[PortraitMode] NONAKTIF — Live Bokeh dimatikan", category: "camera")
+        
+        sessionQueue.async { [weak self] in
+            guard let self = self,
+                  let deviceInput = self.captureSession.inputs.first as? AVCaptureDeviceInput else { return }
+            let device = deviceInput.device
+            
+            // Cek dukungan Portrait Effect (iOS 17+, tersedia di iPhone 12 Pro ke atas)
+            guard device.isPortraitEffectSupported else {
+                HaispaceLogger.warning("[PortraitMode] Hardware Portrait Effect tidak didukung pada \(device.localizedName)", category: "camera")
+                return
+            }
+            
+            do {
+                try device.lockForConfiguration()
+                device.isPortraitEffectEnabled = enabled
+                device.unlockForConfiguration()
+                HaispaceLogger.info("[PortraitMode] Native Portrait Effect \(enabled ? "AKTIF" : "NONAKTIF") pada \(device.localizedName)", category: "camera")
+            } catch {
+                HaispaceLogger.error("[PortraitMode] Gagal set portrait effect: \(error.localizedDescription)", category: "camera")
+            }
         }
     }
 }
@@ -392,70 +388,10 @@ final class CameraCaptureService: NSObject {
 // MARK: - AVCaptureVideoDataOutputSampleBufferDelegate
 extension CameraCaptureService: AVCaptureVideoDataOutputSampleBufferDelegate {
     nonisolated func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        // Jika Portrait Mode aktif, terapkan Live Bokeh (Vision AI segmentasi + CIGaussianBlur)
-        // sebelum frame dikirim ke VideoEncoderService
-        if self.isPortraitModeActive,
-           let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
-            self.applyLiveBokeh(to: pixelBuffer)
-        }
+        // Frame langsung dikirim ke VideoEncoderService.
+        // Portrait Effect sudah diproses oleh hardware Neural Engine iPhone secara otomatis
+        // saat device.isPortraitEffectEnabled = true — tidak perlu pemrosesan manual per-frame.
         self.onVideoFrameCaptured?(sampleBuffer)
-    }
-    
-    /// Menerapkan software bokeh real-time ke CVPixelBuffer secara in-place.
-    /// Pipeline: Orang disegmentasi via Vision AI → background di-blur via CIGaussianBlur
-    /// → composite via CIBlendWithMask → render kembali ke pixel buffer yang sama.
-    nonisolated private func applyLiveBokeh(to pixelBuffer: CVPixelBuffer) {
-        bokehFrameCount += 1
-        
-        // Langkah 1: Update segmentation mask setiap N frame
-        // (tidak perlu setiap frame — mask dicache untuk frame berikutnya)
-        if bokehFrameCount % bokehMaskInterval == 0 {
-            let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer,
-                                               orientation: .up,
-                                               options: [:])
-            do {
-                try handler.perform([segmentationRequest])
-                
-                if let maskPixelBuffer = segmentationRequest.results?.first?.pixelBuffer {
-                    let originalCI = CIImage(cvPixelBuffer: pixelBuffer)
-                    let maskCI = CIImage(cvPixelBuffer: maskPixelBuffer)
-                    
-                    // Scale mask agar sesuai resolusi frame (mask biasanya lebih kecil)
-                    let scaleX = originalCI.extent.width / maskCI.extent.width
-                    let scaleY = originalCI.extent.height / maskCI.extent.height
-                    lastSegmentationMask = maskCI
-                        .transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
-                }
-            } catch {
-                // Jika Vision gagal, lewati bokeh frame ini (stream tetap jalan normal)
-                HaispaceLogger.warning("[Bokeh] Segmentasi gagal: \(error.localizedDescription)", category: "camera")
-                return
-            }
-        }
-        
-        // Langkah 2: Terapkan bokeh menggunakan mask terakhir
-        guard let mask = lastSegmentationMask else { return }
-        
-        let original = CIImage(cvPixelBuffer: pixelBuffer)
-        
-        // Blur seluruh frame untuk digunakan sebagai background
-        // inputRadius: 22 = bokeh depth yang natural mirip lensa 85mm f/1.8
-        let blurred = original
-            .clampedToExtent()
-            .applyingFilter("CIGaussianBlur", parameters: ["inputRadius": 22.0])
-            .cropped(to: original.extent)
-        
-        // CIBlendWithMask:
-        // • mask = putih (1.0) → tampilkan original (orang tajam)
-        // • mask = hitam (0.0) → tampilkan blurred (background blur)
-        let bokehComposite = original.applyingFilter("CIBlendWithMask", parameters: [
-            kCIInputBackgroundImageKey: blurred,
-            kCIInputMaskImageKey: mask
-        ])
-        
-        // Langkah 3: Render composite langsung ke pixelBuffer yang sama (in-place)
-        // CMSampleBuffer yang dibagikan ke VideoEncoder akan otomatis berisi frame yang sudah diproses
-        ciContext.render(bokehComposite, to: pixelBuffer)
     }
 }
 
