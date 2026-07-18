@@ -239,7 +239,14 @@ final class CameraCaptureService: NSObject {
             if self.isPortraitModeActive && self.photoOutput.isDepthDataDeliveryEnabled {
                 photoSettings.isDepthDataDeliveryEnabled = true
                 photoSettings.embedsDepthDataInPhoto = true
-                HaispaceLogger.info("Depth data delivery diaktifkan untuk jepretan Portrait", category: "camera")
+                
+                // Aktifkan portrait effects matte delivery (prasyarat: depth delivery harus aktif)
+                // Ini memastikan capture.portraitEffectsMatte tersedia di PhotoTransferService
+                if self.photoOutput.isPortraitEffectsMatteDeliveryEnabled {
+                    photoSettings.isPortraitEffectsMatteDeliveryEnabled = true
+                    HaispaceLogger.info("Portrait effects matte delivery diaktifkan untuk jepretan", category: "camera")
+                }
+                HaispaceLogger.info("Depth + matte delivery aktif untuk jepretan Portrait", category: "camera")
             } else {
                 photoSettings.isDepthDataDeliveryEnabled = false
                 photoSettings.embedsDepthDataInPhoto = false
@@ -492,6 +499,16 @@ final class CameraCaptureService: NSObject {
                 if self.photoOutput.isDepthDataDeliverySupported {
                     self.photoOutput.isDepthDataDeliveryEnabled = true
                     HaispaceLogger.info("[PortraitMode] photoOutput depth delivery: ENABLED", category: "camera")
+                    
+                    // LANGKAH 4b: Aktifkan portrait effects matte (pixel-perfect ML segmentation dari Neural Engine)
+                    // WAJIB setelah depth delivery diaktifkan — ini adalah prasyarat iOS.
+                    // Matte berformat 1-channel grayscale (255=orang, 0=background) untuk blend mask di PhotoTransferService.
+                    if self.photoOutput.isPortraitEffectsMatteDeliverySupported {
+                        self.photoOutput.isPortraitEffectsMatteDeliveryEnabled = true
+                        HaispaceLogger.info("[PortraitMode] Portrait effects matte delivery: ENABLED", category: "camera")
+                    } else {
+                        HaispaceLogger.warning("[PortraitMode] Portrait effects matte tidak didukung — foto tanpa bokeh jika dijepret", category: "camera")
+                    }
                 } else {
                     HaispaceLogger.warning("[PortraitMode] depth delivery tidak didukung perangkat ini", category: "camera")
                 }
@@ -521,13 +538,15 @@ final class CameraCaptureService: NSObject {
                 // LANGKAH 2: Matikan depth delivery, hapus depthOutput, kembalikan preset
                 self.captureSession.beginConfiguration()
                 
-                // Matikan depth delivery sebelum remove output
+                // Matikan portrait effects matte DAN depth delivery sebelum remove output
+                // Urutan penting: matte harus dimatikan sebelum depth karena matte bergantung pada depth
+                self.photoOutput.isPortraitEffectsMatteDeliveryEnabled = false
                 self.photoOutput.isDepthDataDeliveryEnabled = false
                 
                 self.captureSession.removeOutput(self.depthOutput)
                 self.captureSession.sessionPreset = .hd1280x720
                 self.captureSession.commitConfiguration()
-                HaispaceLogger.info("[PortraitMode] depth output dilepas, preset kembali ke hd1280x720", category: "camera")
+                HaispaceLogger.info("[PortraitMode] matte + depth dinonaktifkan, depth output dilepas, preset kembali ke hd1280x720", category: "camera")
                 
                 // LANGKAH 2b: Kembalikan maxPhotoQualityPrioritization ke .quality jika didukung format aktif
                 if videoDevice.activeFormat.isHighPhotoQualitySupported {
