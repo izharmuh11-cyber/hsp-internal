@@ -489,9 +489,9 @@ struct ActiveSessionView: View {
                     // Portrait Mode ('f' Bokeh) Button
                     Button(action: {
                         isPortraitModeActive.toggle()
-                        // Jika mode Portrait diaktifkan saat di 0.5x, alihkan ke 1x karena UltraWide tidak mendukung depth
-                        // Jika sedang di 1x atau 2x, pertahankan pilihan zoom user (mendukung 2x Portrait!)
-                        if isPortraitModeActive && activeZoom == "0.5x" {
+                        // Saat Mode Portrait diaktifkan, selalu mulai dari default 1x (Kamera Utama 26mm Portrait).
+                        // Pengguna dapat mengklik 2x kapan saja untuk beralih ke 2x Portrait (52mm).
+                        if isPortraitModeActive {
                             activeZoom = "1x"
                             Task {
                                 await P2PMessageRouter.shared.route(.setZoom(factor: 1.0))
