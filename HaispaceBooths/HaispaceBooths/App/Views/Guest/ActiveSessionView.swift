@@ -450,36 +450,43 @@ struct ActiveSessionView: View {
             VStack {
                 VStack(spacing: 14) {
                     // Zoom Selector Pills (Vertical)
-                    VStack(spacing: 6) {
-                        ForEach(["0.5x", "1x", "2x"], id: \.self) { lens in
-                            Button(action: {
-                                activeZoom = lens
-                                let factor = lens == "0.5x" ? 0.5 : (lens == "2x" ? 2.0 : 1.0)
-                                Task {
-                                    await P2PMessageRouter.shared.route(.setZoom(factor: factor))
+                    // Disembunyikan saat Portrait Mode aktif karena sistem membatasi kamera hanya pada lensa 1x (Wide)
+                    // untuk sinkronisasi depth data yang tepat dari hardware stereo.
+                    if !isPortraitModeActive {
+                        VStack(spacing: 6) {
+                            ForEach(["0.5x", "1x", "2x"], id: \.self) { lens in
+                                Button(action: {
+                                    activeZoom = lens
+                                    let factor = lens == "0.5x" ? 0.5 : (lens == "2x" ? 2.0 : 1.0)
+                                    Task {
+                                        await P2PMessageRouter.shared.route(.setZoom(factor: factor))
+                                    }
+                                    lastActivityTime = Date()
+                                }) {
+                                    Text(lens)
+                                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                                        .foregroundStyle(activeZoom == lens ? Color.black : Color.white)
+                                        .frame(width: 48, height: 38)
+                                        .background(activeZoom == lens ? Color.white : Color.white.opacity(0.12))
+                                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                                 }
-                                lastActivityTime = Date()
-                            }) {
-                                Text(lens)
-                                    .font(.system(size: 12, weight: .bold, design: .rounded))
-                                    .foregroundStyle(activeZoom == lens ? Color.black : Color.white)
-                                    .frame(width: 48, height: 38)
-                                    .background(activeZoom == lens ? Color.white : Color.white.opacity(0.12))
-                                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                             }
                         }
+                        .padding(4)
+                        .background(.ultraThinMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                        )
                     }
-                    .padding(4)
-                    .background(.ultraThinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                    )
                     
                     // Portrait Mode ('f' Bokeh) Button
                     Button(action: {
                         isPortraitModeActive.toggle()
+                        if isPortraitModeActive {
+                            activeZoom = "1x" // Mode Portrait mengunci kamera ke 1x secara native
+                        }
                         Task {
                             await P2PMessageRouter.shared.route(.setPortraitMode(enabled: isPortraitModeActive))
                         }
