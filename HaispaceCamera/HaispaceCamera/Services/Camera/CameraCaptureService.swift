@@ -557,22 +557,48 @@ extension CameraCaptureService: AVCaptureDepthDataOutputDelegate {
         let depthFloat32 = depthData.converting(toDepthDataType: kCVPixelFormatType_DepthFloat32)
         let newDepthCI = CIImage(cvPixelBuffer: depthFloat32.depthDataMap)
         
-        // ENHANCEMENT #5: Temporal smoothing untuk mencegah bokeh flickering.
-        // Bokeh bisa berkedip jika depth map berubah drastis antar frame karena
-        // noise sensor atau gerakan kecil subjek.
-        // Solusi: EMA (Exponential Moving Average) — blend 70% frame lama + 30% frame baru.
-        // Hasilnya: transisi depth yang halus dan stabil, persis seperti iPhone Camera native.
+        // ENHANCEMENT #5 (FIXED): Temporal smoothing — EMA 70% lama + 30% baru.
+        //
+        // ⚠️ BUG KRITIS SEBELUMNYA: Menyimpan CIImage hasil blend langsung ke lastDepthImage
+        // menyebabkan akumulasi rantai referensi lazy yang tak terbatas:
+        //   frame 1: smoothed = blend(nil, new1)       → 1 ref
+        //   frame 2: smoothed = blend(frame1, new2)    → 2 refs
+        //   frame N: smoothed = blend(frame N-1, newN) → N refs
+        // Setelah 30 detik pada 24fps = 720 CIImage berantai.
+        // Saat ciContext.render() dipanggil (saat foto diambil), iOS evaluasi semua
+        // 720 frame sekaligus → memory explosion → watchdog kill → CRASH.
+        //
+        // ✅ FIX: Setelah blend, langsung render ke CVPixelBuffer baru untuk memutus
+        // rantai referensi. Depth map berukuran kecil (~640x480), render ini murah di GPU.
+        // CIImage yang dibuat dari flatBuffer tidak membawa histori apapun.
         let smoothed: CIImage
         if let existing = lastDepthImage {
-            // CIBlendWithMask formula: output = foreground * mask + background * (1 - mask)
-            // mask 0.7 (abu-abu 70%) = 70% foreground (lama) + 30% background (baru)
             let smoothingMask = CIImage(color: CIColor(red: 0.7, green: 0.7, blue: 0.7, alpha: 1.0))
                 .cropped(to: newDepthCI.extent)
-            smoothed = newDepthCI.applyingFilter("CIBlendWithMask", parameters: [
-                kCIInputBackgroundImageKey: newDepthCI, // 30% baru
-                kCIInputImageKey: existing,              // 70% lama
+            let blended = newDepthCI.applyingFilter("CIBlendWithMask", parameters: [
+                kCIInputBackgroundImageKey: newDepthCI, // 30% frame baru
+                kCIInputImageKey: existing,              // 70% frame lama
                 kCIInputMaskImageKey: smoothingMask
             ])
+            
+            // KRITIS: Render ke pixel buffer baru untuk memutus rantai CIImage.
+            let w = Int(newDepthCI.extent.width)
+            let h = Int(newDepthCI.extent.height)
+            var flatBuffer: CVPixelBuffer?
+            let attrs: [String: Any] = [kCVPixelBufferIOSurfacePropertiesKey as String: [:]]
+            
+            if w > 0, h > 0,
+               CVPixelBufferCreate(kCFAllocatorDefault, w, h, kCVPixelFormatType_DepthFloat32,
+                                   attrs as CFDictionary, &flatBuffer) == kCVReturnSuccess,
+               let flatBuf = flatBuffer {
+                ciContext.render(blended, to: flatBuf)
+                // CIImage baru dari flatBuffer — rantai referensi = 0
+                smoothed = CIImage(cvPixelBuffer: flatBuf)
+            } else {
+                // Fallback: pakai frame baru langsung jika alokasi buffer gagal
+                HaispaceLogger.warning("[PortraitMode] Gagal alokasi depth flat buffer, fallback ke frame baru", category: "camera")
+                smoothed = newDepthCI
+            }
         } else {
             // Frame pertama — langsung pakai tanpa smoothing
             smoothed = newDepthCI
