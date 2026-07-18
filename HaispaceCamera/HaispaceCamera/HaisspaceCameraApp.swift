@@ -22,13 +22,13 @@ struct HaisspaceCameraApp: App {
                 .environment(cameraState)
                 .task {
                     await cameraState.setup()
-                    GitHubLogUploader.uploadLatestLog(eventName: "app_launch")
+                    R2LogUploader.uploadLatestLog(eventName: "app_launch")
                 }
                 .onReceive(NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)) { _ in
-                    GitHubLogUploader.uploadLatestLog(eventName: "app_background")
+                    R2LogUploader.uploadLatestLog(eventName: "app_background")
                 }
                 .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
-                    GitHubLogUploader.uploadLatestLog(eventName: "app_active")
+                    R2LogUploader.uploadLatestLog(eventName: "app_active")
                 }
         }
     }
