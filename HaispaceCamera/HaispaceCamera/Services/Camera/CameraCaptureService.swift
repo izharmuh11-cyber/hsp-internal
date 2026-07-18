@@ -438,7 +438,7 @@ final class CameraCaptureService: NSObject {
                 
                 // LANGKAH 2: Set delegasi secara asinkron
                 // Kedua output berjalan secara independen di queue masing-masing
-                self.depthOutput.setDelegate(self, queue: self.syncQueue)
+                self.depthOutput.setDelegate(self, callbackQueue: self.syncQueue)
                 self.videoOutput.setSampleBufferDelegate(self, queue: self.videoQueue)
                 
                 // LANGKAH 3: Commit — setelah ini depthOutput terdaftar di session
@@ -462,7 +462,7 @@ final class CameraCaptureService: NSObject {
                 HaispaceLogger.info("[PortraitMode] Depth-Based Bokeh AKTIF (Asynchronous)", category: "camera")
             } else {
                 // LANGKAH 1: Matikan delegasi depthOutput
-                self.depthOutput.setDelegate(nil, queue: nil)
+                self.depthOutput.setDelegate(nil, callbackQueue: nil)
                 HaispaceLogger.info("[PortraitMode] depthOutput delegate dilepas", category: "camera")
                 
                 // LANGKAH 2: Matikan depth delivery, hapus depthOutput, kembalikan preset
