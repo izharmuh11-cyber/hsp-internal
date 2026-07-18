@@ -74,7 +74,7 @@ final class CameraCaptureService: NSObject {
     private let syncQueue = DispatchQueue(label: "id.haispaceproject.camera.syncQueue", qos: .userInteractive)
     
     // Simpan target zoom yang diinginkan agar bisa dikembalikan saat beralih mode
-    nonisolated(unsafe) private var lastRequestedZoomFactor: CGFloat = 1.0
+    nonisolated(unsafe) private(set) var lastRequestedZoomFactor: CGFloat = 1.0
     
     // Cache virtualDeviceSwitchOverVideoZoomFactors dari format normal (sebelum portrait mode).
     // Nilai ini BERUBAH saat portrait mode mengaktifkan format depth — yang menyebabkan
