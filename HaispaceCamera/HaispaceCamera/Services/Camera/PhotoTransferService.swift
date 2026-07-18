@@ -81,7 +81,7 @@ actor PhotoTransferService {
                 guard let jpegData = self.ciContext.jpegRepresentation(
                     of: croppedOutput,
                     colorSpace: colorSpace,
-                    options: [.lossyCompressionQuality: 0.9]
+                    options: [CIImageRepresentationOption(rawValue: kCGImageDestinationLossyCompressionQuality as String): 0.9]
                 ) else {
                     HaispaceLogger.warning("Gagal konversi bokeh ke JPEG - foto asli digunakan", category: "camera")
                     return nil
