@@ -204,36 +204,10 @@ final class CameraCaptureService: NSObject {
             }
             
             // Pilih prioritization terbaik yang didukung oleh format aktif saat ini
-            let supportedPrioritizations = self.photoOutput.supportedPhotoQualityPrioritizations
-            let bestPrioritization: AVCapturePhotoQualityPrioritization
-            
-            if self.isPortraitModeActive {
-                // Saat Portrait aktif (format depth), utamakan .balanced atau .speed
-                if supportedPrioritizations.contains(.balanced) {
-                    bestPrioritization = .balanced
-                } else if supportedPrioritizations.contains(.speed) {
-                    bestPrioritization = .speed
-                } else {
-                    bestPrioritization = supportedPrioritizations.first ?? .balanced
-                }
-            } else {
-                // Saat Normal (preset 720p), utamakan .quality
-                if supportedPrioritizations.contains(.quality) {
-                    bestPrioritization = .quality
-                } else if supportedPrioritizations.contains(.balanced) {
-                    bestPrioritization = .balanced
-                } else {
-                    bestPrioritization = supportedPrioritizations.first ?? .balanced
-                }
-            }
-            
-            // Pastikan tidak melebihi maxPhotoQualityPrioritization milik output saat ini
-            let maxOutputPri = self.photoOutput.maxPhotoQualityPrioritization
-            if maxOutputPri.rawValue < bestPrioritization.rawValue {
-                photoSettings.photoQualityPrioritization = maxOutputPri
-            } else {
-                photoSettings.photoQualityPrioritization = bestPrioritization
-            }
+            // Caranya: photoSettings.photoQualityPrioritization TIDAK boleh melebihi maxPhotoQualityPrioritization milik output saat ini.
+            // Maka langsung gunakan maxPhotoQualityPrioritization dari photoOutput (yang sudah disesuaikan saat toggle portrait).
+            let targetPrioritization = self.photoOutput.maxPhotoQualityPrioritization
+            photoSettings.photoQualityPrioritization = targetPrioritization
             
             HaispaceLogger.info("Mengambil foto dengan prioritization: \(photoSettings.photoQualityPrioritization.rawValue)", category: "camera")
             
