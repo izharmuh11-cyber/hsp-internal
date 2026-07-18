@@ -26,6 +26,8 @@ class StreamingDecoderView: UIView {
     override func layoutSubviews() {
         super.layoutSubviews()
         displayLayer.frame = self.bounds
+        // Transformasi Cermin Horizontal (Mirroring seperti kaca asli)
+        displayLayer.transform = CATransform3DMakeScale(-1.0, 1.0, 1.0)
     }
 }
 

@@ -32,6 +32,9 @@ final class StreamingDecoderService {
     private var sps: [UInt8]?
     private var pps: [UInt8]?
     
+    private var lastReportedWidth: Int32 = 0
+    private var lastReportedHeight: Int32 = 0
+    
     private init() {
         displayLayer.videoGravity = .resizeAspectFill
     }
@@ -152,10 +155,17 @@ final class StreamingDecoderService {
             // Push ke layer secara langsung
             displayLayer.enqueue(sampleBuf)
             
-            // Deteksi dimensi & aspek rasio aliran video untuk auto-rotasi
+            // Deteksi dimensi & aspek rasio aliran video untuk auto-rotasi dan logging diagnostik
             if let formatDesc = CMSampleBufferGetFormatDescription(sampleBuf) {
                 let dimensions = CMVideoFormatDescriptionGetDimensions(formatDesc)
                 let isLandscape = dimensions.width >= dimensions.height
+                
+                if self.lastReportedWidth != dimensions.width || self.lastReportedHeight != dimensions.height {
+                    self.lastReportedWidth = dimensions.width
+                    self.lastReportedHeight = dimensions.height
+                    HaispaceLogger.info("[LivePreview] Aliran video aktif — Resolusi: \(dimensions.width)x\(dimensions.height) (\(isLandscape ? "16:9 Landscape" : "9:16 Portrait")), Mode Cermin (Mirroring): AKTIF", category: "camera")
+                }
+                
                 self.onVideoDimensionsChanged?(isLandscape)
             }
             

@@ -286,22 +286,81 @@ final class CameraCaptureService: NSObject {
         }
     }
     
-    /// Mengatur faktor perbesaran (zoom) kamera utama belakang
+    /// Mengatur faktor perbesaran (zoom) kamera secara dinamis (mendukung 0.5x Ultra Wide, 1x Wide, 2x Zoom)
     func setZoom(factor: CGFloat) {
-        // Ambil device back camera default
-        guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else { return }
-        do {
-            try device.lockForConfiguration()
-            defer { device.unlockForConfiguration() }
+        sessionQueue.async { [weak self] in
+            guard let self = self else { return }
             
-            let minZoom = device.minAvailableVideoZoomFactor
-            let maxZoom = min(device.maxAvailableVideoZoomFactor, 5.0) // Batasi maksimal 5x untuk kestabilan kualitas
-            let targetZoom = max(min(factor, maxZoom), minZoom)
+            let currentInput = self.captureSession.inputs.first as? AVCaptureDeviceInput
+            let currentDevice = currentInput?.device
             
-            device.videoZoomFactor = targetZoom
-            HaispaceLogger.info("Zoom factor diubah menjadi \(targetZoom)x", category: "camera")
-        } catch {
-            HaispaceLogger.error("Gagal mengunci konfigurasi kamera untuk zoom: \(error.localizedDescription)", category: "camera")
+            // 1. Cek apakah device saat ini sudah mendukung faktor zoom target secara langsung (misal Triple/Dual Wide Camera)
+            if let device = currentDevice {
+                let minZ = device.minAvailableVideoZoomFactor
+                let maxZ = min(device.maxAvailableVideoZoomFactor, 5.0)
+                if factor >= minZ && factor <= maxZ {
+                    do {
+                        try device.lockForConfiguration()
+                        device.videoZoomFactor = factor
+                        device.unlockForConfiguration()
+                        HaispaceLogger.info("[Zoom] Zoom factor diubah menjadi \(factor)x pada \(device.localizedName)", category: "camera")
+                        return
+                    } catch {
+                        HaispaceLogger.error("[Zoom] Gagal set zoom factor: \(error.localizedDescription)", category: "camera")
+                    }
+                }
+            }
+            
+            // 2. Jika < 0.8x, beralih ke Ultra Wide Camera jika tersedia
+            let targetDeviceType: AVCaptureDevice.DeviceType = (factor < 0.8) ? .builtInUltraWideCamera : .builtInWideAngleCamera
+            let targetZoom: CGFloat = (factor < 0.8) ? 1.0 : min(max(factor, 1.0), 5.0)
+            
+            guard let newDevice = AVCaptureDevice.default(targetDeviceType, for: .video, position: .back),
+                  let newInput = try? AVCaptureDeviceInput(device: newDevice) else {
+                HaispaceLogger.warning("[Zoom] Device kamera type \(targetDeviceType) tidak tersedia pada perangkat ini", category: "camera")
+                return
+            }
+            
+            // Jangan ganti input jika sudah menggunakan device yang sama
+            if currentDevice?.deviceType == newDevice.deviceType {
+                do {
+                    try newDevice.lockForConfiguration()
+                    newDevice.videoZoomFactor = targetZoom
+                    newDevice.unlockForConfiguration()
+                    HaispaceLogger.info("[Zoom] Zoom diubah menjadi \(targetZoom)x pada \(newDevice.localizedName)", category: "camera")
+                } catch {
+                    HaispaceLogger.error("[Zoom] Gagal set zoom: \(error.localizedDescription)", category: "camera")
+                }
+                return
+            }
+            
+            // Ganti input kamera
+            self.captureSession.beginConfiguration()
+            if let oldInput = currentInput {
+                self.captureSession.removeInput(oldInput)
+            }
+            if self.captureSession.canAddInput(newInput) {
+                self.captureSession.addInput(newInput)
+            }
+            self.captureSession.commitConfiguration()
+            
+            do {
+                try newDevice.lockForConfiguration()
+                newDevice.videoZoomFactor = targetZoom
+                newDevice.unlockForConfiguration()
+                HaispaceLogger.info("[Zoom] Berhasil beralih ke kamera \(newDevice.localizedName) (Zoom target: \(factor)x)", category: "camera")
+            } catch {
+                HaispaceLogger.error("[Zoom] Gagal set zoom setelah ganti input: \(error.localizedDescription)", category: "camera")
+            }
+        }
+    }
+    
+    /// Mengaktifkan atau mematikan mode Portrait
+    func setPortraitMode(enabled: Bool) {
+        sessionQueue.async { [weak self] in
+            guard let self = self else { return }
+            self.isPortraitModeActive = enabled
+            HaispaceLogger.info("[PortraitMode] Mode Portrait diset ke \(enabled ? "AKTIF (Depth/Bokeh)" : "NONAKTIF")", category: "camera")
         }
     }
 }
