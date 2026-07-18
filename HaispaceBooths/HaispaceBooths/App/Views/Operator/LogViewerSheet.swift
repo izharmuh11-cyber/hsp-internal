@@ -10,11 +10,8 @@ struct LogViewerSheet: View {
     @State private var logContent = ""
     @State private var isShowingToast = false
 
-    // Token dibaca/ditulis dari Keychain — input sekali, tidak perlu ulangi
-    @State private var githubPAT = ""
-    @State private var isTokenSaved = false
     @State private var isUploading = false
-    @State private var lastUploadURL: String? = nil   // URL raw file setelah upload sukses
+    @State private var lastUploadURL: String? = nil   // URL file R2 setelah upload sukses
     @State private var uploadMessage = ""
     @State private var showUploadAlert = false
 
@@ -37,52 +34,11 @@ struct LogViewerSheet: View {
                     .cornerRadius(12)
                     .padding(.horizontal)
 
-                    // Panel Token + Upload
+                    // Panel Upload ke R2
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("KIRIM LOG OTOMATIS KE GITHUB")
+                        Text("KIRIM LOG OTOMATIS KE HAISPACE R2 CLOUD")
                             .font(.caption.bold())
                             .foregroundStyle(.white.opacity(0.5))
-
-                        // Input token (hanya perlu diisi sekali — disimpan di Keychain)
-                        HStack(spacing: 8) {
-                            SecureField("GitHub Personal Access Token (PAT)", text: $githubPAT)
-                                .textFieldStyle(.plain)
-                                .padding(10)
-                                .background(Color.white.opacity(0.1))
-                                .cornerRadius(8)
-                                .foregroundStyle(.white)
-                                .font(.system(size: 13, design: .monospaced))
-                                .autocorrectionDisabled()
-                                .textInputAutocapitalization(.never)
-
-                            Button {
-                                GitHubLogUploader.saveToken(githubPAT)
-                                withAnimation { isTokenSaved = true }
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                                    withAnimation { isTokenSaved = false }
-                                }
-                            } label: {
-                                Label(isTokenSaved ? "Tersimpan" : "Simpan",
-                                      systemImage: isTokenSaved ? "checkmark.circle.fill" : "key.fill")
-                                    .font(.caption.bold())
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 10)
-                                    .background(isTokenSaved ? Color.green : Color.blue)
-                                    .foregroundStyle(.white)
-                                    .cornerRadius(8)
-                            }
-                            .disabled(githubPAT.count < 10)
-                        }
-
-                        if isTokenSaved {
-                            Text("✅ Token disimpan di Keychain — tidak perlu input ulang")
-                                .font(.caption2)
-                                .foregroundStyle(.green)
-                        } else if KeychainHelper.getGitHubPAT() != nil {
-                            Text("🔑 Token sudah tersimpan di Keychain")
-                                .font(.caption2)
-                                .foregroundStyle(.white.opacity(0.5))
-                        }
 
                         // Tombol Upload
                         Button {
@@ -91,16 +47,16 @@ struct LogViewerSheet: View {
                             if isUploading {
                                 ProgressView().tint(.white).frame(maxWidth: .infinity)
                             } else {
-                                Label("Unggah Log ke GitHub", systemImage: "arrow.up.circle.fill")
+                                Label("Unggah Log ke R2 Storage", systemImage: "cloud.sun.fill")
                                     .font(.caption.bold())
                                     .frame(maxWidth: .infinity)
                             }
                         }
-                        .padding(.vertical, 10)
-                        .background(GitHubLogUploader.resolvedToken() == nil ? Color.gray.opacity(0.3) : Color.indigo)
+                        .padding(.vertical, 12)
+                        .background(isUploading ? Color.gray.opacity(0.3) : Color.indigo)
                         .foregroundStyle(.white)
                         .cornerRadius(8)
-                        .disabled(GitHubLogUploader.resolvedToken() == nil || isUploading)
+                        .disabled(isUploading)
 
                         // URL hasil upload — langsung copy dan kirim ke AI
                         if let url = lastUploadURL {
@@ -188,10 +144,6 @@ struct LogViewerSheet: View {
             }
             .onAppear {
                 logContent = LocalLogWriter.readLogContent()
-                // Load token dari Keychain jika sudah ada
-                if let stored = KeychainHelper.getGitHubPAT() {
-                    githubPAT = stored
-                }
             }
             .overlay {
                 if isShowingToast {
@@ -221,14 +173,14 @@ struct LogViewerSheet: View {
     private func uploadLog() {
         isUploading = true
         lastUploadURL = nil
-        GitHubLogUploader.uploadLatestLog(eventName: "manual_upload") { url in
+        R2LogUploader.uploadLatestLog(eventName: "manual_upload") { url in
             isUploading = false
             if let url = url {
                 lastUploadURL = url
                 // Otomatis copy URL ke clipboard
                 UIPasteboard.general.string = url
             } else {
-                uploadMessage = "Gagal upload. Pastikan token valid dan koneksi internet tersedia."
+                uploadMessage = "Gagal upload. Pastikan koneksi internet tersedia."
                 showUploadAlert = true
             }
         }

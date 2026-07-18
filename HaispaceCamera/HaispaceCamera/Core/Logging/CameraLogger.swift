@@ -129,40 +129,27 @@ struct LocalLogWriter {
     }
 }
 
-// MARK: - GitHub Auto Log Uploader (Camera)
+// MARK: - R2 Log Uploader (Camera)
+// Upload log ke Cloudflare R2 — tidak perlu setup token, tidak ada yang expired.
+// URL public langsung bisa dibuka dan dibagikan ke AI.
 
-struct GitHubLogUploader {
-    // PENTING: Token TIDAK boleh di-hardcode di source code.
-    // GitHub Security akan otomatis merevoke token yang terekspos di public repo.
-    // Token disimpan aman di iOS Keychain — input sekali, tidak perlu ulangi.
-    private static let repoOwner = "izharmuh11-cyber"
-    private static let repoName  = "hsp-internal"
+struct R2LogUploader {
+    // R2 credentials — developer-only, bukan user credential
+    // Access key ini statis dan tidak pernah expired seperti GitHub PAT
+    private static let accountID      = "66c40e0caaaa333ca0f4977bf32be2a7"
+    private static let accessKeyID    = "b4612a74659f3f9ce39bd5ec1ffbefbf"
+    private static let secretKey      = "388aab4ee2e7cabb97c3ac0a30a34dac2f7480628ce6afbbec6e2c730ffcbc49"
+    private static let bucket         = "haispaceproject"
+    private static let publicBaseURL  = "https://api.haispaceproject.my.id/r2-media"
+    private static let r2Endpoint     = "https://66c40e0caaaa333ca0f4977bf32be2a7.r2.cloudflarestorage.com"
 
-    /// Ambil token dari Keychain. Return nil jika kosong atau format tidak valid.
-    static func resolvedToken() -> String? {
-        // Migrasi: jika ada di UserDefaults (versi lama), pindahkan ke Keychain lalu hapus
-        if let legacy = UserDefaults.standard.string(forKey: "github_pat"),
-           legacy.hasPrefix("ghp_") || legacy.hasPrefix("github_pat_") {
-            KeychainHelper.saveGitHubPAT(legacy)
-            UserDefaults.standard.removeObject(forKey: "github_pat")
-        }
-        guard let token = KeychainHelper.getGitHubPAT(), !token.isEmpty else { return nil }
-        let isValid = token.hasPrefix("ghp_") || token.hasPrefix("github_pat_")
-        return isValid ? token : nil
-    }
-
-    /// Simpan token baru ke Keychain (dipanggil dari UI saat user input token).
-    @discardableResult
-    static func saveToken(_ token: String) -> Bool {
-        return KeychainHelper.saveGitHubPAT(token)
-    }
-
-    /// Upload log ke GitHub. Completion dipanggil di main thread dengan URL file (jika sukses) atau nil.
-    static func uploadLatestLog(eventName: String = "auto_event", completion: ((String?) -> Void)? = nil) {
-        guard let token = resolvedToken() else { return }
-
+    /// Upload log kamera ke R2. Completion dipanggil di main thread dengan public URL atau nil.
+    static func uploadLatestLog(eventName: String = "auto", completion: ((String?) -> Void)? = nil) {
         let logContent = LocalLogWriter.readLogContent(subsystem: "camera")
-        guard !logContent.isEmpty && logContent != "Log file tidak ditemukan atau kosong." else { return }
+        guard !logContent.isEmpty && logContent != "Log file tidak ditemukan atau kosong." else {
+            completion?(nil)
+            return
+        }
 
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyyMMdd-HHmmss"
@@ -171,38 +158,39 @@ struct GitHubLogUploader {
             .replacingOccurrences(of: " ", with: "_")
             .replacingOccurrences(of: ":", with: "_")
 
-        let filename = "iphone-log-\(timestamp)-\(cleanEvent).txt"
-        let apiURLString = "https://api.github.com/repos/\(repoOwner)/\(repoName)/contents/logs/\(filename)"
-        // URL raw file yang bisa dibuka siapapun (repo public)
-        let rawURLString = "https://raw.githubusercontent.com/\(repoOwner)/\(repoName)/main/logs/\(filename)"
+        let key = "haispace-logs/iphone-\(timestamp)-\(cleanEvent).txt"
+        let publicURL = "\(publicBaseURL)/\(key)"
 
-        guard let url = URL(string: apiURLString) else { return }
+        guard let body = logContent.data(using: .utf8) else {
+            completion?(nil)
+            return
+        }
 
-        var request = URLRequest(url: url)
-        request.httpMethod = "PUT"
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/vnd.github.v3+json", forHTTPHeaderField: "Accept")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        // Buat PUT request dengan AWS Signature V4
+        let signedRequest = AWSV4Signer.sign(
+            method: "PUT",
+            endpoint: r2Endpoint,
+            bucket: bucket,
+            key: key,
+            body: body,
+            contentType: "text/plain; charset=utf-8",
+            accessKeyID: accessKeyID,
+            secretKey: secretKey,
+            region: "auto",
+            service: "s3"
+        )
 
-        let base64Content = Data(logContent.utf8).base64EncodedString()
-        let body: [String: Any] = [
-            "message": "Auto upload log from iPhone [\(cleanEvent)] at \(timestamp)",
-            "content": base64Content,
-            "branch": "main"
-        ]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
-
-        URLSession.shared.dataTask(with: request) { data, response, error in
+        URLSession.shared.dataTask(with: signedRequest) { _, response, error in
             DispatchQueue.main.async {
                 if let error = error {
-                    HaispaceLogger.error("Auto upload log gagal: \(error.localizedDescription)", category: "logging")
+                    HaispaceLogger.error("R2 upload gagal: \(error.localizedDescription)", category: "logging")
                     completion?(nil)
-                } else if let httpResponse = response as? HTTPURLResponse {
-                    if (200...299).contains(httpResponse.statusCode) {
-                        HaispaceLogger.info("Auto upload log sukses → \(rawURLString)", category: "logging")
-                        completion?(rawURLString)
+                } else if let http = response as? HTTPURLResponse {
+                    if (200...299).contains(http.statusCode) {
+                        HaispaceLogger.info("R2 upload sukses → \(publicURL)", category: "logging")
+                        completion?(publicURL)
                     } else {
-                        HaispaceLogger.error("Auto upload log gagal dengan status: \(httpResponse.statusCode)", category: "logging")
+                        HaispaceLogger.error("R2 upload gagal HTTP \(http.statusCode)", category: "logging")
                         completion?(nil)
                     }
                 }
@@ -210,5 +198,112 @@ struct GitHubLogUploader {
         }.resume()
     }
 }
+
+// MARK: - AWS Signature V4 (minimal, no external dependency)
+// Implementasi minimal AWS SigV4 untuk S3-compatible PUT request.
+// Dipakai untuk auth ke Cloudflare R2 (S3-compatible API).
+
+enum AWSV4Signer {
+    static func sign(
+        method: String,
+        endpoint: String,
+        bucket: String,
+        key: String,
+        body: Data,
+        contentType: String,
+        accessKeyID: String,
+        secretKey: String,
+        region: String,
+        service: String
+    ) -> URLRequest {
+        let urlString = "\(endpoint)/\(bucket)/\(key)"
+        guard let url = URL(string: urlString) else {
+            fatalError("Invalid R2 URL: \(urlString)")
+        }
+
+        let now = Date()
+        let dateFormatter = ISO8601DateFormatter()
+        dateFormatter.formatOptions = [.withYear, .withMonth, .withDay,
+                                       .withTime, .withTimeZone, .withColonSeparatorInTime]
+        let amzDate = dateFormatter.string(from: now)
+            .replacingOccurrences(of: "-", with: "")
+            .replacingOccurrences(of: ":", with: "")
+        // amzDate format: 20260718T090000Z
+        let dateStamp = String(amzDate.prefix(8))  // 20260718
+
+        let bodyHash = SHA256.hash(data: body).compactMap { String(format: "%02x", $0) }.joined()
+
+        // Canonical headers (harus sorted alphabetical)
+        let host = URL(string: endpoint)!.host!
+        let canonicalHeaders =
+            "content-type:\(contentType)\n" +
+            "host:\(host)\n" +
+            "x-amz-content-sha256:\(bodyHash)\n" +
+            "x-amz-date:\(amzDate)\n"
+        let signedHeaders = "content-type;host;x-amz-content-sha256;x-amz-date"
+
+        let encodedKey = key
+            .split(separator: "/", omittingEmptySubsequences: false)
+            .map { $0.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? String($0) }
+            .joined(separator: "/")
+        let canonicalURI = "/\(bucket)/\(encodedKey)"
+
+        let canonicalRequest =
+            method + "\n" +
+            canonicalURI + "\n" +
+            "" + "\n" +  // query string kosong
+            canonicalHeaders + "\n" +
+            signedHeaders + "\n" +
+            bodyHash
+
+        let credentialScope = "\(dateStamp)/\(region)/\(service)/aws4_request"
+        let canonicalHash = SHA256.hash(data: Data(canonicalRequest.utf8))
+            .compactMap { String(format: "%02x", $0) }.joined()
+
+        let stringToSign =
+            "AWS4-HMAC-SHA256" + "\n" +
+            amzDate + "\n" +
+            credentialScope + "\n" +
+            canonicalHash
+
+        // Derive signing key
+        func hmac256(_ key: Data, _ data: String) -> Data {
+            let symKey = SymmetricKey(data: key)
+            let mac = HMAC<SHA256>.authenticationCode(for: Data(data.utf8), using: symKey)
+            return Data(mac)
+        }
+        let signingKey = hmac256(
+            hmac256(
+                hmac256(
+                    hmac256(Data(("AWS4" + secretKey).utf8), dateStamp),
+                    region
+                ),
+                service
+            ),
+            "aws4_request"
+        )
+
+        let symKey = SymmetricKey(data: signingKey)
+        let signatureMac = HMAC<SHA256>.authenticationCode(for: Data(stringToSign.utf8), using: symKey)
+        let signature = Data(signatureMac).compactMap { String(format: "%02x", $0) }.joined()
+
+        let authHeader =
+            "AWS4-HMAC-SHA256 " +
+            "Credential=\(accessKeyID)/\(credentialScope), " +
+            "SignedHeaders=\(signedHeaders), " +
+            "Signature=\(signature)"
+
+        var request = URLRequest(url: url)
+        request.httpMethod = method
+        request.httpBody = body
+        request.setValue(contentType, forHTTPHeaderField: "Content-Type")
+        request.setValue(host, forHTTPHeaderField: "Host")
+        request.setValue(amzDate, forHTTPHeaderField: "x-amz-date")
+        request.setValue(bodyHash, forHTTPHeaderField: "x-amz-content-sha256")
+        request.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        return request
+    }
+}
+
 
 
