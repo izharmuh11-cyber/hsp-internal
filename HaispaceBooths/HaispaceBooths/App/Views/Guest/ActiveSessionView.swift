@@ -315,14 +315,8 @@ struct ActiveSessionView: View {
     
     @ViewBuilder
     private func videoFeedView(geometry: GeometryProxy) -> some View {
-        ZStack {
-            StreamingVideoView()
-                .blur(radius: 30)
-                .opacity(0.5)
-                .ignoresSafeArea()
-            
-            StreamingVideoView()
-                .gesture(
+        StreamingVideoView()
+            .gesture(
                     DragGesture(minimumDistance: 0)
                         .onEnded { value in
                             guard localCountdown == 0 else { return }
@@ -365,7 +359,6 @@ struct ActiveSessionView: View {
                             showPoseHint = false
                         }
                 )
-        }
     }
     
     @ViewBuilder

@@ -83,7 +83,7 @@ final class StreamingDecoderService {
                 
                 if status == noErr {
                     self.formatDescription = formatDesc
-                    HaispaceLogger.debug("VideoFormatDescription berhasil diperbarui", category: "camera")
+                    HaispaceLogger.info("H.264 VideoFormatDescription berhasil dibuat", category: "camera")
                 } else {
                     let error = NSError(domain: "StreamingDecoder", code: Int(status), userInfo: [NSLocalizedDescriptionKey: "Gagal membuat VideoFormatDescription: \(status)"])
                     HaispaceLogger.error(error)
@@ -144,10 +144,13 @@ final class StreamingDecoderService {
                 dict[kCMSampleAttachmentKey_DisplayImmediately as String] = true
             }
             
-            // Push ke layer
-            if displayLayer.isReadyForMoreMediaData {
-                displayLayer.enqueue(sampleBuf)
+            // Reset layer jika status failed
+            if displayLayer.status == .failed {
+                displayLayer.flush()
             }
+            
+            // Push ke layer secara langsung
+            displayLayer.enqueue(sampleBuf)
             
             // Deteksi dimensi & aspek rasio aliran video untuk auto-rotasi
             if let formatDesc = CMSampleBufferGetFormatDescription(sampleBuf) {
