@@ -26,12 +26,8 @@ actor PhotoTransferService {
     
     // REUSE CICONTEXT: CIContext adalah objek yang sangat berat karena menginisialisasi
     // pipeline Metal, shader compilation, dan command queue GPU.
-    // Inisialisasi CIContext berulang-ulang di dalam thread background/callback pemotretan
-    // bisa memicu driver GPU hang/crash seketika. Reusable context ini sangat efisien dan aman.
-    private let ciContext = CIContext(options: [
-        .useSoftwareRenderer: false,
-        .workingColorSpace: CGColorSpaceCreateDeviceRGB() as Any
-    ])
+    // Default initializer CIContext() otomatis menggunakan Metal GPU di iOS secara optimal.
+    private let ciContext = CIContext()
     
     private init() {}
     
@@ -72,17 +68,15 @@ actor PhotoTransferService {
                 
                 // Crop output ke original extent agar terhindar dari crash infinite extent
                 let croppedOutput = outputCIImage.cropped(to: ciImage.extent)
-                let colorSpace = CGColorSpaceCreateDeviceRGB()
                 
-                // OPTIMASI RADIKAL: Gunakan jpegRepresentation langsung dari CIContext.
-                // Ini merender CIImage langsung ke JPEG terkompresi di GPU.
-                // Menghindari alokasi intermediate bitmaps (createCGImage + UIImage) 
-                // yang memakan 100-200MB RAM di main heap, membuat pemrosesan O(1) memory.
-                guard let jpegData = self.ciContext.jpegRepresentation(
-                    of: croppedOutput,
-                    colorSpace: colorSpace,
-                    options: [CIImageRepresentationOption(rawValue: kCGImageDestinationLossyCompressionQuality as String): 0.9]
-                ) else {
+                // Render menggunakan shared ciContext terakselerasi GPU (Metal) ke CGImage
+                guard let cgImage = self.ciContext.createCGImage(croppedOutput, from: ciImage.extent) else {
+                    HaispaceLogger.warning("Gagal render bokeh CGImage - foto asli digunakan", category: "camera")
+                    return nil
+                }
+                
+                let uiImage = UIImage(cgImage: cgImage)
+                guard let jpegData = uiImage.jpegData(compressionQuality: 0.9) else {
                     HaispaceLogger.warning("Gagal konversi bokeh ke JPEG - foto asli digunakan", category: "camera")
                     return nil
                 }

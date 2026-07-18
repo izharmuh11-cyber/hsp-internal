@@ -44,10 +44,9 @@ final class CameraCaptureService: NSObject {
     // 'lazy var' di Swift TIDAK thread-safe — jika dua thread mengaksesnya pertama kali
     // secara bersamaan (videoQueue & syncQueue), bisa terjadi double-init atau crash.
     // 'let' diinisialisasi sekali di init() dan dijamin aman dari semua thread.
-    private let ciContext = CIContext(options: [
-        .useSoftwareRenderer: false,
-        .workingColorSpace: CGColorSpaceCreateDeviceRGB() as Any
-    ])
+    // PENTING: Gunakan default CIContext() agar menggunakan Metal GPU renderer dengan
+    // working color space standard (linear sRGB) yang kompatibel dengan CIDepthBlurEffect.
+    private let ciContext = CIContext()
     
     // FIX #2: Ganti nonisolated(unsafe) dengan NSLock-protected storage.
     // lastDepthImage dibaca dari videoQueue (processVideoFrame) dan ditulis
