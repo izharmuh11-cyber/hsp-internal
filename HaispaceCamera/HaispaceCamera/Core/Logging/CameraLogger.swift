@@ -8,6 +8,7 @@
 
 import Foundation
 import OSLog
+import CryptoKit
 
 // MARK: - HaispaceLogger (Camera Target)
 // Mirror dari HaispaceBooths/Core/Logging/Logger.swift dengan subsystem berbeda
@@ -158,20 +159,36 @@ struct R2LogUploader {
             .replacingOccurrences(of: " ", with: "_")
             .replacingOccurrences(of: ":", with: "_")
 
-        let key = "haispace-logs/iphone-\(timestamp)-\(cleanEvent).txt"
-        let publicURL = "\(publicBaseURL)/\(key)"
+        let uniqueKey = "haispace-logs/iphone-\(timestamp)-\(cleanEvent).txt"
+        let latestKey = "haispace-logs/iphone-latest.txt"
+        let publicLatestURL = "\(publicBaseURL)/\(latestKey)"
 
         guard let body = logContent.data(using: .utf8) else {
             completion?(nil)
             return
         }
 
-        // Buat PUT request dengan AWS Signature V4
-        let signedRequest = AWSV4Signer.sign(
+        // 1. Upload ke unique timestamped file
+        let uniqueRequest = AWSV4Signer.sign(
             method: "PUT",
             endpoint: r2Endpoint,
             bucket: bucket,
-            key: key,
+            key: uniqueKey,
+            body: body,
+            contentType: "text/plain; charset=utf-8",
+            accessKeyID: accessKeyID,
+            secretKey: secretKey,
+            region: "auto",
+            service: "s3"
+        )
+        URLSession.shared.dataTask(with: uniqueRequest).resume()
+
+        // 2. Upload ke 'iphone-latest.txt' (overwrite)
+        let latestRequest = AWSV4Signer.sign(
+            method: "PUT",
+            endpoint: r2Endpoint,
+            bucket: bucket,
+            key: latestKey,
             body: body,
             contentType: "text/plain; charset=utf-8",
             accessKeyID: accessKeyID,
@@ -180,17 +197,17 @@ struct R2LogUploader {
             service: "s3"
         )
 
-        URLSession.shared.dataTask(with: signedRequest) { _, response, error in
+        URLSession.shared.dataTask(with: latestRequest) { _, response, error in
             DispatchQueue.main.async {
                 if let error = error {
-                    HaispaceLogger.error("R2 upload gagal: \(error.localizedDescription)", category: "logging")
+                    HaispaceLogger.error("R2 upload latest gagal: \(error.localizedDescription)", category: "logging")
                     completion?(nil)
                 } else if let http = response as? HTTPURLResponse {
                     if (200...299).contains(http.statusCode) {
-                        HaispaceLogger.info("R2 upload sukses → \(publicURL)", category: "logging")
-                        completion?(publicURL)
+                        HaispaceLogger.info("R2 upload latest sukses → \(publicLatestURL)", category: "logging")
+                        completion?(publicLatestURL)
                     } else {
-                        HaispaceLogger.error("R2 upload gagal HTTP \(http.statusCode)", category: "logging")
+                        HaispaceLogger.error("R2 upload latest gagal HTTP \(http.statusCode)", category: "logging")
                         completion?(nil)
                     }
                 }
