@@ -526,7 +526,8 @@ extension CameraCaptureService: AVCaptureDataOutputSynchronizerDelegate {
         var outputBuffer: CVPixelBuffer?
         let attrs: [String: Any] = [
             kCVPixelBufferCGImageCompatibilityKey as String: true,
-            kCVPixelBufferCGBitmapContextCompatibilityKey as String: true
+            kCVPixelBufferCGBitmapContextCompatibilityKey as String: true,
+            kCVPixelBufferIOSurfacePropertiesKey as String: [:] // PENTING: Wajib ada agar kompatibel dengan Hardware Video Encoder!
         ]
         guard CVPixelBufferCreate(kCFAllocatorDefault, width, height, pixelFormat, attrs as CFDictionary, &outputBuffer) == kCVReturnSuccess,
               let outBuf = outputBuffer else {
