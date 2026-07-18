@@ -189,7 +189,19 @@ final class CameraCaptureService: NSObject {
         sessionQueue.async { [weak self] in
             guard let self = self else { return }
             
-            let photoSettings = AVCapturePhotoSettings()
+            // Inisialisasi photo settings dengan container format yang mendukung depth data (HEVC / JPEG)
+            // Default AVCapturePhotoSettings() tanpa format dapat memilih format TIFF/RAW yang tidak mendukung depth metadata, menyebabkan crash instan.
+            let photoSettings: AVCapturePhotoSettings
+            let availableCodecs = self.photoOutput.availablePhotoCodecTypes
+            
+            if availableCodecs.contains(.hevc) {
+                photoSettings = AVCapturePhotoSettings(format: [AVVideoCodecKey: AVVideoCodecType.hevc])
+            } else if availableCodecs.contains(.jpeg) {
+                photoSettings = AVCapturePhotoSettings(format: [AVVideoCodecKey: AVVideoCodecType.jpeg])
+            } else {
+                photoSettings = AVCapturePhotoSettings()
+            }
+            
             photoSettings.flashMode = .off
             
             // Aktifkan depth data hanya jika portrait mode aktif DAN output level depth delivery sudah aktif
