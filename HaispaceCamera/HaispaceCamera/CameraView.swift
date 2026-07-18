@@ -402,7 +402,9 @@ private struct CameraLogViewerSheet: View {
     @State private var isShowingToast = false
     
     // Konfigurasi Auto-Upload GitHub
-    @AppStorage("github_pat") private var githubPAT = "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"
+    // Token tidak di-hardcode — user harus input manual lewat field di bawah.
+    // Token yang di-hardcode di source code akan di-revoke otomatis oleh GitHub Security.
+    @AppStorage("github_pat") private var githubPAT = ""
     @State private var isUploading = false
     @State private var uploadMessage = ""
     @State private var showUploadAlert = false

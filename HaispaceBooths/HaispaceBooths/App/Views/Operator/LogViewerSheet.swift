@@ -11,7 +11,8 @@ struct LogViewerSheet: View {
     @State private var isShowingToast = false
     
     // Konfigurasi Auto-Upload GitHub
-    @AppStorage("github_pat") private var githubPAT = "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"
+    // Token tidak di-hardcode — operator harus input manual. Token yang terekspos di repo akan di-revoke GitHub.
+    @AppStorage("github_pat") private var githubPAT = ""
     @State private var isUploading = false
     @State private var uploadMessage = ""
     @State private var showUploadAlert = false

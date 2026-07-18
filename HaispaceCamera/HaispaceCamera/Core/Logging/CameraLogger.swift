@@ -132,10 +132,22 @@ struct LocalLogWriter {
 // MARK: - GitHub Auto Log Uploader (Camera)
 
 struct GitHubLogUploader {
+    // PENTING: Token TIDAK boleh di-hardcode di source code.
+    // GitHub Security akan otomatis merevoke token yang terekspos di public repo.
+    // Token harus diisi manual oleh operator lewat UI LogViewer (disimpan di UserDefaults).
+    private static let patKey = "github_pat"
+    
+    /// Ambil token dari UserDefaults. Return nil jika kosong atau format tidak valid.
+    static func resolvedToken() -> String? {
+        let token = UserDefaults.standard.string(forKey: patKey) ?? ""
+        // Validasi format dasar token GitHub (ghp_, github_pat_, dll)
+        let isValid = token.hasPrefix("ghp_") || token.hasPrefix("github_pat_")
+        return isValid ? token : nil
+    }
+    
     static func uploadLatestLog(eventName: String = "auto_event") {
-        let token = UserDefaults.standard.string(forKey: "github_pat") ?? "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"
-        guard !token.isEmpty else {
-            HaispaceLogger.warning("Auto log upload dilewati: token PAT kosong.", category: "logging")
+        guard let token = resolvedToken() else {
+            // Tidak log warning setiap kali — ini sudah diketahui tidak ada token
             return
         }
         
@@ -147,7 +159,8 @@ struct GitHubLogUploader {
         let timestamp = formatter.string(from: Date())
         
         // Clean event name for safe filename
-        let cleanEvent = eventName.replacingOccurrences(of: " ", with: "_")
+        let cleanEvent = eventName
+            .replacingOccurrences(of: " ", with: "_")
             .replacingOccurrences(of: ":", with: "_")
             
         let filename = "iphone-log-\(timestamp)-\(cleanEvent).txt"
