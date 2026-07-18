@@ -76,6 +76,20 @@ final class CameraCaptureService: NSObject {
     // Simpan target zoom yang diinginkan agar bisa dikembalikan saat beralih mode
     nonisolated(unsafe) private(set) var lastRequestedZoomFactor: CGFloat = 1.0
     
+    // Pro Preset Color Filter & Aperture State
+    nonisolated(unsafe) private(set) var currentColorPreset: String = "original"
+    nonisolated(unsafe) private(set) var currentAperture: Double = 2.8
+    
+    func setColorPreset(presetId: String) {
+        currentColorPreset = presetId
+        HaispaceLogger.info("[Filter] Color preset diubah ke: \(presetId)", category: "camera")
+    }
+    
+    func setAperture(fNumber: Double) {
+        currentAperture = fNumber
+        HaispaceLogger.info("[Aperture] Aperture diubah ke: f/\(fNumber)", category: "camera")
+    }
+    
     // Cache virtualDeviceSwitchOverVideoZoomFactors dari format normal (sebelum portrait mode).
     // Nilai ini BERUBAH saat portrait mode mengaktifkan format depth — yang menyebabkan
     // pemetaan 2x → internal zoom yang salah. Dengan cache dari session awal,
@@ -637,8 +651,48 @@ extension CameraCaptureService {
                 } else {
                     self.onVideoFrameCaptured?(sampleBuffer)
                 }
+            } else if self.currentColorPreset != "original" && !isCapturing {
+                // Terapkan Pro Studio Color Filter pada mode normal
+                let videoCI = CIImage(cvPixelBuffer: pixelBuffer)
+                let filteredCI = self.applyColorFilter(to: videoCI, presetId: self.currentColorPreset)
+                
+                let width = CVPixelBufferGetWidth(pixelBuffer)
+                let height = CVPixelBufferGetHeight(pixelBuffer)
+                let pixelFormat = CVPixelBufferGetPixelFormatType(pixelBuffer)
+                
+                var outputBuffer: CVPixelBuffer?
+                let attrs: [String: Any] = [
+                    kCVPixelBufferCGImageCompatibilityKey as String: true,
+                    kCVPixelBufferCGBitmapContextCompatibilityKey as String: true,
+                    kCVPixelBufferIOSurfacePropertiesKey as String: [:]
+                ]
+                if CVPixelBufferCreate(kCFAllocatorDefault, width, height, pixelFormat, attrs as CFDictionary, &outputBuffer) == kCVReturnSuccess,
+                   let outBuf = outputBuffer {
+                    self.ciContext.render(filteredCI, to: outBuf)
+                    
+                    var newSampleBuffer: CMSampleBuffer?
+                    var timingInfo = CMSampleTimingInfo()
+                    CMSampleBufferGetSampleTimingInfo(sampleBuffer, at: 0, timingInfoOut: &timingInfo)
+                    var formatDesc: CMFormatDescription?
+                    CMVideoFormatDescriptionCreateForImageBuffer(allocator: kCFAllocatorDefault, imageBuffer: outBuf, formatDescriptionOut: &formatDesc)
+                    if let formatDesc = formatDesc {
+                        CMSampleBufferCreateForImageBuffer(
+                            allocator: kCFAllocatorDefault,
+                            imageBuffer: outBuf,
+                            dataReady: true,
+                            makeDataReadyCallback: nil,
+                            refcon: nil,
+                            formatDescription: formatDesc,
+                            sampleTiming: &timingInfo,
+                            sampleBufferOut: &newSampleBuffer
+                        )
+                    }
+                    self.onVideoFrameCaptured?(newSampleBuffer ?? sampleBuffer)
+                } else {
+                    self.onVideoFrameCaptured?(sampleBuffer)
+                }
             } else {
-                // Jika portrait mode tidak aktif, kirim buffer asli langsung
+                // Jika portrait mode & filter tidak aktif, kirim buffer asli langsung
                 self.onVideoFrameCaptured?(sampleBuffer)
             }
         }
@@ -673,18 +727,29 @@ extension CameraCaptureService {
                 .transformed(by: CGAffineTransform(scaleX: 2.0, y: 2.0))
         }
         
-        // Step 1: Blur background menggunakan CIDiscBlur.
-        let blurred = original
-            .clampedToExtent()
-            .applyingFilter("CIDiscBlur", parameters: ["inputRadius": 14.0])
-            .cropped(to: original.extent)
+        // Step 1: Blur background menggunakan CIDiscBlur sesuai fNumber aperture (f/1.4 - f/8.0).
+        let blurRadius: Double
+        if currentAperture < 1.8 {
+            blurRadius = 24.0 // f/1.4 Ultra Heavy Bokeh
+        } else if currentAperture < 3.5 {
+            blurRadius = 14.0 // f/2.8 Balanced Default Bokeh
+        } else if currentAperture < 6.5 {
+            blurRadius = 6.0  // f/5.6 Gentle Blur
+        } else {
+            blurRadius = 0.0  // f/8.0 Sharp Background
+        }
+        
+        let blurred: CIImage
+        if blurRadius > 0 {
+            blurred = original
+                .clampedToExtent()
+                .applyingFilter("CIDiscBlur", parameters: ["inputRadius": blurRadius])
+                .cropped(to: original.extent)
+        } else {
+            blurred = original
+        }
         
         // Step 2: Normalisasi depth Float32 (meter) ke mask 0.0–1.0
-        // IMPROVEMENT #1: Range disesuaikan untuk konteks photobooth:
-        // near=0.5m → 1.0 (putih=tajam) — jarak minimum tamu berdiri dari kamera
-        // far=4.0m  → 0.0 (hitam=blur)  — kedalaman background booth
-        // Range 0.3m-3.0m sebelumnya terlalu sempit — subjek di 1.5-2m terlihat
-        // separuh-blur yang tidak natural. Range 0.5m-4.0m lebih gradual dan realistis.
         let nearPlane: CGFloat = 0.5
         let farPlane:  CGFloat = 4.0
         let scale = 1.0 / (farPlane - nearPlane)
@@ -718,8 +783,10 @@ extension CameraCaptureService {
             kCIInputMaskImageKey: softMask
         ])
         
+        // Terapkan Pro Studio Color Filter pada frame hasil komposit
+        let finalImage = applyColorFilter(to: bokehComposite, presetId: currentColorPreset)
+        
         // Step 3: Buat pixel buffer BARU (bukan in-place) untuk menghindari EXC_BAD_ACCESS
-        // Buffer dari synchronizer masih dipegang AVFoundation — tidak bisa di-write!
         let width  = CVPixelBufferGetWidth(pixelBuffer)
         let height = CVPixelBufferGetHeight(pixelBuffer)
         let pixelFormat = CVPixelBufferGetPixelFormatType(pixelBuffer)
@@ -728,7 +795,7 @@ extension CameraCaptureService {
         let attrs: [String: Any] = [
             kCVPixelBufferCGImageCompatibilityKey as String: true,
             kCVPixelBufferCGBitmapContextCompatibilityKey as String: true,
-            kCVPixelBufferIOSurfacePropertiesKey as String: [:] // PENTING: Wajib ada agar kompatibel dengan Hardware Video Encoder!
+            kCVPixelBufferIOSurfacePropertiesKey as String: [:]
         ]
         guard CVPixelBufferCreate(kCFAllocatorDefault, width, height, pixelFormat, attrs as CFDictionary, &outputBuffer) == kCVReturnSuccess,
               let outBuf = outputBuffer else {
@@ -736,8 +803,49 @@ extension CameraCaptureService {
             return nil
         }
         
-        ciContext.render(bokehComposite, to: outBuf)
+        ciContext.render(finalImage, to: outBuf)
         return outBuf
+    }
+    
+    /// Helper internal untuk menerapkan Pro Studio Color Preset Filter.
+    nonisolated func applyColorFilter(to image: CIImage, presetId: String) -> CIImage {
+        switch presetId {
+        case "warm":
+            // Warm Studio (Kodak Portra Style)
+            let controls = image.applyingFilter("CIColorControls", parameters: [
+                "inputSaturation": 1.05,
+                "inputContrast": 1.03
+            ])
+            return controls.applyingFilter("CITemperatureAndTint", parameters: [
+                "inputNeutral": CIVector(x: 6800, y: 0),
+                "inputTargetNeutral": CIVector(x: 6500, y: 0)
+            ])
+        case "clean":
+            // Clean Portrait (Vogue Editorial Style)
+            return image.applyingFilter("CIColorControls", parameters: [
+                "inputSaturation": 1.08,
+                "inputBrightness": 0.02,
+                "inputContrast": 1.05
+            ])
+        case "vintage":
+            // Vintage Film (Retro Pastel Style)
+            let controls = image.applyingFilter("CIColorControls", parameters: [
+                "inputSaturation": 0.88,
+                "inputContrast": 0.95
+            ])
+            return controls.applyingFilter("CIColorMatrix", parameters: [
+                "inputRVector": CIVector(x: 0.95, y: 0, z: 0, w: 0),
+                "inputGVector": CIVector(x: 0, y: 0.95, z: 0, w: 0),
+                "inputBVector": CIVector(x: 0, y: 0, z: 0.95, w: 0),
+                "inputBiasVector": CIVector(x: 0.05, y: 0.04, z: 0.03, w: 0)
+            ])
+        case "bw_noir":
+            // Noir B&W (Leica Monochrome Style)
+            return image.applyingFilter("CIPhotoEffectNoir")
+        default:
+            // Original (Tanpa Filter)
+            return image
+        }
     }
 }
 

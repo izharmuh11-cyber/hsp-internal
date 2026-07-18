@@ -39,6 +39,8 @@ enum P2PMessage: Codable, Equatable {
     case pairingAcknowledge(sessionToken: String)
     case setZoom(factor: Double)
     case setPortraitMode(enabled: Bool)
+    case setColorPreset(presetId: String)
+    case setAperture(fNumber: Double)
 }
 
 // MARK: - P2PMessageType (untuk filtering)
@@ -48,7 +50,7 @@ enum P2PMessageType: String, CaseIterable {
     case photoMetadata, photoPreview, photoFull, photoAck
     case cameraStatus, cameraReady, cameraError
     case pairingRequest, pairingAcknowledge, gestureDetected
-    case setZoom, setPortraitMode
+    case setZoom, setPortraitMode, setColorPreset, setAperture
 
     static func type(of message: P2PMessage) -> P2PMessageType {
         switch message {
@@ -71,6 +73,8 @@ enum P2PMessageType: String, CaseIterable {
         case .pairingAcknowledge: return .pairingAcknowledge
         case .setZoom: return .setZoom
         case .setPortraitMode: return .setPortraitMode
+        case .setColorPreset: return .setColorPreset
+        case .setAperture: return .setAperture
         }
     }
 }

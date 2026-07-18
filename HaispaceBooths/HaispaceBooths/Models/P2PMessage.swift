@@ -79,31 +79,20 @@ enum P2PMessage: Codable, Equatable {
     
     /// Set portrait mode (bokeh) kamera secara remote
     case setPortraitMode(enabled: Bool)
+    
+    case setColorPreset(presetId: String)
+    case setAperture(fNumber: Double)
 }
 
 // MARK: - P2PMessageType (untuk filtering)
 
 /// Tipe pesan untuk subscribe ke stream tertentu via P2PMessageRouter
 enum P2PMessageType: String, CaseIterable {
-    case ping
-    case sessionStart
-    case triggerCapture
-    case sessionPause
-    case sessionResume
-    case sessionEnd
-    case focusPoint
-    case photoMetadata
-    case photoPreview
-    case photoFull
-    case photoAck
-    case cameraStatus
-    case cameraReady
-    case cameraError
-    case pairingRequest
-    case pairingAcknowledge
-    case gestureDetected
-    case setZoom
-    case setPortraitMode
+    case ping, sessionStart, triggerCapture, sessionPause, sessionResume, sessionEnd, focusPoint
+    case photoMetadata, photoPreview, photoFull, photoAck
+    case cameraStatus, cameraReady, cameraError
+    case pairingRequest, pairingAcknowledge, gestureDetected
+    case setZoom, setPortraitMode, setColorPreset, setAperture
 
     /// Tipe pesan dari P2PMessage
     static func type(of message: P2PMessage) -> P2PMessageType {
@@ -127,6 +116,8 @@ enum P2PMessageType: String, CaseIterable {
         case .pairingAcknowledge: return .pairingAcknowledge
         case .setZoom: return .setZoom
         case .setPortraitMode: return .setPortraitMode
+        case .setColorPreset: return .setColorPreset
+        case .setAperture: return .setAperture
         }
     }
 }

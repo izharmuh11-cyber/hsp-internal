@@ -386,6 +386,14 @@ final class CameraAppState {
             HaispaceLogger.info("[RemoteControl] Menerima sinyal setPortraitMode(\(enabled))", category: "camera")
             CameraCaptureService.shared.setPortraitMode(enabled: enabled)
             
+        case .setColorPreset(let presetId):
+            HaispaceLogger.info("[RemoteControl] Menerima sinyal setColorPreset(\(presetId))", category: "camera")
+            CameraCaptureService.shared.setColorPreset(presetId: presetId)
+            
+        case .setAperture(let fNumber):
+            HaispaceLogger.info("[RemoteControl] Menerima sinyal setAperture(f/\(fNumber))", category: "camera")
+            CameraCaptureService.shared.setAperture(fNumber: fNumber)
+            
         default:
             break
         }

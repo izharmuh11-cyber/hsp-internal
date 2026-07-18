@@ -124,93 +124,85 @@ actor PhotoTransferService {
                     "inputIntensity": 0.4    // intensitas glow (0.4 = subtle & natural)
                 ])
                 
-                // --- FIX #4: VARIABLE DOF BLUR ---
-                // Two-pass blur: light (near) + heavy (far), di-blend berdasarkan depth gradient.
-                
-                // Light blur → transisi halus untuk background yang dekat dengan subjek
-                let lightBlur = bloomedSource
-                    .clampedToExtent()
-                    .applyingFilter("CIDiscBlur", parameters: ["inputRadius": 8.0])
-                    .cropped(to: photoExtent)
-                
-                // Heavy blur → latar belakang jauh, focal plane tegas
-                let heavyBlur = bloomedSource
-                    .clampedToExtent()
-                    .applyingFilter("CIDiscBlur", parameters: ["inputRadius": 22.0])
-                    .cropped(to: photoExtent)
+                let currentAperture = CameraCaptureService.shared.currentAperture
+                let heavyRadius: Double = currentAperture < 1.8 ? 32.0 : (currentAperture < 3.5 ? 22.0 : (currentAperture < 6.5 ? 10.0 : 0.0))
+                let lightRadius: Double = currentAperture < 1.8 ? 14.0 : (currentAperture < 3.5 ? 8.0 : (currentAperture < 6.5 ? 4.0 : 0.0))
                 
                 let blurredBackground: CIImage
-                
-                if let depthData = capture.depthData {
-                    // Depth data tersedia → variable blur gradient
-                    // Konversi ke Float32 meters dan align orientasi
-                    let depthFloat32 = depthData.converting(toDepthDataType: kCVPixelFormatType_DepthFloat32)
-                    var depthCIImage = CIImage(cvPixelBuffer: depthFloat32.depthDataMap)
-                        .oriented(forExifOrientation: exifOrientation)
-                    
-                    let depthRawExtent = depthCIImage.extent
-                    if depthRawExtent.origin != .zero {
-                        depthCIImage = depthCIImage.transformed(
-                            by: CGAffineTransform(translationX: -depthRawExtent.minX, y: -depthRawExtent.minY)
-                        )
-                    }
-                    // Scale depth ke dimensi foto
-                    let dScaleX = photoExtent.width / depthCIImage.extent.width
-                    let dScaleY = photoExtent.height / depthCIImage.extent.height
-                    let scaledDepth = depthCIImage.transformed(by: CGAffineTransform(scaleX: dScaleX, y: dScaleY))
-                    
-                    // Normalisasi: near=0.5m → 0.0 (mask gelap=lightBlur), far=3.5m → 1.0 (mask terang=heavyBlur)
-                    let nearPlane: CGFloat = 0.5
-                    let farPlane:  CGFloat = 3.5
-                    let dScale = 1.0 / (farPlane - nearPlane)
-                    let dBias  = -nearPlane * dScale
-                    
-                    let normalizedDepth = scaledDepth.applyingFilter("CIColorMatrix", parameters: [
-                        "inputRVector":    CIVector(x: dScale, y: 0, z: 0, w: 0),
-                        "inputGVector":    CIVector(x: 0, y: dScale, z: 0, w: 0),
-                        "inputBVector":    CIVector(x: 0, y: 0, z: dScale, w: 0),
-                        "inputBiasVector": CIVector(x: dBias, y: dBias, z: dBias, w: 0)
-                    ])
-                    
-                    // Clamp 0-1 lalu smooth untuk menghilangkan noise dari sensor DualWide iPhone 14
-                    let smoothDepth = normalizedDepth
-                        .applyingFilter("CIColorClamp", parameters: [
-                            "inputMinComponents": CIVector(x: 0, y: 0, z: 0, w: 0),
-                            "inputMaxComponents": CIVector(x: 1, y: 1, z: 1, w: 1)
-                        ])
-                        .applyingFilter("CIGaussianBlur", parameters: ["inputRadius": 4.0])
+                if heavyRadius > 0 {
+                    let lightBlur = bloomedSource
+                        .clampedToExtent()
+                        .applyingFilter("CIDiscBlur", parameters: ["inputRadius": lightRadius])
                         .cropped(to: photoExtent)
                     
-                    // CIBlendWithMask: mask=0 (near) → background (lightBlur), mask=1 (far) → foreground (heavyBlur)
-                    blurredBackground = heavyBlur.applyingFilter("CIBlendWithMask", parameters: [
-                        kCIInputBackgroundImageKey: lightBlur,
-                        kCIInputMaskImageKey: smoothDepth
-                    ])
-                    HaispaceLogger.info("[PortraitMatte] Variable DOF AKTIF — depth gradient diterapkan", category: "camera")
+                    let heavyBlur = bloomedSource
+                        .clampedToExtent()
+                        .applyingFilter("CIDiscBlur", parameters: ["inputRadius": heavyRadius])
+                        .cropped(to: photoExtent)
                     
+                    if let depthData = capture.depthData {
+                        let depthFloat32 = depthData.converting(toDepthDataType: kCVPixelFormatType_DepthFloat32)
+                        var depthCIImage = CIImage(cvPixelBuffer: depthFloat32.depthDataMap)
+                            .oriented(forExifOrientation: exifOrientation)
+                        
+                        let depthRawExtent = depthCIImage.extent
+                        if depthRawExtent.origin != .zero {
+                            depthCIImage = depthCIImage.transformed(
+                                by: CGAffineTransform(translationX: -depthRawExtent.minX, y: -depthRawExtent.minY)
+                            )
+                        }
+                        let dScaleX = photoExtent.width / depthCIImage.extent.width
+                        let dScaleY = photoExtent.height / depthCIImage.extent.height
+                        let scaledDepth = depthCIImage.transformed(by: CGAffineTransform(scaleX: dScaleX, y: dScaleY))
+                        
+                        let nearPlane: CGFloat = 0.5
+                        let farPlane:  CGFloat = 3.5
+                        let dScale = 1.0 / (farPlane - nearPlane)
+                        let dBias  = -nearPlane * dScale
+                        
+                        let normalizedDepth = scaledDepth.applyingFilter("CIColorMatrix", parameters: [
+                            "inputRVector":    CIVector(x: dScale, y: 0, z: 0, w: 0),
+                            "inputGVector":    CIVector(x: 0, y: dScale, z: 0, w: 0),
+                            "inputBVector":    CIVector(x: 0, y: 0, z: dScale, w: 0),
+                            "inputBiasVector": CIVector(x: dBias, y: dBias, z: dBias, w: 0)
+                        ])
+                        
+                        let smoothDepth = normalizedDepth
+                            .applyingFilter("CIColorClamp", parameters: [
+                                "inputMinComponents": CIVector(x: 0, y: 0, z: 0, w: 0),
+                                "inputMaxComponents": CIVector(x: 1, y: 1, z: 1, w: 1)
+                            ])
+                            .applyingFilter("CIGaussianBlur", parameters: ["inputRadius": 4.0])
+                            .cropped(to: photoExtent)
+                        
+                        blurredBackground = heavyBlur.applyingFilter("CIBlendWithMask", parameters: [
+                            kCIInputBackgroundImageKey: lightBlur,
+                            kCIInputMaskImageKey: smoothDepth
+                        ])
+                        HaispaceLogger.info("[PortraitMatte] Variable DOF AKTIF — depth gradient diterapkan", category: "camera")
+                    } else {
+                        blurredBackground = heavyBlur
+                        HaispaceLogger.info("[PortraitMatte] Variable DOF fallback — depth nil, heavy blur digunakan", category: "camera")
+                    }
                 } else {
-                    // Depth nil (tidak didukung atau warm-up pertama) → uniform heavy blur
-                    blurredBackground = heavyBlur
-                    HaispaceLogger.info("[PortraitMatte] Variable DOF fallback — depth nil, uniform blur digunakan", category: "camera")
+                    blurredBackground = bloomedSource
                 }
                 
                 // --- COMPOSITE FINAL ---
-                // Subject: orientedPhoto asli (bukan bloomedSource) agar subjek 100% tajam & natural
-                // Background: variable blur + bloom (dari blurredBackground)
-                // Mask: softMatte (putih=subjek tajam, hitam=background blur)
                 let composite = orientedPhoto.applyingFilter("CIBlendWithMask", parameters: [
                     kCIInputBackgroundImageKey: blurredBackground,
                     kCIInputMaskImageKey: softMatte
                 ])
                 
-                // Render ke CGImage — GPU Metal, satu render pass untuk seluruh chain.
-                // Peak VRAM ~200MB (aman untuk iPhone 14 6GB RAM).
-                guard let cgImage = self.ciContext.createCGImage(composite, from: photoExtent) else {
+                // Terapkan Pro Studio Color Filter pada foto 12MP hasil komposit
+                let presetId = CameraCaptureService.shared.currentColorPreset
+                let finalPhoto = CameraCaptureService.shared.applyColorFilter(to: composite, presetId: presetId)
+                
+                guard let cgImage = self.ciContext.createCGImage(finalPhoto, from: photoExtent) else {
                     HaispaceLogger.warning("[PortraitMatte] Gagal render CGImage — foto asli digunakan", category: "camera")
                     return nil
                 }
                 
-                // Encode JPEG 0.92 — kualitas tinggi, file size optimal untuk transfer P2P
                 let uiImage = UIImage(cgImage: cgImage)
                 guard let jpegData = uiImage.jpegData(compressionQuality: 0.92) else {
                     HaispaceLogger.warning("[PortraitMatte] Gagal encode JPEG — foto asli digunakan", category: "camera")
@@ -218,14 +210,34 @@ actor PhotoTransferService {
                 }
                 
                 HaispaceLogger.info(
-                    "Portrait Bokeh ✓ (Matte+VariableDOF+Bloom): \(jpegData.count / 1024)KB (\(Int(photoExtent.width))×\(Int(photoExtent.height))px)",
+                    "Portrait Bokeh ✓ (Preset: \(presetId), f/\(currentAperture)): \(jpegData.count / 1024)KB (\(Int(photoExtent.width))×\(Int(photoExtent.height))px)",
                     category: "camera"
                 )
                 return jpegData
-            } // ← autoreleasepool: semua intermediate CIImage/CGImage/CVPixelBuffer dibebaskan di sini
+            } // ← autoreleasepool
             
             if let result = bokehResult {
                 photoData = result
+            }
+        } else if !isPortraitActive, let rawData = photoData, CameraCaptureService.shared.currentColorPreset != "original" {
+            // Mode normal tetapi menggunakan Pro Studio Color Preset Filter
+            let presetId = CameraCaptureService.shared.currentColorPreset
+            let ciImageOptions: [CIImageOption: Any] = [.applyOrientationProperty: true]
+            if var orientedPhoto = CIImage(data: rawData, options: ciImageOptions) {
+                let rawExtent = orientedPhoto.extent
+                if rawExtent.origin != .zero {
+                    orientedPhoto = orientedPhoto.transformed(
+                        by: CGAffineTransform(translationX: -rawExtent.minX, y: -rawExtent.minY)
+                    )
+                }
+                let filteredPhoto = CameraCaptureService.shared.applyColorFilter(to: orientedPhoto, presetId: presetId)
+                if let cgImage = self.ciContext.createCGImage(filteredPhoto, from: filteredPhoto.extent) {
+                    let uiImage = UIImage(cgImage: cgImage)
+                    if let jpegData = uiImage.jpegData(compressionQuality: 0.92) {
+                        photoData = jpegData
+                        HaispaceLogger.info("Normal Photo Color Filter ✓ (Preset: \(presetId)): \(jpegData.count / 1024)KB", category: "camera")
+                    }
+                }
             }
         }
         

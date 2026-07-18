@@ -63,6 +63,9 @@ struct ActiveSessionView: View {
     @State private var isStreamLandscape: Bool = true
     @State private var activeZoom: String = "1x"
     @State private var isPortraitModeActive: Bool = false
+    @State private var activeFilter: String = "original"
+    @State private var activeAperture: Double = 2.8
+    @State private var showFilterSelector: Bool = false
     
     @State private var focusTapPoint: CGPoint? = nil
     @State private var showFocusIndicator: Bool = false
@@ -490,7 +493,6 @@ struct ActiveSessionView: View {
                     Button(action: {
                         isPortraitModeActive.toggle()
                         // Saat Mode Portrait diaktifkan, selalu mulai dari default 1x (Kamera Utama 26mm Portrait).
-                        // Pengguna dapat mengklik 2x kapan saja untuk beralih ke 2x Portrait (52mm).
                         if isPortraitModeActive {
                             activeZoom = "1x"
                             Task {
@@ -517,6 +519,87 @@ struct ActiveSessionView: View {
                             RoundedRectangle(cornerRadius: 16, style: .continuous)
                                 .stroke(isPortraitModeActive ? Color(red: 255/255, green: 215/255, blue: 0/255).opacity(0.5) : Color.white.opacity(0.12), lineWidth: 1)
                         )
+                    }
+                    
+                    // Aperture Quick-Picker Pills (Muncul jika Mode Portrait Aktif)
+                    if isPortraitModeActive {
+                        VStack(spacing: 4) {
+                            let apertures: [(label: String, val: Double)] = [("f/1.4", 1.4), ("f/2.8", 2.8), ("f/5.6", 5.6)]
+                            ForEach(apertures, id: \.label) { ap in
+                                Button(action: {
+                                    activeAperture = ap.val
+                                    Task {
+                                        await P2PMessageRouter.shared.route(.setAperture(fNumber: ap.val))
+                                    }
+                                    lastActivityTime = Date()
+                                }) {
+                                    Text(ap.label)
+                                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                                        .foregroundStyle(activeAperture == ap.val ? Color.black : Color.white.opacity(0.85))
+                                        .frame(width: 46, height: 26)
+                                        .background(activeAperture == ap.val ? Color(red: 255/255, green: 215/255, blue: 0/255) : Color.white.opacity(0.1))
+                                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                }
+                            }
+                        }
+                        .padding(3)
+                        .background(.ultraThinMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    }
+                    
+                    // Pro Color Filter Button & Selector
+                    VStack(spacing: 4) {
+                        Button(action: {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                showFilterSelector.toggle()
+                            }
+                            lastActivityTime = Date()
+                        }) {
+                            VStack(spacing: 2) {
+                                Image(systemName: activeFilter != "original" ? "wand.and.stars.inverse" : "wand.and.stars")
+                                    .font(.system(size: 16, weight: .bold))
+                                Text("Filter")
+                                    .font(.system(size: 9, weight: .bold, design: .rounded))
+                            }
+                            .foregroundStyle(activeFilter != "original" ? Color.black : Color.white)
+                            .frame(width: 52, height: 46)
+                            .background(activeFilter != "original" ? Color.cyan : Color.white.opacity(0.12))
+                            .background(.ultraThinMaterial)
+                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        }
+                        
+                        if showFilterSelector {
+                            let filters: [(id: String, name: String)] = [
+                                ("original", "Clean"),
+                                ("warm", "Warm"),
+                                ("clean", "Vogue"),
+                                ("vintage", "Retro"),
+                                ("bw_noir", "B&W")
+                            ]
+                            VStack(spacing: 4) {
+                                ForEach(filters, id: \.id) { flt in
+                                    Button(action: {
+                                        activeFilter = flt.id
+                                        Task {
+                                            await P2PMessageRouter.shared.route(.setColorPreset(presetId: flt.id))
+                                        }
+                                        withAnimation { showFilterSelector = false }
+                                        lastActivityTime = Date()
+                                    }) {
+                                        Text(flt.name)
+                                            .font(.system(size: 10, weight: .bold, design: .rounded))
+                                            .foregroundStyle(activeFilter == flt.id ? Color.black : Color.white)
+                                            .frame(width: 48, height: 28)
+                                            .background(activeFilter == flt.id ? Color.cyan : Color.white.opacity(0.12))
+                                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                    }
+                                }
+                            }
+                            .padding(3)
+                            .background(.ultraThinMaterial)
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .transition(.scale.combined(with: .opacity))
+                        }
                     }
                 }
                 .padding(8)
