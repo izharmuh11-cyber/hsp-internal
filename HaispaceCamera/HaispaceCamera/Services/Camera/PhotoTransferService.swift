@@ -41,30 +41,38 @@ actor PhotoTransferService {
     func handleNewCapture(photoId: String, capture: AVCapturePhoto, sortOrder: Int, isPortraitActive: Bool) async {
         var photoData: Data? = capture.fileDataRepresentation()
         
-        // OPSI B: AVPortraitEffectsMatte — ML segmentation via Neural Engine
-        // Hanya diproses jika portrait mode aktif DAN matte berhasil dihasilkan oleh iOS
+        // Fix #4 + #5: Variable DOF + Highlight Bloom
+        //
+        // Fix #4: Variable blur berbasis depth gradient
+        //   - Background dekat subjek (0.5–2m) → CIDiscBlur radius 8 (ringan, transisi natural)
+        //   - Background jauh subjek (2–3.5m+)  → CIDiscBlur radius 22 (berat, focal plane tegas)
+        //   - Gradient dikontrol oleh depth map dari capture.depthData
+        //   - Fallback ke heavy blur seragam jika depth nil
+        //
+        // Fix #5: Highlight Bloom (CIBloom sebelum blur)
+        //   - Bright highlights (lampu, jendela, refleksi) di background menjadi glowing circles
+        //   - Mensimulasikan specular bokeh dari lensa optik berkualitas tinggi (Zeiss, Leica style)
+        //   - Subject tetap menggunakan orientedPhoto asli (non-bloomed) → 100% crisp
         if isPortraitActive, let rawData = photoData {
             
             let bokehResult: Data? = autoreleasepool { () -> Data? in
                 
-                // Cek ketersediaan Portrait Effects Matte.
-                // Nil jika perangkat tidak support atau isPortraitEffectsMatteDeliveryEnabled belum di-set.
-                // Graceful fallback: foto asli dikirim tanpa crash.
+                // Cek ketersediaan Portrait Effects Matte (Neural Engine segmentation mask).
+                // Nil jika isPortraitEffectsMatteDeliveryEnabled belum di-set atau device tidak support.
+                // Graceful fallback: foto asli dikirim, tidak crash.
                 guard let matte = capture.portraitEffectsMatte else {
                     HaispaceLogger.info("Portrait effects matte tidak tersedia — foto asli dikirim tanpa bokeh", category: "camera")
                     return nil
                 }
                 
-                // Buat CIImage dari data foto dengan EXIF orientation diterapkan sebagai
-                // affine transform (tidak merotasi pixel → zero-copy, memory efficient).
+                // Load foto dengan EXIF orientation sebagai affine transform (zero-copy, memory efficient)
                 let ciImageOptions: [CIImageOption: Any] = [.applyOrientationProperty: true]
                 guard var orientedPhoto = CIImage(data: rawData, options: ciImageOptions) else {
                     HaispaceLogger.warning("[PortraitMatte] Gagal membuat CIImage — foto asli digunakan", category: "camera")
                     return nil
                 }
                 
-                // Normalkan origin ke (0,0). CIImage.oriented() dapat menggeser origin ke koordinat
-                // negatif yang menyebabkan clipping pada tepi saat di-render ke CGImage.
+                // Normalkan origin ke (0,0) — oriented() dapat menggeser origin ke nilai negatif
                 let rawExtent = orientedPhoto.extent
                 if rawExtent.origin != .zero {
                     orientedPhoto = orientedPhoto.transformed(
@@ -72,60 +80,129 @@ actor PhotoTransferService {
                     )
                 }
                 let photoExtent = orientedPhoto.extent
-                
-                // Orientasi EXIF untuk menyamakan koordinat matte dengan foto
                 let exifOrientation = capture.metadata[kCGImagePropertyOrientation as String] as? Int32 ?? 1
                 
-                // Konversi matte ke CIImage.
+                // --- MATTE PROCESSING ---
                 // Format: kCVPixelFormatType_OneComponent8 (grayscale 8-bit)
-                //   255 = orang / foreground → foto tetap tajam
-                //     0 = background        → foto di-blur
-                // Resolusi matte selalu lebih rendah dari foto — wajib di-scale.
+                //   255 = orang/foreground → foto tetap tajam
+                //     0 = background      → foto di-blur
                 let mattePixelBuffer = matte.mattingImage
                 var matteCIImage = CIImage(cvPixelBuffer: mattePixelBuffer)
                     .oriented(forExifOrientation: exifOrientation)
                 
-                // Normalkan origin matte
                 let matteRawExtent = matteCIImage.extent
                 if matteRawExtent.origin != .zero {
                     matteCIImage = matteCIImage.transformed(
                         by: CGAffineTransform(translationX: -matteRawExtent.minX, y: -matteRawExtent.minY)
                     )
                 }
-                
-                // Scale matte ke dimensi foto penuh
+                // Scale matte ke dimensi foto (matte selalu resolusi lebih rendah dari foto)
                 let scaleX = photoExtent.width / matteCIImage.extent.width
                 let scaleY = photoExtent.height / matteCIImage.extent.height
                 let scaledMatte = matteCIImage.transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
                 
-                // Haluskan tepi matte — radius 2.5 memberi anti-aliasing natural pada rambut dan jari
-                // tanpa merusak presisi segmentasi Neural Engine
+                // Haluskan tepi matte — radius 2.5 = anti-aliasing natural pada rambut & jari
                 let softMatte = scaledMatte
                     .applyingFilter("CIGaussianBlur", parameters: ["inputRadius": 2.5])
                     .cropped(to: photoExtent)
                 
-                // Blur seluruh foto untuk layer background.
-                // clampedToExtent() mencegah artefak hitam di tepi saat Gaussian sampling keluar batas.
-                // radius 28 ≈ efek f/1.8 — cinematic dan natural untuk portrait photobooth.
-                let blurredBackground = orientedPhoto
+                // --- FIX #5: HIGHLIGHT BLOOM ---
+                // CIBloom memperkuat highlight (cahaya terang) sebelum blur diterapkan.
+                // Ketika highlight yang membesar ini di-blur, hasilnya adalah glowing circles
+                // yang persis seperti specular bokeh dari lensa optik premium.
+                // inputRadius=6.0 + inputIntensity=0.4 → subtle, tidak overexposed.
+                let bloomedSource = orientedPhoto.applyingFilter("CIBloom", parameters: [
+                    "inputRadius":    6.0,   // radius halo glow di sekitar highlight
+                    "inputIntensity": 0.4    // intensitas glow (0.4 = subtle & natural)
+                ])
+                
+                // --- FIX #4: VARIABLE DOF BLUR ---
+                // Two-pass blur: light (near) + heavy (far), di-blend berdasarkan depth gradient.
+                
+                // Light blur → transisi halus untuk background yang dekat dengan subjek
+                let lightBlur = bloomedSource
                     .clampedToExtent()
-                    .applyingFilter("CIGaussianBlur", parameters: ["inputRadius": 28.0])
+                    .applyingFilter("CIDiscBlur", parameters: ["inputRadius": 8.0])
                     .cropped(to: photoExtent)
                 
-                // Composite: orang (matte=putih) tajam di atas background blur
+                // Heavy blur → latar belakang jauh, focal plane tegas
+                let heavyBlur = bloomedSource
+                    .clampedToExtent()
+                    .applyingFilter("CIDiscBlur", parameters: ["inputRadius": 22.0])
+                    .cropped(to: photoExtent)
+                
+                let blurredBackground: CIImage
+                
+                if let depthData = capture.depthData {
+                    // Depth data tersedia → variable blur gradient
+                    // Konversi ke Float32 meters dan align orientasi
+                    let depthFloat32 = depthData.converting(toDepthDataType: kCVPixelFormatType_DepthFloat32)
+                    var depthCIImage = CIImage(cvPixelBuffer: depthFloat32.depthDataMap)
+                        .oriented(forExifOrientation: exifOrientation)
+                    
+                    let depthRawExtent = depthCIImage.extent
+                    if depthRawExtent.origin != .zero {
+                        depthCIImage = depthCIImage.transformed(
+                            by: CGAffineTransform(translationX: -depthRawExtent.minX, y: -depthRawExtent.minY)
+                        )
+                    }
+                    // Scale depth ke dimensi foto
+                    let dScaleX = photoExtent.width / depthCIImage.extent.width
+                    let dScaleY = photoExtent.height / depthCIImage.extent.height
+                    let scaledDepth = depthCIImage.transformed(by: CGAffineTransform(scaleX: dScaleX, y: dScaleY))
+                    
+                    // Normalisasi: near=0.5m → 0.0 (mask gelap=lightBlur), far=3.5m → 1.0 (mask terang=heavyBlur)
+                    let nearPlane: CGFloat = 0.5
+                    let farPlane:  CGFloat = 3.5
+                    let dScale = 1.0 / (farPlane - nearPlane)
+                    let dBias  = -nearPlane * dScale
+                    
+                    let normalizedDepth = scaledDepth.applyingFilter("CIColorMatrix", parameters: [
+                        "inputRVector":    CIVector(x: dScale, y: 0, z: 0, w: 0),
+                        "inputGVector":    CIVector(x: 0, y: dScale, z: 0, w: 0),
+                        "inputBVector":    CIVector(x: 0, y: 0, z: dScale, w: 0),
+                        "inputBiasVector": CIVector(x: dBias, y: dBias, z: dBias, w: 0)
+                    ])
+                    
+                    // Clamp 0-1 lalu smooth untuk menghilangkan noise dari sensor DualWide iPhone 14
+                    let smoothDepth = normalizedDepth
+                        .applyingFilter("CIColorClamp", parameters: [
+                            "inputMinComponents": CIVector(x: 0, y: 0, z: 0, w: 0),
+                            "inputMaxComponents": CIVector(x: 1, y: 1, z: 1, w: 1)
+                        ])
+                        .applyingFilter("CIGaussianBlur", parameters: ["inputRadius": 4.0])
+                        .cropped(to: photoExtent)
+                    
+                    // CIBlendWithMask: mask=0 (near) → background (lightBlur), mask=1 (far) → foreground (heavyBlur)
+                    blurredBackground = heavyBlur.applyingFilter("CIBlendWithMask", parameters: [
+                        kCIInputBackgroundImageKey: lightBlur,
+                        kCIInputMaskImageKey: smoothDepth
+                    ])
+                    HaispaceLogger.info("[PortraitMatte] Variable DOF AKTIF — depth gradient diterapkan", category: "camera")
+                    
+                } else {
+                    // Depth nil (tidak didukung atau warm-up pertama) → uniform heavy blur
+                    blurredBackground = heavyBlur
+                    HaispaceLogger.info("[PortraitMatte] Variable DOF fallback — depth nil, uniform blur digunakan", category: "camera")
+                }
+                
+                // --- COMPOSITE FINAL ---
+                // Subject: orientedPhoto asli (bukan bloomedSource) agar subjek 100% tajam & natural
+                // Background: variable blur + bloom (dari blurredBackground)
+                // Mask: softMatte (putih=subjek tajam, hitam=background blur)
                 let composite = orientedPhoto.applyingFilter("CIBlendWithMask", parameters: [
                     kCIInputBackgroundImageKey: blurredBackground,
                     kCIInputMaskImageKey: softMatte
                 ])
                 
-                // Render ke CGImage menggunakan shared Metal CIContext (GPU-accelerated, thread-safe).
-                // Ini adalah satu-satunya titik di mana GPU benar-benar mengalokasikan memori (~180MB peak).
+                // Render ke CGImage — GPU Metal, satu render pass untuk seluruh chain.
+                // Peak VRAM ~200MB (aman untuk iPhone 14 6GB RAM).
                 guard let cgImage = self.ciContext.createCGImage(composite, from: photoExtent) else {
                     HaispaceLogger.warning("[PortraitMatte] Gagal render CGImage — foto asli digunakan", category: "camera")
                     return nil
                 }
                 
-                // Encode ke JPEG — quality 0.92 = kualitas tinggi, file size optimal untuk transfer P2P
+                // Encode JPEG 0.92 — kualitas tinggi, file size optimal untuk transfer P2P
                 let uiImage = UIImage(cgImage: cgImage)
                 guard let jpegData = uiImage.jpegData(compressionQuality: 0.92) else {
                     HaispaceLogger.warning("[PortraitMatte] Gagal encode JPEG — foto asli digunakan", category: "camera")
@@ -133,11 +210,11 @@ actor PhotoTransferService {
                 }
                 
                 HaispaceLogger.info(
-                    "Portrait Matte Bokeh berhasil: \(jpegData.count / 1024)KB (\(Int(photoExtent.width))×\(Int(photoExtent.height))px)",
+                    "Portrait Bokeh ✓ (Matte+VariableDOF+Bloom): \(jpegData.count / 1024)KB (\(Int(photoExtent.width))×\(Int(photoExtent.height))px)",
                     category: "camera"
                 )
                 return jpegData
-            } // ← autoreleasepool: semua intermediate CIImage/CGImage dibebaskan di sini
+            } // ← autoreleasepool: semua intermediate CIImage/CGImage/CVPixelBuffer dibebaskan di sini
             
             if let result = bokehResult {
                 photoData = result

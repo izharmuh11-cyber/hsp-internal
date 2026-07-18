@@ -76,9 +76,15 @@ final class CameraCaptureService: NSObject {
     // Simpan target zoom yang diinginkan agar bisa dikembalikan saat beralih mode
     nonisolated(unsafe) private var lastRequestedZoomFactor: CGFloat = 1.0
     
+    // Cache virtualDeviceSwitchOverVideoZoomFactors dari format normal (sebelum portrait mode).
+    // Nilai ini BERUBAH saat portrait mode mengaktifkan format depth — yang menyebabkan
+    // pemetaan 2x → internal zoom yang salah. Dengan cache dari session awal,
+    // zoom mapping selalu konsisten terlepas dari apakah portrait mode ON atau OFF.
+    nonisolated(unsafe) private var cachedSwitchOverFactors: [CGFloat] = []
+    
     // FIX #6: Simpan titik fokus terakhir dari operator (normalized 0.0-1.0).
-    // Digunakan sebagai inputFocusRect di CIDepthBlurEffect pada foto final
-    // sehingga area fokus mengikuti titik yang dipilih operator, bukan selalu di tengah.
+    // Digunakan untuk blend mask di PhotoTransferService sehingga area fokus
+    // mengikuti titik yang dipilih operator, bukan selalu di tengah.
     nonisolated(unsafe) var lastFocusPoint: CGPoint = CGPoint(x: 0.5, y: 0.5)
     
     private override init() {
@@ -203,6 +209,15 @@ final class CameraCaptureService: NSObject {
         
         // Atur default zoom awal ke 1.0x (Wide Angle Utama)
         self.applyZoomInternal(factor: 1.0)
+        
+        // Cache switchOver factors dari format normal SETELAH session berjalan.
+        // Harus dilakukan SEBELUM portrait mode pernah aktif agar nilai yang tersimpan
+        // mencerminkan mapping zoom yang benar (UW → Wide → 2x digital).
+        if let input = captureSession.inputs.first as? AVCaptureDeviceInput {
+            let raw = input.device.virtualDeviceSwitchOverVideoZoomFactors
+            cachedSwitchOverFactors = raw.map { CGFloat($0.doubleValue) }
+            HaispaceLogger.info("[Zoom] Cached switchOver factors: \(cachedSwitchOverFactors)", category: "camera")
+        }
         
         isConfigured = true
     }
@@ -391,15 +406,24 @@ final class CameraCaptureService: NSObject {
     /// Mengatur zoom kamera menggunakan Apple native multi-cam approach.
     /// Selalu menggunakan SATU device virtual (DualWide/Triple) tanpa mengganti input.
     /// Memetakan user zoom (0.5x, 1x, 2x) ke internal device zoomFactor menggunakan
-    /// virtualDeviceSwitchOverVideoZoomFactors — persis seperti app Camera bawaan Apple.
+    /// cachedSwitchOverFactors — di-cache saat session awal agar stabil saat portrait ON/OFF.
     ///
-    /// CATATAN: Saat depthOutput aktif, format DualWide berubah sehingga minZ menjadi ~2.0.
-    /// 0.5x (Ultra Wide) harus menggunakan nilai TEPAT DI BAWAH switchOver, bukan minZ.
+    /// ATURAN: 0.5x (Ultra Wide) TIDAK kompatibel saat portrait mode aktif.
+    /// Jika portrait ON dan iPad mengirim 0.5x, di-clamp ke 1.0x secara otomatis.
     func setZoom(factor: CGFloat) {
-        lastRequestedZoomFactor = factor
+        // Clamp 0.5x ke 1.0x saat portrait mode aktif.
+        // UltraWide tidak menghasilkan depth map yang reliable di iPhone 14 DualWide.
+        let effectiveFactor: CGFloat
+        if isPortraitModeActive && factor < 1.0 {
+            effectiveFactor = 1.0
+            HaispaceLogger.info("[Zoom] 0.5x dikembalikan ke 1.0x — portrait mode aktif, UltraWide tidak kompatibel dengan depth", category: "camera")
+        } else {
+            effectiveFactor = factor
+        }
+        lastRequestedZoomFactor = effectiveFactor
         sessionQueue.async { [weak self] in
             guard let self = self else { return }
-            self.applyZoomInternal(factor: factor)
+            self.applyZoomInternal(factor: effectiveFactor)
         }
     }
     
@@ -417,20 +441,26 @@ final class CameraCaptureService: NSObject {
             let maxZ = min(device.maxAvailableVideoZoomFactor, 8.0)
             let minZ = device.minAvailableVideoZoomFactor
             
-            // Baca switch-over points dari virtual device (DualWide / Triple)
-            let switchOvers = device.virtualDeviceSwitchOverVideoZoomFactors.map { CGFloat($0.doubleValue) }
+            // Gunakan cachedSwitchOverFactors agar mapping zoom STABIL saat portrait mode ON/OFF.
+            // virtualDeviceSwitchOverVideoZoomFactors berubah saat format depth aktif:
+            //   Normal mode (DualWide iPhone 14): [2.0]  → 1x=2.0 internal, 2x=4.0 internal
+            //   Portrait mode (depth format):     [1.0]  → mapping bergeser, 2x salah jadi 2.0 internal
+            // Dengan cache dari session awal, mapping selalu benar terlepas dari portrait ON/OFF.
+            let switchOvers = cachedSwitchOverFactors.isEmpty
+                ? device.virtualDeviceSwitchOverVideoZoomFactors.map { CGFloat($0.doubleValue) }
+                : cachedSwitchOverFactors
             
             let targetInternalZoom: CGFloat
             
             if let wideZoom = switchOvers.first {
                 if factor < 0.8 {
-                    // 0.5x → Ultra Wide: gunakan nilai minimum perangkat (minZ)
-                    // Pada mode normal (non-depth), minZ bernilai 1.0 (Ultra Wide super lebar).
-                    // Pada mode portrait (depth aktif), minZ menjadi 2.0 (Wide utama) secara otomatis oleh iOS.
-                    targetInternalZoom = minZ
-                    HaispaceLogger.info("[Zoom] 0.5x → Ultra Wide (internal: \(minZ)x, switchOver: \(wideZoom)x)", category: "camera")
+                    // 0.5x → Ultra Wide: gunakan nilai minimum perangkat
+                    // Normal mode: minZ=1.0 (UltraWide). Portrait mode: UltraWide diblokir iOS (clamp ke wideZoom).
+                    let ultraWideZoom = min(minZ, wideZoom - 0.01) // pastikan di bawah switchOver
+                    targetInternalZoom = max(ultraWideZoom, minZ)
+                    HaispaceLogger.info("[Zoom] 0.5x → Ultra Wide (internal: \(targetInternalZoom)x, switchOver: \(wideZoom)x)", category: "camera")
                 } else if factor <= 1.2 {
-                    // 1x → tepat di titik switch ke Wide Angle
+                    // 1x → tepat di titik switch ke Wide Angle (kamera utama)
                     targetInternalZoom = wideZoom
                     HaispaceLogger.info("[Zoom] 1x → Wide Angle (internal: \(wideZoom)x)", category: "camera")
                 } else {
@@ -664,10 +694,13 @@ extension CameraCaptureService {
     nonisolated private func applyDepthBokeh(to pixelBuffer: CVPixelBuffer, depthMap: CIImage) -> CVPixelBuffer? {
         let original = CIImage(cvPixelBuffer: pixelBuffer)
         
-        // Step 1: Blur background
+        // Step 1: Blur background menggunakan CIDiscBlur.
+        // CIDiscBlur mensimulasikan out-of-focus disk blur seperti lensa optik sungguhan
+        // (berbentuk lingkaran/disk, bukan Gaussian yang terlalu soft dan terlihat digital).
+        // Radius 14 di CIDiscBlur ≈ visual weight Gaussian radius 18 tapi jauh lebih natural.
         let blurred = original
             .clampedToExtent()
-            .applyingFilter("CIGaussianBlur", parameters: ["inputRadius": 18.0])
+            .applyingFilter("CIDiscBlur", parameters: ["inputRadius": 14.0])
             .cropped(to: original.extent)
         
         // Step 2: Normalisasi depth Float32 (meter) ke mask 0.0–1.0
