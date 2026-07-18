@@ -210,7 +210,10 @@ final class CameraCaptureService: NSObject {
             }
             
             // Aktifkan pemrosesan gambar penuh Apple (Smart HDR, Deep Fusion, Neural Engine ISP)
-            if self.photoOutput.maxPhotoQualityPrioritization == .quality {
+            // PENTING: Saat portrait mode aktif, format kamera dipaksa iOS ke format depth.
+            // Format depth TIDAK selalu mendukung .quality prioritization → NSInvalidArgumentException → CRASH.
+            // Solusi: gunakan .balanced saat portrait (depth format), .quality saat normal.
+            if self.photoOutput.maxPhotoQualityPrioritization == .quality && !self.isPortraitModeActive {
                 photoSettings.photoQualityPrioritization = .quality
             } else {
                 photoSettings.photoQualityPrioritization = .balanced
@@ -417,17 +420,23 @@ final class CameraCaptureService: NSObject {
                 if self.captureSession.canAddOutput(self.depthOutput) {
                     self.captureSession.addOutput(self.depthOutput)
                     HaispaceLogger.info("[PortraitMode] depth output ditambahkan ke captureSession", category: "camera")
+                } else {
+                    HaispaceLogger.warning("[PortraitMode] depth output TIDAK bisa ditambahkan ke session", category: "camera")
                 }
                 
                 // Lepaskan callback delegasi video biasa agar tidak double deliver frame
                 self.videoOutput.setSampleBufferDelegate(nil, queue: nil)
                 
-                // Konfigurasi synchronizer untuk video + depth data
+                // PENTING: commitConfiguration HARUS dilakukan SEBELUM membuat outputSynchronizer.
+                // AVCaptureDataOutputSynchronizer hanya valid jika semua dataOutputs sudah terdaftar
+                // di captureSession. Membuat synchronizer sebelum commit → synchronizer invalid → CRASH.
+                self.captureSession.commitConfiguration()
+                HaispaceLogger.info("[PortraitMode] session committed — depth output terdaftar", category: "camera")
+                
+                // Konfigurasi synchronizer SETELAH commit — depth output sudah diakui session
                 self.outputSynchronizer = AVCaptureDataOutputSynchronizer(dataOutputs: [self.videoOutput, self.depthOutput])
                 self.outputSynchronizer?.setDelegate(self, queue: self.syncQueue)
                 HaispaceLogger.info("[PortraitMode] depth+video synchronizer dikonfigurasi", category: "camera")
-                
-                self.captureSession.commitConfiguration()
                 
                 // Paksa zoom ke 1.0x (Wide Angle) agar sinkronisasi depth map dari dual camera pas
                 self.applyZoomInternal(factor: 1.0)
