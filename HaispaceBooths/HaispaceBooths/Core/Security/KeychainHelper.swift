@@ -182,13 +182,63 @@ struct KeychainHelper {
         return newUUID
     }
 
-    // MARK: - Convenience: GitHub PAT (Log Uploader)
+    // MARK: - Convenience: GitHub PAT (Log Uploader) — iCloud Keychain Sync
+    // Menggunakan kSecAttrSynchronizable: true agar token tetap ada setelah uninstall + reinstall.
+    // Selama Apple ID sama di device, token otomatis kembali tanpa perlu input ulang.
+    // Jika iCloud Keychain tidak tersedia, fallback ke local Keychain — tidak crash.
 
-    static func getGitHubPAT() -> String? { read(for: .githubPAT) }
+    static func getGitHubPAT() -> String? {
+        // Coba baca dari iCloud-synced keychain dulu
+        let syncQuery: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: KeychainKey.githubPAT.rawValue,
+            kSecAttrSynchronizable as String: kCFBooleanTrue!,
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne
+        ]
+        var result: AnyObject?
+        if SecItemCopyMatching(syncQuery as CFDictionary, &result) == errSecSuccess,
+           let data = result as? Data,
+           let value = String(data: data, encoding: .utf8) {
+            return value
+        }
+        // Fallback: baca dari local keychain
+        return read(for: .githubPAT)
+    }
+
     @discardableResult
-    static func saveGitHubPAT(_ token: String) -> Bool { save(token, for: .githubPAT) }
+    static func saveGitHubPAT(_ token: String) -> Bool {
+        guard let data = token.data(using: .utf8) else { return false }
+        deleteGitHubPAT()
+        let syncQuery: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: KeychainKey.githubPAT.rawValue,
+            kSecAttrSynchronizable as String: kCFBooleanTrue!,
+            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock,
+            kSecValueData as String: data
+        ]
+        let syncStatus = SecItemAdd(syncQuery as CFDictionary, nil)
+        if syncStatus == errSecSuccess { return true }
+        // Fallback ke local keychain jika iCloud tidak tersedia
+        return save(data, for: .githubPAT)
+    }
+
     @discardableResult
-    static func deleteGitHubPAT() -> Bool { delete(.githubPAT) }
+    static func deleteGitHubPAT() -> Bool {
+        let localQuery: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: KeychainKey.githubPAT.rawValue
+        ]
+        SecItemDelete(localQuery as CFDictionary)
+
+        let syncQuery: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: KeychainKey.githubPAT.rawValue,
+            kSecAttrSynchronizable as String: kCFBooleanTrue!
+        ]
+        let status = SecItemDelete(syncQuery as CFDictionary)
+        return status == errSecSuccess || status == errSecItemNotFound
+    }
 }
 
 // MARK: - KeychainKey CaseIterable
