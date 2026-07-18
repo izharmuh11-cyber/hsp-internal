@@ -46,7 +46,7 @@ actor PhotoTransferService {
             // Gunakan autoreleasepool untuk membebaskan intermediate bitmaps Core Image
             // segera setelah selesai. Tanpa ini, iOS bisa akumulasi 200-400MB RAM dari
             // CIImage pipeline pada foto 12MP sebelum ARC sempat membebaskannya.
-            let bokehResult: Data? = autoreleasepool {
+            let bokehResult: Data? = autoreleasepool { () -> Data? in
                 guard let ciImage = CIImage(data: rawData),
                       let filter = CIFilter(name: "CIDepthBlurEffect") else {
                     HaispaceLogger.warning("Gagal inisialisasi CIDepthBlurEffect - foto asli digunakan", category: "camera")
