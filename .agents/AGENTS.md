@@ -35,6 +35,12 @@ Semua agen AI selanjutnya wajib membaca riwayat build ini sebelum melanjutkan pe
   * `depthOutput` dan `videoOutput` berjalan asinkron. Data depth disimpan ke cache memori `lastDepthImage` secara berkala, lalu video delegate mengambil cache tersebut untuk merender bokeh secara independen.
   * **Pencegahan Crash:** Sesaat sebelum jepret (`capturePhoto`), kita menonaktifkan seluruh koneksi `depthOutput` (`connection.isEnabled = false`) untuk membebaskan 100% bandwidth sensor. Koneksi dihidupkan kembali (`connection.isEnabled = true`) di dalam callback delegate `didFinishProcessingPhoto`.
 
-### 2. Langkah Pengujian Berikutnya untuk Agen Baru:
-1. Tanyakan kepada operator apakah **Build #180** yang baru saja di-push dapat berjalan dengan sukses dan berhasil mengambil foto Portrait tanpa crash.
-2. Jika sukses, masalah crash mode portrait telah terselesaikan 100% melalui arsitektur Asynchronous Caching baru ini.
+### 2. Alur Pengujian & Pemeriksaan Log (Untuk Agen AI Baru):
+1. **Dapatkan Hasil Pengujian:** Tanyakan apakah **Build #180** yang baru saja di-push berhasil mengambil foto Portrait tanpa crash.
+2. **Pemeriksaan Log:** Jika terjadi kendala/crash, agen harus segera mengunduh log terbaru dengan perintah:
+   `python scratch/fetch_r2_logs.py`
+3. **Analisis Berkas Log:**
+   * Buka berkas `scratch/logs/iphone-latest.txt` (log iPhone) dan `scratch/logs/ipad-latest.txt` (log iPad).
+   * Cari teks `Memicu jepretan foto` untuk melihat detik-detik proses capture.
+   * Cari teks `Koneksi TCP gagal` atau `Connection reset` untuk memverifikasi jika terjadi crash instan setelah jepretan dipicu.
+
