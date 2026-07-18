@@ -143,11 +143,11 @@ final class CameraCaptureService: NSObject {
         HaispaceLogger.info("[setupSession] Langkah 5: commitConfiguration selesai", category: "camera")
         
         // FIX: maxPhotoQualityPrioritization HANYA boleh di-set SETELAH commitConfiguration
-        // dan HARUS divalidasi terhadap availablePhotoQualityPrioritizations untuk mencegah NSInvalidArgumentException.
-        if photoOutput.availablePhotoQualityPrioritizations.contains(.quality) {
+        // dan di-gate dengan photoOutput.isHighPhotoQualitySupported untuk mencegah NSInvalidArgumentException.
+        if photoOutput.isHighPhotoQualitySupported {
             photoOutput.maxPhotoQualityPrioritization = .quality
             HaispaceLogger.info("[setupSession] maxPhotoQualityPrioritization set to quality", category: "camera")
-        } else if photoOutput.availablePhotoQualityPrioritizations.contains(.balanced) {
+        } else {
             photoOutput.maxPhotoQualityPrioritization = .balanced
             HaispaceLogger.info("[setupSession] maxPhotoQualityPrioritization set to balanced", category: "camera")
         }
