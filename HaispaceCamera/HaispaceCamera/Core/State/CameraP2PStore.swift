@@ -95,6 +95,15 @@ final class CameraP2PStore {
     @MainActor
     func startReconnection(payload: QRPairingPayload) {
         guard !isConnected, !isReconnecting else { return }
+        
+        // Jika payload sudah expired sejak awal, langsung minta scan ulang
+        if payload.isExpired {
+            HaispaceLogger.warning("Auto-reconnect dibatalkan: QR Payload sudah expired. Perlu scan ulang.", category: "p2p")
+            connectionState = .failed(reason: "QR Expired")
+            lastPairingPayload = nil   // Hapus payload lama agar tidak dipakai lagi
+            return
+        }
+        
         isReconnecting = true
         reconnectAttempt = 1
         connectionState = .reconnecting(attempt: reconnectAttempt)
@@ -105,6 +114,15 @@ final class CameraP2PStore {
                 guard let self = self else { return }
                 if self.isConnected {
                     self.stopReconnection()
+                    return
+                }
+                
+                // Cek lagi apakah payload sudah expired saat timer berjalan
+                if payload.isExpired {
+                    HaispaceLogger.warning("QR Payload expired saat auto-reconnect. Hentikan dan minta scan ulang.", category: "p2p")
+                    self.stopReconnection()
+                    self.connectionState = .failed(reason: "QR Expired")
+                    self.lastPairingPayload = nil
                     return
                 }
                 

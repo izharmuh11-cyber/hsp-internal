@@ -237,9 +237,10 @@ struct PairingSetupView: View {
     private func setupQRGeneration() {
         let eventId = appState.currentSession?.sessionId ?? "TEST-EVENT-\(Int.random(in: 1000...9999))"
         let localIp = NetworkUtility.getWiFiAddress() ?? "127.0.0.1"
-        let randomPort = Int.random(in: 50000...60000)
+        // Port statis agar QR lama tetap valid — menggunakan defaultPort dari LocalTCPRouterService
+        let staticPort = 55123
         
-        appState.p2p.startGeneratingQRPayload(eventId: eventId, ip: localIp, port: randomPort)
+        appState.p2p.startGeneratingQRPayload(eventId: eventId, ip: localIp, port: staticPort)
         
         timer?.invalidate()
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in

@@ -26,21 +26,36 @@ actor LocalTCPRouterService {
         self.onDataReceived = callback
     }
     
-    // Default TCP Port untuk listener
+    // Port TCP statis untuk listener — sama dengan nilai di PairingSetupView
     let defaultPort: NWEndpoint.Port = 55123
+    
+    private var currentListeningPort: UInt16 = 0
     
     private init() {}
     
-    /// Memulai TCP Listener di iPad
+    /// Memulai TCP Listener di iPad.
+    /// Idempotent: tidak me-restart listener jika port yang sama sudah aktif.
     func startHosting(port: Int? = nil) {
-        guard listener == nil else { return }
-        
         let listenPort: NWEndpoint.Port
         if let portVal = port, let p = NWEndpoint.Port(rawValue: UInt16(portVal)) {
             listenPort = p
         } else {
             listenPort = defaultPort
         }
+        
+        // Jika listener sudah aktif di port yang sama, tidak perlu restart
+        if listener != nil && currentListeningPort == listenPort.rawValue {
+            HaispaceLogger.info("TCP Listener sudah aktif di port \(listenPort.rawValue) — skip restart", category: "p2p")
+            return
+        }
+        
+        // Jika ada listener di port berbeda, hentikan dulu
+        if listener != nil {
+            listener?.cancel()
+            listener = nil
+        }
+        
+        currentListeningPort = listenPort.rawValue
         
         do {
             listener = try NWListener(using: .tcp, on: listenPort)
