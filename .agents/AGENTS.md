@@ -19,28 +19,23 @@ All AI agents working on this project must strictly adhere to the following work
 4. **Confidentiality of Design Docs:**
    * Do not remove `docs/design/` from `.gitignore`. Internal design strategy documents must remain local-only.
 
-## 📌 Status Pengembangan Terakhir & Log Build (Per 18 Juli 2026)
+## 📁 How to View and Analyze logs (Cara Melihat & Menganalisis Log)
 
-Semua agen AI selanjutnya wajib membaca riwayat build ini sebelum melanjutkan pekerjaan perbaikan kamera Portrait pada iPhone 14:
+AI agents must use the following procedure to inspect logs when debugging issues or verifying test results:
 
-### 1. Riwayat Eksperimen Build & Penyebab Crash
-* **Build #170 - #173 (Gagal Compile):** Error sintaksis pada Swift try-catch wrapper dan ketiadaan properti `supportedPhotoQualityPrioritizations` pada `AVCapturePhotoOutput`.
-* **Build #174 (Crash Watchdog - 16 detik):** Terjadi circular wait deadlock (Swift Concurrency) antara `MainActor` dan `PhotoTransferService` actor, memicu pembekuan main thread selama 16 detik hingga Watchdog iOS mematikan paksa aplikasi.
-* **Build #175 (Crash Instan saat Capture):** Deadlock selesai dengan memindahkan transfer foto ke `Task.detached`. Namun terjadi crash instan baru karena inisialisasi default `AVCapturePhotoSettings()` menghasilkan format uncompressed (TIFF/RAW) yang tidak mendukung embedding depth data metadata.
-* **Build #176 (Crash Instan saat Capture):** Memaksa inisialisasi settings dengan format terkompresi `.hevc` atau `.jpeg`. Tetap crash karena bentrokan bandwidth hardware dual-camera iPhone 14 akibat streaming depth via `AVCaptureDepthDataOutput` (dengan synchronizer) berjalan bersamaan dengan capture depth pada `AVCapturePhotoOutput`.
-* **Build #177 - #178 (Gagal Compile):** Percobaan mematikan synchronizer sementara saat capture, namun gagal compile karena salah argumen `queue:` (seharusnya `callbackQueue:` pada setDelegate depthOutput).
-* **Build #179 (Crash Instan saat Capture):** Error compile teratasi, namun masih crash karena walaupun synchronizer dilepas, `depthOutput` tetap aktif mengalirkan frame depth di latar belakang.
-* **Build #180 (Migrasi Penuh ke Asynchronous Caching):** 
-  * Membuang `AVCaptureDataOutputSynchronizer` secara total.
-  * `depthOutput` dan `videoOutput` berjalan asinkron. Data depth disimpan ke cache memori `lastDepthImage` secara berkala, lalu video delegate mengambil cache tersebut untuk merender bokeh secara independen.
-  * **Pencegahan Crash:** Sesaat sebelum jepret (`capturePhoto`), kita menonaktifkan seluruh koneksi `depthOutput` (`connection.isEnabled = false`) untuk membebaskan 100% bandwidth sensor. Koneksi dihidupkan kembali (`connection.isEnabled = true`) di dalam callback delegate `didFinishProcessingPhoto`.
+1. **Download logs from cloud storage (R2):**
+   Run the Python script in the repository root to fetch logs:
+   ```bash
+   python scratch/fetch_r2_logs.py
+   ```
+   *This downloads the latest logs to the local `scratch/logs/` directory.*
 
-### 2. Alur Pengujian & Pemeriksaan Log (Untuk Agen AI Baru):
-1. **Dapatkan Hasil Pengujian:** Tanyakan apakah **Build #180** yang baru saja di-push berhasil mengambil foto Portrait tanpa crash.
-2. **Pemeriksaan Log:** Jika terjadi kendala/crash, agen harus segera mengunduh log terbaru dengan perintah:
-   `python scratch/fetch_r2_logs.py`
-3. **Analisis Berkas Log:**
-   * Buka berkas `scratch/logs/iphone-latest.txt` (log iPhone) dan `scratch/logs/ipad-latest.txt` (log iPad).
-   * Cari teks `Memicu jepretan foto` untuk melihat detik-detik proses capture.
-   * Cari teks `Koneksi TCP gagal` atau `Connection reset` untuk memverifikasi jika terjadi crash instan setelah jepretan dipicu.
+2. **Locate Target Log Files:**
+   * **iPhone logs (HaiCamera):** Inspect `scratch/logs/iphone-latest.txt` (or timestamped `iphone-*.txt` matching the test timestamp).
+   * **iPad logs (HaiBooth):** Inspect `scratch/logs/ipad-latest.txt` (or timestamped `ipad-*.txt` matching the test timestamp).
 
+3. **Log Markers to search for:**
+   * `Memicu jepretan foto` – Marks the start of a still capture event.
+   * `[PortraitMode]` – Traces zoom adjustment, depth delivery activation, and synchronizer changes.
+   * `Koneksi TCP gagal` or `Connection reset` – Indicates a network drop, usually caused by an instant app crash on the other device.
+   * `launched` or `setupSession` – Traces app launches/restarts.
