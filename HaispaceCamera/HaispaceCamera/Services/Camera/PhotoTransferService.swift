@@ -49,7 +49,29 @@ actor PhotoTransferService {
                     return nil
                 }
                 
-                filter.setValue(ciImage, forKey: kCIInputImageKey)
+                // LAKUKAN DOWNSCALING ADAPTIF: Foto 12MP (4032x3024) membutuhkan VRAM sangat besar
+                // untuk filter multi-pass CIDepthBlurEffect, menyebabkan SIGKILL OOM crash instant.
+                // Dengan melakukan downscale ke resolusi stabil 5.4MP (2688x2016) menggunakan GPU,
+                // pemakaian memori ditekan hingga 4x lipat lebih hemat sementara kualitas cetak 4R tetap prima.
+                var inputImage = ciImage
+                let originalExtent = ciImage.extent
+                let targetWidth: CGFloat = 2688.0
+                let scale = targetWidth / originalExtent.width
+                
+                if scale < 1.0 {
+                    if let scaleFilter = CIFilter(name: "CILanczosScaleTransform") {
+                        scaleFilter.setValue(ciImage, forKey: kCIInputImageKey)
+                        scaleFilter.setValue(scale, forKey: kCIInputScaleKey)
+                        scaleFilter.setValue(1.0, forKey: kCIInputAspectRatioKey)
+                        if let scaledImage = scaleFilter.outputImage {
+                            inputImage = scaledImage
+                        }
+                    } else {
+                        inputImage = ciImage.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+                    }
+                }
+                
+                filter.setValue(inputImage, forKey: kCIInputImageKey)
                 filter.setValue(depthData, forKey: "inputDepthData")
                 
                 // Titik fokus dari operator (tap-to-focus dari iPad)
@@ -66,11 +88,11 @@ actor PhotoTransferService {
                     return nil
                 }
                 
-                // Crop output ke original extent agar terhindar dari crash infinite extent
-                let croppedOutput = outputCIImage.cropped(to: ciImage.extent)
+                // Crop output ke target extent agar terhindar dari crash infinite extent
+                let croppedOutput = outputCIImage.cropped(to: inputImage.extent)
                 
                 // Render menggunakan shared ciContext terakselerasi GPU (Metal) ke CGImage
-                guard let cgImage = self.ciContext.createCGImage(croppedOutput, from: ciImage.extent) else {
+                guard let cgImage = self.ciContext.createCGImage(croppedOutput, from: inputImage.extent) else {
                     HaispaceLogger.warning("Gagal render bokeh CGImage - foto asli digunakan", category: "camera")
                     return nil
                 }
@@ -81,7 +103,7 @@ actor PhotoTransferService {
                     return nil
                 }
                 
-                HaispaceLogger.info("Bokeh Portrait berhasil diterapkan: \(jpegData.count / 1024)KB", category: "camera")
+                HaispaceLogger.info("Bokeh Portrait berhasil diterapkan: \(jpegData.count / 1024)KB (Resolusi: \(Int(inputImage.extent.width))x\(Int(inputImage.extent.height)))", category: "camera")
                 return jpegData
             }
             
