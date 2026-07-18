@@ -131,10 +131,10 @@ final class CameraCaptureService: NSObject {
         // Setup Photo Output untuk jepretan full quality — Safe check before setting maxPhotoQualityPrioritization to prevent exception crash
         if captureSession.canAddOutput(photoOutput) {
             captureSession.addOutput(photoOutput)
-            if photoOutput.supportedPhotoQualityPrioritizations.contains(.quality) {
+            if videoDevice.activeFormat.isHighPhotoQualitySupported {
                 photoOutput.maxPhotoQualityPrioritization = .quality
-            } else if photoOutput.supportedPhotoQualityPrioritizations.contains(.balanced) {
-                photoOutput.maxPhotoQualityPrioritization = .balanced
+            } else {
+                photoOutput.maxPhotoQualityPrioritization = .speed
             }
         }
         
