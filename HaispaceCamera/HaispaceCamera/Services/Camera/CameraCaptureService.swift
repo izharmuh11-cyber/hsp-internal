@@ -318,7 +318,10 @@ final class CameraCaptureService: NSObject {
                photoConnection.isVideoOrientationSupported {
                 photoConnection.videoOrientation = avOrientation
             }
-         /// Mengatur zoom kamera menggunakan Apple native multi-cam approach.
+        }
+    }
+    
+    /// Mengatur zoom kamera menggunakan Apple native multi-cam approach.
     /// Selalu menggunakan SATU device virtual (DualWide/Triple) tanpa mengganti input.
     /// Memetakan user zoom (0.5x, 1x, 2x) ke internal device zoomFactor menggunakan
     /// virtualDeviceSwitchOverVideoZoomFactors — persis seperti app Camera bawaan Apple.
