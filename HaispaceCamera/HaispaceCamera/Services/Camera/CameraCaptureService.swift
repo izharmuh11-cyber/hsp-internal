@@ -9,6 +9,9 @@
 import Foundation
 import AVFoundation
 import UIKit
+import Vision
+import CoreImage
+import CoreImage.CIFilterBuiltins
 
 final class CameraCaptureService: NSObject {
     static let shared = CameraCaptureService()
@@ -32,6 +35,26 @@ final class CameraCaptureService: NSObject {
     // Status Portrait Mode
     nonisolated(unsafe) var isPortraitModeActive = false
     nonisolated(unsafe) var isSessionActive = false
+    
+    // MARK: - Live Bokeh (Vision + CoreImage Pipeline)
+    // VNGeneratePersonSegmentationRequest: AI segmentasi orang vs background per frame
+    // qualityLevel .balanced = ~5ms/frame di iPhone 14, cukup untuk 30fps stream
+    private let segmentationRequest: VNGeneratePersonSegmentationRequest = {
+        let req = VNGeneratePersonSegmentationRequest()
+        req.qualityLevel = .balanced
+        req.outputPixelFormat = kCVPixelFormatType_OneComponent8
+        return req
+    }()
+    // Cache mask terakhir — tidak perlu update setiap frame untuk efek smooth
+    nonisolated(unsafe) private var lastSegmentationMask: CIImage? = nil
+    nonisolated(unsafe) private var bokehFrameCount: Int = 0
+    // Update mask setiap 3 frame = ~10x/detik pada 30fps, cukup halus untuk bokeh
+    private let bokehMaskInterval = 3
+    // CIContext dengan GPU Metal acceleration
+    private lazy var ciContext: CIContext = CIContext(options: [
+        .useSoftwareRenderer: false,
+        .workingColorSpace: CGColorSpaceCreateDeviceRGB() as Any
+    ])
     
     private override init() {
         super.init()
@@ -288,92 +311,80 @@ final class CameraCaptureService: NSObject {
         }
     }
     
-    /// Mengatur faktor perbesaran (zoom) kamera secara dinamis (iPhone 14 / Multi-Cam architecture)
+    /// Mengatur zoom kamera menggunakan Apple native multi-cam approach.
+    /// Selalu menggunakan SATU device virtual (DualWide/Triple) tanpa mengganti input.
+    /// Memetakan user zoom (0.5x, 1x, 2x) ke internal device zoomFactor menggunakan
+    /// virtualDeviceSwitchOverVideoZoomFactors — persis seperti app Camera bawaan Apple.
     func setZoom(factor: CGFloat) {
         sessionQueue.async { [weak self] in
             guard let self = self else { return }
             
-            let currentInput = self.captureSession.inputs.first as? AVCaptureDeviceInput
-            let currentDevice = currentInput?.device
-            
-            // Logika Kamera iPhone 14 / Dual Cam / Triple Cam:
-            // 0.5x -> builtInUltraWideCamera (zoomFactor: 1.0)
-            // 1.0x -> builtInWideAngleCamera / builtInDualWideCamera (zoomFactor: 1.0)
-            // 2.0x -> builtInWideAngleCamera / builtInDualWideCamera (zoomFactor: 2.0 digital crop)
-            
-            let targetDeviceType: AVCaptureDevice.DeviceType = (factor < 0.8) ? .builtInUltraWideCamera : .builtInWideAngleCamera
-            let targetZoomFactor: CGFloat = (factor < 0.8) ? 1.0 : (factor > 1.5 ? 2.0 : 1.0)
-            
-            // Cek apakah device saat ini mendukung zoom factor target secara langsung (misal Dual/Triple Camera)
-            if let device = currentDevice {
-                let minZ = device.minAvailableVideoZoomFactor
-                let maxZ = min(device.maxAvailableVideoZoomFactor, 5.0)
-                
-                // Jika device saat ini adalah Dual Wide / Triple Camera, zoom 0.5x hingga 2.0x didukung langsung di 1 device!
-                if device.deviceType == .builtInDualWideCamera || device.deviceType == .builtInTripleCamera {
-                    do {
-                        try device.lockForConfiguration()
-                        let finalZoom = max(min(factor, maxZ), minZ)
-                        device.ramp(toVideoZoomFactor: finalZoom, withRate: 8.0) // Smooth ramp zoom khas Apple!
-                        device.unlockForConfiguration()
-                        HaispaceLogger.info("[Zoom] Smooth ramp zoom ke \(finalZoom)x pada \(device.localizedName)", category: "camera")
-                        return
-                    } catch {
-                        HaispaceLogger.error("[Zoom] Gagal ramp zoom: \(error.localizedDescription)", category: "camera")
-                    }
-                }
-                
-                // Jika device saat ini sudah sama dengan targetDeviceType, lakukan smooth ramp zoom
-                if device.deviceType == targetDeviceType {
-                    do {
-                        try device.lockForConfiguration()
-                        let finalZoom = max(min(targetZoomFactor, maxZ), minZ)
-                        device.ramp(toVideoZoomFactor: finalZoom, withRate: 8.0)
-                        device.unlockForConfiguration()
-                        HaispaceLogger.info("[Zoom] Zoom factor diubah menjadi \(finalZoom)x pada \(device.localizedName)", category: "camera")
-                        return
-                    } catch {
-                        HaispaceLogger.error("[Zoom] Gagal set zoom: \(error.localizedDescription)", category: "camera")
-                    }
-                }
-            }
-            
-            // Jika berbeda device (misal dari Ultra Wide kembali ke Wide Angle pada iPhone standar)
-            guard let newDevice = AVCaptureDevice.default(targetDeviceType, for: .video, position: .back),
-                  let newInput = try? AVCaptureDeviceInput(device: newDevice) else {
-                HaispaceLogger.warning("[Zoom] Perangkat \(targetDeviceType) tidak tersedia", category: "camera")
+            guard let currentInput = self.captureSession.inputs.first as? AVCaptureDeviceInput else {
+                HaispaceLogger.warning("[Zoom] Tidak ada active camera input", category: "camera")
                 return
             }
-            
-            self.captureSession.beginConfiguration()
-            if let oldInput = currentInput {
-                self.captureSession.removeInput(oldInput)
-            }
-            if self.captureSession.canAddInput(newInput) {
-                self.captureSession.addInput(newInput)
-            }
-            self.captureSession.commitConfiguration()
+            let device = currentInput.device
             
             do {
-                try newDevice.lockForConfiguration()
-                let minZ = newDevice.minAvailableVideoZoomFactor
-                let maxZ = min(newDevice.maxAvailableVideoZoomFactor, 5.0)
-                let finalZoom = max(min(targetZoomFactor, maxZ), minZ)
-                newDevice.videoZoomFactor = finalZoom
-                newDevice.unlockForConfiguration()
-                HaispaceLogger.info("[Zoom] Berhasil beralih ke perangkat \(newDevice.localizedName) (Zoom: \(factor)x)", category: "camera")
+                try device.lockForConfiguration()
+                
+                let minZ = device.minAvailableVideoZoomFactor
+                let maxZ = min(device.maxAvailableVideoZoomFactor, 8.0)
+                
+                // Baca switch-over points dari virtual device (DualWide / Triple)
+                // Contoh iPhone 14: switchOvers = [2.0]
+                //   • zoomFactor < 2.0  → lensa Ultra Wide (tampilan 0.5x)
+                //   • zoomFactor = 2.0  → lensa Wide Angle  (tampilan 1x)
+                //   • zoomFactor = 4.0  → 2x digital zoom pada Wide
+                let switchOvers = device.virtualDeviceSwitchOverVideoZoomFactors.map { CGFloat($0.doubleValue) }
+                
+                let targetInternalZoom: CGFloat
+                
+                if let wideZoom = switchOvers.first {
+                    // Virtual multi-cam (DualWide / Triple / DualCamera)
+                    if factor < 0.8 {
+                        // 0.5x → minimum (= lensa Ultra Wide fisik)
+                        targetInternalZoom = minZ
+                        HaispaceLogger.info("[Zoom] 0.5x → Ultra Wide (internal: \(minZ)x), switchOver: \(wideZoom)x", category: "camera")
+                    } else if factor <= 1.2 {
+                        // 1x → tepat di titik switch ke Wide Angle
+                        targetInternalZoom = wideZoom
+                        HaispaceLogger.info("[Zoom] 1x → Wide Angle (internal: \(wideZoom)x)", category: "camera")
+                    } else {
+                        // 2x → 2x digital pada Wide Angle
+                        let zoom2x = min(wideZoom * 2.0, maxZ)
+                        targetInternalZoom = zoom2x
+                        HaispaceLogger.info("[Zoom] 2x → Digital zoom (internal: \(zoom2x)x)", category: "camera")
+                    }
+                } else {
+                    // Device single-lens (WideAngle saja): gunakan factor langsung
+                    targetInternalZoom = max(min(factor, maxZ), minZ)
+                    HaispaceLogger.info("[Zoom] Single-lens zoom ke \(targetInternalZoom)x", category: "camera")
+                }
+                
+                let finalZoom = max(min(targetInternalZoom, maxZ), minZ)
+                device.ramp(toVideoZoomFactor: finalZoom, withRate: 8.0) // Smooth ramp khas Apple!
+                device.unlockForConfiguration()
+                
             } catch {
-                HaispaceLogger.error("[Zoom] Gagal lock config zoom pasca ganti device: \(error.localizedDescription)", category: "camera")
+                HaispaceLogger.error("[Zoom] Gagal set zoom: \(error.localizedDescription)", category: "camera")
             }
         }
     }
     
-    /// Mengaktifkan atau mematikan mode Portrait (Bokeh)
+    /// Mengaktifkan atau mematikan mode Portrait (Live Bokeh via Vision AI)
     func setPortraitMode(enabled: Bool) {
-        sessionQueue.async { [weak self] in
-            guard let self = self else { return }
-            self.isPortraitModeActive = enabled
-            HaispaceLogger.info("[PortraitMode] Status Portrait diset ke \(enabled ? "AKTIF (Depth/Bokeh)" : "NONAKTIF")", category: "camera")
+        // isPortraitModeActive dibaca dari videoQueue (captureOutput) — set langsung tanpa dispatch
+        // aman karena nonisolated(unsafe) dan perubahan boolean adalah atomic write pada platform 64-bit
+        isPortraitModeActive = enabled
+        if enabled {
+            // Reset cache mask agar segmentasi segar dimulai ulang
+            lastSegmentationMask = nil
+            bokehFrameCount = 0
+            HaispaceLogger.info("[PortraitMode] AKTIF — Live Bokeh (Vision AI) dimulai", category: "camera")
+        } else {
+            lastSegmentationMask = nil
+            HaispaceLogger.info("[PortraitMode] NONAKTIF — Live Bokeh dimatikan", category: "camera")
         }
     }
 }
@@ -381,8 +392,70 @@ final class CameraCaptureService: NSObject {
 // MARK: - AVCaptureVideoDataOutputSampleBufferDelegate
 extension CameraCaptureService: AVCaptureVideoDataOutputSampleBufferDelegate {
     nonisolated func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        // Teruskan ke VideoEncoderService secara langsung dan sinkron
+        // Jika Portrait Mode aktif, terapkan Live Bokeh (Vision AI segmentasi + CIGaussianBlur)
+        // sebelum frame dikirim ke VideoEncoderService
+        if self.isPortraitModeActive,
+           let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
+            self.applyLiveBokeh(to: pixelBuffer)
+        }
         self.onVideoFrameCaptured?(sampleBuffer)
+    }
+    
+    /// Menerapkan software bokeh real-time ke CVPixelBuffer secara in-place.
+    /// Pipeline: Orang disegmentasi via Vision AI → background di-blur via CIGaussianBlur
+    /// → composite via CIBlendWithMask → render kembali ke pixel buffer yang sama.
+    nonisolated private func applyLiveBokeh(to pixelBuffer: CVPixelBuffer) {
+        bokehFrameCount += 1
+        
+        // Langkah 1: Update segmentation mask setiap N frame
+        // (tidak perlu setiap frame — mask dicache untuk frame berikutnya)
+        if bokehFrameCount % bokehMaskInterval == 0 {
+            let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer,
+                                               orientation: .up,
+                                               options: [:])
+            do {
+                try handler.perform([segmentationRequest])
+                
+                if let maskPixelBuffer = segmentationRequest.results?.first?.pixelBuffer {
+                    let originalCI = CIImage(cvPixelBuffer: pixelBuffer)
+                    let maskCI = CIImage(cvPixelBuffer: maskPixelBuffer)
+                    
+                    // Scale mask agar sesuai resolusi frame (mask biasanya lebih kecil)
+                    let scaleX = originalCI.extent.width / maskCI.extent.width
+                    let scaleY = originalCI.extent.height / maskCI.extent.height
+                    lastSegmentationMask = maskCI
+                        .transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
+                }
+            } catch {
+                // Jika Vision gagal, lewati bokeh frame ini (stream tetap jalan normal)
+                HaispaceLogger.warning("[Bokeh] Segmentasi gagal: \(error.localizedDescription)", category: "camera")
+                return
+            }
+        }
+        
+        // Langkah 2: Terapkan bokeh menggunakan mask terakhir
+        guard let mask = lastSegmentationMask else { return }
+        
+        let original = CIImage(cvPixelBuffer: pixelBuffer)
+        
+        // Blur seluruh frame untuk digunakan sebagai background
+        // inputRadius: 22 = bokeh depth yang natural mirip lensa 85mm f/1.8
+        let blurred = original
+            .clampedToExtent()
+            .applyingFilter("CIGaussianBlur", parameters: ["inputRadius": 22.0])
+            .cropped(to: original.extent)
+        
+        // CIBlendWithMask:
+        // • mask = putih (1.0) → tampilkan original (orang tajam)
+        // • mask = hitam (0.0) → tampilkan blurred (background blur)
+        let bokehComposite = original.applyingFilter("CIBlendWithMask", parameters: [
+            kCIInputBackgroundImageKey: blurred,
+            kCIInputMaskImageKey: mask
+        ])
+        
+        // Langkah 3: Render composite langsung ke pixelBuffer yang sama (in-place)
+        // CMSampleBuffer yang dibagikan ke VideoEncoder akan otomatis berisi frame yang sudah diproses
+        ciContext.render(bokehComposite, to: pixelBuffer)
     }
 }
 
