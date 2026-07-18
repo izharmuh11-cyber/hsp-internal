@@ -189,15 +189,23 @@ final class CameraCaptureService: NSObject {
         sessionQueue.async { [weak self] in
             guard let self = self else { return }
             
+            // Hentikan sementara synchronizer streaming depth untuk membebaskan bandwidth hardware
+            // sehingga sensor dapat fokus 100% pada pengambilan data depth kualitas tinggi untuk foto final
+            if self.isPortraitModeActive && self.outputSynchronizer != nil {
+                self.outputSynchronizer?.setDelegate(nil, queue: nil)
+                self.outputSynchronizer = nil
+                HaispaceLogger.info("[PortraitMode] synchronizer dimatikan sementara untuk membebaskan bandwidth hardware saat capture", category: "camera")
+            }
+            
             // Inisialisasi photo settings dengan container format yang mendukung depth data (HEVC / JPEG)
             // Default AVCapturePhotoSettings() tanpa format dapat memilih format TIFF/RAW yang tidak mendukung depth metadata, menyebabkan crash instan.
             let photoSettings: AVCapturePhotoSettings
             let availableCodecs = self.photoOutput.availablePhotoCodecTypes
             
             if availableCodecs.contains(.hevc) {
-                photoSettings = AVCapturePhotoSettings(format: [AVVideoCodecKey: AVVideoCodecType.hevc])
+                photoSettings = AVCapturePhotoSettings(format: [AVVideoCodecKey: AVVideoCodecType.hevc.rawValue])
             } else if availableCodecs.contains(.jpeg) {
-                photoSettings = AVCapturePhotoSettings(format: [AVVideoCodecKey: AVVideoCodecType.jpeg])
+                photoSettings = AVCapturePhotoSettings(format: [AVVideoCodecKey: AVVideoCodecType.jpeg.rawValue])
             } else {
                 photoSettings = AVCapturePhotoSettings()
             }
@@ -656,8 +664,28 @@ extension CameraCaptureService: AVCapturePhotoCaptureDelegate {
     nonisolated func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
         if let error = error {
             HaispaceLogger.error("Gagal capture foto: \(error.localizedDescription)", category: "camera")
-            return
+        } else {
+            self.onPhotoCaptured?(photo)
         }
-        self.onPhotoCaptured?(photo)
+        
+        // Hidupkan kembali synchronizer preview bokeh setelah pemotretan selesai
+        self.resumePortraitSynchronizerIfNeeded()
+    }
+}
+
+extension CameraCaptureService {
+    func resumePortraitSynchronizerIfNeeded() {
+        sessionQueue.async { [weak self] in
+            guard let self = self else { return }
+            if self.isPortraitModeActive && self.outputSynchronizer == nil {
+                // Pastikan delegasi video normal dilepas
+                self.videoOutput.setSampleBufferDelegate(nil, queue: nil)
+                
+                // Buat synchronizer baru untuk video + depth data
+                self.outputSynchronizer = AVCaptureDataOutputSynchronizer(dataOutputs: [self.videoOutput, self.depthOutput])
+                self.outputSynchronizer?.setDelegate(self, queue: self.syncQueue)
+                HaispaceLogger.info("[PortraitMode] depth+video synchronizer diaktifkan kembali setelah capture selesai", category: "camera")
+            }
+        }
     }
 }
