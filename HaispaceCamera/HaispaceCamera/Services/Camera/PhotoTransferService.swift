@@ -41,7 +41,7 @@ actor PhotoTransferService {
             let bokehResult: Data? = autoreleasepool {
                 guard let ciImage = CIImage(data: rawData),
                       let filter = CIFilter(name: "CIDepthBlurEffect") else {
-                    HaispaceLogger.warning("Gagal inisialisasi CIDepthBlurEffect \u2014 foto asli digunakan", category: "camera")
+                    HaispaceLogger.warning("Gagal inisialisasi CIDepthBlurEffect - foto asli digunakan", category: "camera")
                     return nil
                 }
                 
@@ -54,18 +54,18 @@ actor PhotoTransferService {
                 let focusY = max(0.05, min(0.95, fp.y)) - 0.05
                 filter.setValue(CIVector(cgRect: CGRect(x: focusX, y: focusY, width: 0.1, height: 0.1)),
                                 forKey: "inputFocusRect")
-                // f/4.5 \u2014 natural untuk group portrait 2-4 orang di photobooth
+                // f/4.5 - natural untuk group portrait 2-4 orang di photobooth
                 filter.setValue(4.5, forKey: "inputAperture")
                 
                 guard let outputCIImage = filter.outputImage else {
-                    HaispaceLogger.warning("CIDepthBlurEffect tidak menghasilkan output \u2014 foto asli digunakan", category: "camera")
+                    HaispaceLogger.warning("CIDepthBlurEffect tidak menghasilkan output - foto asli digunakan", category: "camera")
                     return nil
                 }
                 
                 // KRITIS: Gunakan Metal-accelerated CIContext.
                 // CIContext(options: nil) = CPU-only software renderer.
                 // Pada foto 12MP + CIDepthBlurEffect, CPU renderer memakan 200-400MB RAM
-                // dalam 1 detik \u2192 iOS watchdog kill \u2192 CRASH (Connection reset by peer di iPad).
+                // dalam 1 detik -> iOS watchdog kill -> CRASH (Connection reset by peer di iPad).
                 // Metal GPU renderer jauh lebih efisien dalam manajemen memory pipeline.
                 let metalContext = CIContext(options: [
                     .useSoftwareRenderer: false,
@@ -76,13 +76,13 @@ actor PhotoTransferService {
                 let safeExtent = outputCIImage.extent.intersection(ciImage.extent)
                 guard !safeExtent.isNull, !safeExtent.isEmpty,
                       let cgImage = metalContext.createCGImage(outputCIImage, from: safeExtent) else {
-                    HaispaceLogger.warning("Gagal render bokeh CGImage \u2014 foto asli digunakan", category: "camera")
+                    HaispaceLogger.warning("Gagal render bokeh CGImage - foto asli digunakan", category: "camera")
                     return nil
                 }
                 
                 let uiImage = UIImage(cgImage: cgImage)
                 guard let jpegData = uiImage.jpegData(compressionQuality: 0.9) else {
-                    HaispaceLogger.warning("Gagal konversi bokeh ke JPEG \u2014 foto asli digunakan", category: "camera")
+                    HaispaceLogger.warning("Gagal konversi bokeh ke JPEG - foto asli digunakan", category: "camera")
                     return nil
                 }
                 
