@@ -554,57 +554,26 @@ extension CameraCaptureService: AVCaptureDepthDataOutputDelegate {
         timestamp: CMTime,
         connection: AVCaptureConnection
     ) {
+        // FINAL FIX: Simpan depth CIImage langsung — tanpa temporal blend.
+        //
+        // ❌ PENDEKATAN SEBELUMNYA (temporal smoothing via CIBlendWithMask) MENYEBABKAN DUA BUG:
+        //
+        // BUG 1 — CIImage chain accumulation:
+        //   Setiap frame menyimpan referensi ke frame sebelumnya secara rekursif.
+        //   30 detik × 24fps = 720 lazy CIImage berantai. Saat ciContext.render() dipanggil
+        //   → iOS evaluasi semua 720 sekaligus → memory explosion → CRASH.
+        //
+        // BUG 2 — Invalid render target format (penyebab crash saat ini):
+        //   ciContext.render(_:to:) TIDAK mendukung kCVPixelFormatType_DepthFloat32 sebagai
+        //   render target. CIContext hanya bisa render ke BGRA/RGBA format.
+        //   Render ke Depth buffer = undefined behavior → CRASH langsung.
+        //
+        // ✅ SOLUSI AMAN:
+        //   Simpan CIImage langsung dari pixel buffer depth (backing = 1 pixel buffer saja).
+        //   Anti-flicker/noise ditangani oleh CIGaussianBlur radius 8.0 di applyDepthBokeh.
+        //   Setiap frame menggantikan lastDepthImage sepenuhnya — zero chain, O(1) memori.
         let depthFloat32 = depthData.converting(toDepthDataType: kCVPixelFormatType_DepthFloat32)
-        let newDepthCI = CIImage(cvPixelBuffer: depthFloat32.depthDataMap)
-        
-        // ENHANCEMENT #5 (FIXED): Temporal smoothing — EMA 70% lama + 30% baru.
-        //
-        // ⚠️ BUG KRITIS SEBELUMNYA: Menyimpan CIImage hasil blend langsung ke lastDepthImage
-        // menyebabkan akumulasi rantai referensi lazy yang tak terbatas:
-        //   frame 1: smoothed = blend(nil, new1)       → 1 ref
-        //   frame 2: smoothed = blend(frame1, new2)    → 2 refs
-        //   frame N: smoothed = blend(frame N-1, newN) → N refs
-        // Setelah 30 detik pada 24fps = 720 CIImage berantai.
-        // Saat ciContext.render() dipanggil (saat foto diambil), iOS evaluasi semua
-        // 720 frame sekaligus → memory explosion → watchdog kill → CRASH.
-        //
-        // ✅ FIX: Setelah blend, langsung render ke CVPixelBuffer baru untuk memutus
-        // rantai referensi. Depth map berukuran kecil (~640x480), render ini murah di GPU.
-        // CIImage yang dibuat dari flatBuffer tidak membawa histori apapun.
-        let smoothed: CIImage
-        if let existing = lastDepthImage {
-            let smoothingMask = CIImage(color: CIColor(red: 0.7, green: 0.7, blue: 0.7, alpha: 1.0))
-                .cropped(to: newDepthCI.extent)
-            let blended = newDepthCI.applyingFilter("CIBlendWithMask", parameters: [
-                kCIInputBackgroundImageKey: newDepthCI, // 30% frame baru
-                kCIInputImageKey: existing,              // 70% frame lama
-                kCIInputMaskImageKey: smoothingMask
-            ])
-            
-            // KRITIS: Render ke pixel buffer baru untuk memutus rantai CIImage.
-            let w = Int(newDepthCI.extent.width)
-            let h = Int(newDepthCI.extent.height)
-            var flatBuffer: CVPixelBuffer?
-            let attrs: [String: Any] = [kCVPixelBufferIOSurfacePropertiesKey as String: [:]]
-            
-            if w > 0, h > 0,
-               CVPixelBufferCreate(kCFAllocatorDefault, w, h, kCVPixelFormatType_DepthFloat32,
-                                   attrs as CFDictionary, &flatBuffer) == kCVReturnSuccess,
-               let flatBuf = flatBuffer {
-                ciContext.render(blended, to: flatBuf)
-                // CIImage baru dari flatBuffer — rantai referensi = 0
-                smoothed = CIImage(cvPixelBuffer: flatBuf)
-            } else {
-                // Fallback: pakai frame baru langsung jika alokasi buffer gagal
-                HaispaceLogger.warning("[PortraitMode] Gagal alokasi depth flat buffer, fallback ke frame baru", category: "camera")
-                smoothed = newDepthCI
-            }
-        } else {
-            // Frame pertama — langsung pakai tanpa smoothing
-            smoothed = newDepthCI
-        }
-        
-        self.lastDepthImage = smoothed
+        self.lastDepthImage = CIImage(cvPixelBuffer: depthFloat32.depthDataMap)
     }
 }
 
