@@ -330,6 +330,9 @@ final class CameraCaptureService: NSObject {
     /// Selalu menggunakan SATU device virtual (DualWide/Triple) tanpa mengganti input.
     /// Memetakan user zoom (0.5x, 1x, 2x) ke internal device zoomFactor menggunakan
     /// virtualDeviceSwitchOverVideoZoomFactors — persis seperti app Camera bawaan Apple.
+    ///
+    /// CATATAN: Saat depthOutput aktif, format DualWide berubah sehingga minZ menjadi ~2.0.
+    /// 0.5x (Ultra Wide) harus menggunakan nilai TEPAT DI BAWAH switchOver, bukan minZ.
     func setZoom(factor: CGFloat) {
         sessionQueue.async { [weak self] in
             guard let self = self else { return }
@@ -343,24 +346,25 @@ final class CameraCaptureService: NSObject {
             do {
                 try device.lockForConfiguration()
                 
-                let minZ = device.minAvailableVideoZoomFactor
                 let maxZ = min(device.maxAvailableVideoZoomFactor, 8.0)
                 
                 // Baca switch-over points dari virtual device (DualWide / Triple)
-                // Contoh iPhone 14: switchOvers = [2.0]
-                //   • zoomFactor < 2.0  → lensa Ultra Wide (tampilan 0.5x)
-                //   • zoomFactor = 2.0  → lensa Wide Angle  (tampilan 1x)
-                //   • zoomFactor = 4.0  → 2x digital zoom pada Wide
+                // iPhone 14 DualWide: switchOvers = [2.0]
+                //   • zoomFactor < 2.0  → lensa Ultra Wide fisik aktif (0.5x tampilan)
+                //   • zoomFactor = 2.0  → lensa Wide Angle fisik aktif (1x tampilan)
+                //   • zoomFactor = 4.0  → 2x digital zoom pada Wide Angle
                 let switchOvers = device.virtualDeviceSwitchOverVideoZoomFactors.map { CGFloat($0.doubleValue) }
                 
                 let targetInternalZoom: CGFloat
                 
                 if let wideZoom = switchOvers.first {
-                    // Virtual multi-cam (DualWide / Triple / DualCamera)
                     if factor < 0.8 {
-                        // 0.5x → minimum (= lensa Ultra Wide fisik)
-                        targetInternalZoom = minZ
-                        HaispaceLogger.info("[Zoom] 0.5x → Ultra Wide (internal: \(minZ)x), switchOver: \(wideZoom)x", category: "camera")
+                        // 0.5x → Ultra Wide: gunakan nilai tepat di BAWAH switchOver
+                        // (wideZoom - 0.1) memastikan masuk ke lensa Ultra Wide,
+                        // terlepas dari berapa nilai minZ saat ini (bisa 1.0 atau 2.0 tergantung format)
+                        let ultraWideZoom = max(wideZoom - 0.1, 1.0)
+                        targetInternalZoom = ultraWideZoom
+                        HaispaceLogger.info("[Zoom] 0.5x → Ultra Wide (internal: \(ultraWideZoom)x, switchOver: \(wideZoom)x)", category: "camera")
                     } else if factor <= 1.2 {
                         // 1x → tepat di titik switch ke Wide Angle
                         targetInternalZoom = wideZoom
@@ -373,10 +377,12 @@ final class CameraCaptureService: NSObject {
                     }
                 } else {
                     // Device single-lens (WideAngle saja): gunakan factor langsung
+                    let minZ = device.minAvailableVideoZoomFactor
                     targetInternalZoom = max(min(factor, maxZ), minZ)
                     HaispaceLogger.info("[Zoom] Single-lens zoom ke \(targetInternalZoom)x", category: "camera")
                 }
                 
+                let minZ = device.minAvailableVideoZoomFactor
                 let finalZoom = max(min(targetInternalZoom, maxZ), minZ)
                 device.ramp(toVideoZoomFactor: finalZoom, withRate: 8.0) // Smooth ramp khas Apple!
                 device.unlockForConfiguration()
@@ -431,48 +437,54 @@ extension CameraCaptureService: AVCaptureDataOutputSynchronizerDelegate {
             }
             
             // Terapkan depth bokeh menggunakan depth map terakhir
-            if let depthCI = lastDepthImage {
-                applyDepthBokeh(to: pixelBuffer, depthMap: depthCI)
+        if let depthCI = lastDepthImage,
+           let processedBuffer = applyDepthBokeh(to: pixelBuffer, depthMap: depthCI) {
+            // Buat CMSampleBuffer baru yang membungkus processedBuffer (aman, tidak crash)
+            var newSampleBuffer: CMSampleBuffer?
+            var timingInfo = CMSampleTimingInfo()
+            CMSampleBufferGetSampleTimingInfo(syncedVideo.sampleBuffer, at: 0, timingInfoOut: &timingInfo)
+            var formatDesc: CMFormatDescription?
+            CMVideoFormatDescriptionCreateForImageBuffer(allocator: kCFAllocatorDefault,
+                                                        imageBuffer: processedBuffer,
+                                                        formatDescriptionOut: &formatDesc)
+            if let formatDesc = formatDesc {
+                CMSampleBufferCreateForImageBuffer(
+                    allocator: kCFAllocatorDefault,
+                    imageBuffer: processedBuffer,
+                    dataReady: true,
+                    makeDataReadyCallback: nil,
+                    refcon: nil,
+                    formatDescription: formatDesc,
+                    sampleTiming: &timingInfo,
+                    sampleBufferOut: &newSampleBuffer
+                )
             }
+            self.onVideoFrameCaptured?(newSampleBuffer ?? syncedVideo.sampleBuffer)
+        } else {
+            self.onVideoFrameCaptured?(syncedVideo.sampleBuffer)
         }
-        
-        self.onVideoFrameCaptured?(syncedVideo.sampleBuffer)
     }
     
     /// Menerapkan natural depth-of-field bokeh berdasarkan peta kedalaman fisik.
-    /// Orang di depth dekat = tajam, background di depth jauh = blur natural.
-    ///
-    /// Depth Float32 dari iPhone 14 Dual Wide Camera:
-    ///   - Nilai kecil (0.2–1.5m) = dekat kamera = orang = TAJAM
-    ///   - Nilai besar (1.5–5.0m+) = jauh dari kamera = background = BLUR
-    ///
-    /// Kita perlu: mask putih (1.0) = tajam, mask hitam (0.0) = blur
-    /// Jadi: mask = 1 - clamp(depth / maxDepth, 0, 1)
-    nonisolated private func applyDepthBokeh(to pixelBuffer: CVPixelBuffer, depthMap: CIImage) {
+    /// PENTING: Tidak melakukan in-place render ke pixelBuffer dari synchronizer
+    /// (menyebabkan EXC_BAD_ACCESS crash karena buffer masih dipegang AVFoundation).
+    /// Render ke pixel buffer TERPISAH lalu kirim sebagai sampleBuffer baru.
+    nonisolated private func applyDepthBokeh(to pixelBuffer: CVPixelBuffer, depthMap: CIImage) -> CVPixelBuffer? {
         let original = CIImage(cvPixelBuffer: pixelBuffer)
         
-        // Step 1: Blur seluruh frame untuk latar belakang
+        // Step 1: Blur background
         let blurred = original
             .clampedToExtent()
             .applyingFilter("CIGaussianBlur", parameters: ["inputRadius": 18.0])
             .cropped(to: original.extent)
         
-        // Step 2: Normalisasi depth map ke range 0.0–1.0
-        // Depth Float32 dari dual-cam ~= 0.0 (sangat dekat) hingga 5.0+ (sangat jauh)
-        // Kita clamp ke range fokus yang relevan: 0.3m–3.0m
-        // Setelah normalisasi: dekat = 0.0 (hitam), jauh = 1.0 (putih)
-        // Lalu inversi agar: dekat = 1.0 (putih = tajam), jauh = 0.0 (hitam = blur)
-        let nearPlane: CGFloat = 0.3   // meter — titik terdekat yang masih tajam
-        let farPlane:  CGFloat = 3.0   // meter — titik terjauh yang masih relevan
+        // Step 2: Normalisasi depth Float32 (meter) ke mask 0.0–1.0
+        // near=0.3m → 1.0 (putih=tajam), far=3.0m → 0.0 (hitam=blur)
+        let nearPlane: CGFloat = 0.3
+        let farPlane:  CGFloat = 3.0
+        let scale = 1.0 / (farPlane - nearPlane)
+        let bias  = -nearPlane * scale
         
-        // Normalisasi: (depth - nearPlane) / (farPlane - nearPlane)
-        //              = depth * scale + bias
-        // scale = 1 / (farPlane - nearPlane) = 1 / 2.7 ≈ 0.37
-        // bias  = -nearPlane * scale         = -0.3 * 0.37 ≈ -0.111
-        let scale = 1.0 / (farPlane - nearPlane)    // ~0.370
-        let bias  = -nearPlane * scale               // ~-0.111
-        
-        // Terapkan normalisasi via CIColorMatrix
         let normalizedDepth = depthMap.applyingFilter("CIColorMatrix", parameters: [
             "inputRVector": CIVector(x: scale, y: 0, z: 0, w: 0),
             "inputGVector": CIVector(x: 0, y: scale, z: 0, w: 0),
@@ -480,7 +492,6 @@ extension CameraCaptureService: AVCaptureDataOutputSynchronizerDelegate {
             "inputBiasVector": CIVector(x: bias, y: bias, z: bias, w: 0)
         ])
         
-        // Clamp ke 0.0–1.0 dan INVERSI: dekat (kecil) → putih (tajam)
         let invertedDepth = normalizedDepth.applyingFilter("CIColorMatrix", parameters: [
             "inputRVector": CIVector(x: -1, y: 0, z: 0, w: 0),
             "inputGVector": CIVector(x: 0, y: -1, z: 0, w: 0),
@@ -488,35 +499,46 @@ extension CameraCaptureService: AVCaptureDataOutputSynchronizerDelegate {
             "inputBiasVector": CIVector(x: 1, y: 1, z: 1, w: 1)
         ])
         
-        // Clamp ke range valid 0.0–1.0
         let clampedMask = invertedDepth.applyingFilter("CIColorClamp", parameters: [
             "inputMinComponents": CIVector(x: 0, y: 0, z: 0, w: 0),
             "inputMaxComponents": CIVector(x: 1, y: 1, z: 1, w: 1)
         ])
         
-        // Softening tepi mask agar transisi bokeh terlihat natural (bukan garis keras)
         let softMask = clampedMask
             .applyingFilter("CIGaussianBlur", parameters: ["inputRadius": 8.0])
             .cropped(to: original.extent)
         
-        // Step 3: CIBlendWithMask:
-        //   mask putih (dekat/orang) → tampilkan original (tajam)
-        //   mask hitam (jauh/background) → tampilkan blurred
         let bokehComposite = original.applyingFilter("CIBlendWithMask", parameters: [
             kCIInputBackgroundImageKey: blurred,
             kCIInputMaskImageKey: softMask
         ])
         
-        // Step 4: Render in-place ke pixelBuffer (Metal GPU, zero extra allocation)
-        ciContext.render(bokehComposite, to: pixelBuffer)
+        // Step 3: Buat pixel buffer BARU (bukan in-place) untuk menghindari EXC_BAD_ACCESS
+        // Buffer dari synchronizer masih dipegang AVFoundation — tidak bisa di-write!
+        let width  = CVPixelBufferGetWidth(pixelBuffer)
+        let height = CVPixelBufferGetHeight(pixelBuffer)
+        let pixelFormat = CVPixelBufferGetPixelFormatType(pixelBuffer)
+        
+        var outputBuffer: CVPixelBuffer?
+        let attrs: [String: Any] = [
+            kCVPixelBufferCGImageCompatibilityKey as String: true,
+            kCVPixelBufferCGBitmapContextCompatibilityKey as String: true
+        ]
+        guard CVPixelBufferCreate(kCFAllocatorDefault, width, height, pixelFormat, attrs as CFDictionary, &outputBuffer) == kCVReturnSuccess,
+              let outBuf = outputBuffer else {
+            HaispaceLogger.warning("[Bokeh] Gagal buat output pixel buffer", category: "camera")
+            return nil
+        }
+        
+        ciContext.render(bokehComposite, to: outBuf)
+        return outBuf
     }
 }
 
 // MARK: - AVCaptureVideoDataOutputSampleBufferDelegate
-// Delegate ini hanya dipakai saat TIDAK ada synchronizer aktif (fallback)
+// Fallback delegate — tidak aktif saat synchronizer digunakan
 extension CameraCaptureService: AVCaptureVideoDataOutputSampleBufferDelegate {
     nonisolated func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        // Fallback: jika depth output tidak tersedia, kirim frame langsung tanpa bokeh
         self.onVideoFrameCaptured?(sampleBuffer)
     }
 }
