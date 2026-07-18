@@ -305,6 +305,7 @@ final class CameraAppState {
                 guard let self = self else { return }
                 let photoId = self.activeRetakePhotoId ?? UUID().uuidString
                 let sortOrder = self.activeCaptureIndex ?? 0
+                let isPortraitActive = CameraCaptureService.shared.isPortraitModeActive
                 
                 // Feedback haptic pada iPhone saat berhasil mengambil foto (shutter)
                 let impact = UIImpactFeedbackGenerator(style: .medium)
@@ -314,7 +315,17 @@ final class CameraAppState {
                 self.activeRetakePhotoId = nil
                 self.activeCaptureIndex = nil
                 
-                await PhotoTransferService.shared.handleNewCapture(photoId: photoId, capture: photo, sortOrder: sortOrder)
+                // Jalankan pengolahan & transfer foto di background thread terpisah (detached Task)
+                // Ini memutus rantai deadlock antara MainActor dan PhotoTransferService
+                // serta mencegah Main Thread diblokir oleh pemrosesan bokeh 12MP yang berat (Watchdog safe)
+                Task.detached(priority: .userInitiated) {
+                    await PhotoTransferService.shared.handleNewCapture(
+                        photoId: photoId,
+                        capture: photo,
+                        sortOrder: sortOrder,
+                        isPortraitActive: isPortraitActive
+                    )
+                }
             }
         }
         

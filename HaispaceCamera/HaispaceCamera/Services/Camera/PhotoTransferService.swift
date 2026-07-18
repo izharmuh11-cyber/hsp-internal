@@ -27,11 +27,8 @@ actor PhotoTransferService {
     private init() {}
     
     /// Dipanggil setiap kali iPhone selesai mengambil foto resolusi tinggi
-    func handleNewCapture(photoId: String, capture: AVCapturePhoto, sortOrder: Int) async {
+    func handleNewCapture(photoId: String, capture: AVCapturePhoto, sortOrder: Int, isPortraitActive: Bool) async {
         var photoData: Data? = capture.fileDataRepresentation()
-        
-        // Cek jika mode Portrait aktif dan data kedalaman sensor tersedia
-        let isPortraitActive = await MainActor.run { CameraCaptureService.shared.isPortraitModeActive }
         
         if isPortraitActive,
            let depthData = capture.depthData,
