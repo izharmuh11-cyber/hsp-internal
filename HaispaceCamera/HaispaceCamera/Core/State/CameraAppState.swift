@@ -285,8 +285,9 @@ final class CameraAppState {
             if CameraCaptureService.shared.isSessionActive {
                 HandGestureDetector.shared.processFrame(sampleBuffer) {
                     // FIX: Gunakan isConnectedSync() dan sendDataSync() — tidak ada actor hop per frame
-                    if P2PClientService.shared.isConnectedSync() {
-                        P2PClientService.shared.sendDataSync(P2PMessage.gestureDetected.encode())
+                    if P2PClientService.shared.isConnectedSync(),
+                       let gestureMsg = try? P2PMessage.gestureDetected.encode() {
+                        P2PClientService.shared.sendDataSync(gestureMsg)
                         HaispaceLogger.info("Gesture 'Hai' terdeteksi! Mengirim sinyal pemicu ke iPad.", category: "camera")
                         
                         // Feedback haptic pada iPhone saat gesture berhasil dibaca
