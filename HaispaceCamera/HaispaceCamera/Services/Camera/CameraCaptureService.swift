@@ -192,26 +192,35 @@ final class CameraCaptureService: NSObject {
     
     /// Trigger pemotretan kualitas tinggi (dipanggil saat menerima instruksi dari iPad)
     func captureHighQualityPhoto() {
-        let photoSettings = AVCapturePhotoSettings()
-        photoSettings.flashMode = .off // Flash menggunakan layar iPad, iPhone flash dimatikan
-        
-        // Aktifkan data kedalaman (depth map) jika mode Portrait aktif dan didukung hardware
-        if isPortraitModeActive && photoOutput.isDepthDataDeliverySupported {
-            photoSettings.isDepthDataDeliveryEnabled = true
-            photoSettings.embedsDepthDataInPhoto = true
-            HaispaceLogger.info("Depth data delivery diaktifkan untuk jepretan Portrait", category: "camera")
+        // PENTING: Seluruh logika foto harus dijalankan di sessionQueue.
+        // Ini memastikan eksekusi SETELAH setPortraitMode (yang juga di sessionQueue)
+        // selesai commitConfiguration — mencegah crash akibat race condition.
+        sessionQueue.async { [weak self] in
+            guard let self = self else { return }
+            
+            let photoSettings = AVCapturePhotoSettings()
+            photoSettings.flashMode = .off // Flash menggunakan layar iPad, iPhone flash dimatikan
+            
+            // Aktifkan data kedalaman (depth map) jika mode Portrait aktif dan didukung hardware
+            // Dicek di sini (setelah session commit) untuk membaca state yang akurat
+            if self.isPortraitModeActive && self.photoOutput.isDepthDataDeliverySupported {
+                photoSettings.isDepthDataDeliveryEnabled = true
+                photoSettings.embedsDepthDataInPhoto = true
+                HaispaceLogger.info("Depth data delivery diaktifkan untuk jepretan Portrait", category: "camera")
+            }
+            
+            // Aktifkan pemrosesan gambar penuh Apple (Smart HDR, Deep Fusion, Neural Engine ISP)
+            if self.photoOutput.maxPhotoQualityPrioritization == .quality {
+                photoSettings.photoQualityPrioritization = .quality
+            } else {
+                photoSettings.photoQualityPrioritization = .balanced
+            }
+            
+            self.photoOutput.capturePhoto(with: photoSettings, delegate: self)
+            HaispaceLogger.info("Memicu jepretan foto kualitas tinggi (Smart HDR/Deep Fusion)", category: "camera")
         }
-        
-        // Aktifkan pemrosesan gambar penuh Apple (Smart HDR, Deep Fusion, Neural Engine ISP)
-        if photoOutput.maxPhotoQualityPrioritization == .quality {
-            photoSettings.photoQualityPrioritization = .quality
-        } else {
-            photoSettings.photoQualityPrioritization = .balanced
-        }
-        
-        photoOutput.capturePhoto(with: photoSettings, delegate: self)
-        HaispaceLogger.info("Memicu jepretan foto kualitas tinggi (Smart HDR/Deep Fusion)", category: "camera")
     }
+
     
     /// Kunci Fokus dan Eksposur dari jarak jauh pada titik tertentu (0.0 - 1.0)
     /// PENTING: Menggunakan .continuousAutoFocus + focusPointOfInterest — bukan .autoFocus!
