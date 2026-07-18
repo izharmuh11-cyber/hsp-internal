@@ -204,7 +204,7 @@ final class CameraCaptureService: NSObject {
             }
             
             // Pilih prioritization terbaik yang didukung oleh format aktif saat ini
-            let supportedPrioritizations = self.photoOutput.availablePhotoQualityPrioritizations
+            let supportedPrioritizations = self.photoOutput.supportedPhotoQualityPrioritizations
             let bestPrioritization: AVCapturePhotoQualityPrioritization
             
             if self.isPortraitModeActive {

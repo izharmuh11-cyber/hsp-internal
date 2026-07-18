@@ -37,32 +37,34 @@ actor PhotoTransferService {
            let depthData = capture.depthData,
            let rawData = photoData {
             
-            // Bungkus proses pengolahan bokeh dalam blok do-catch pengaman
-            // Rendering gambar resolusi tinggi (12 Megapixel) bisa memicu crash memory jika tidak diantisipasi fallbacknya
-            do {
-                if let ciImage = CIImage(data: rawData),
-                   let filter = CIFilter(name: "CIDepthBlurEffect") {
-                    
-                    filter.setValue(ciImage, forKey: kCIInputImageKey)
-                    filter.setValue(depthData, forKey: "inputDepthData")
-                    // Focus area di tengah (normalized rect)
-                    filter.setValue(CIVector(cgRect: CGRect(x: 0.45, y: 0.45, width: 0.1, height: 0.1)), forKey: "inputFocusRect")
-                    filter.setValue(2.0, forKey: "inputAperture") // Bukaan lensa f/2.0
-                    
-                    if let outputCIImage = filter.outputImage {
-                        let context = CIContext(options: nil)
-                        if let cgImage = context.createCGImage(outputCIImage, from: outputCIImage.extent) {
-                            let uiImage = UIImage(cgImage: cgImage)
-                            if let jpegData = uiImage.jpegData(compressionQuality: 0.9) {
-                                photoData = jpegData
-                                HaispaceLogger.info("Efek Bokeh Portrait berhasil diterapkan pada foto final", category: "camera")
-                            }
+            // Rendering gambar resolusi tinggi (12 Megapixel) diolah secara aman dengan unwrapping bertahap
+            if let ciImage = CIImage(data: rawData),
+               let filter = CIFilter(name: "CIDepthBlurEffect") {
+                
+                filter.setValue(ciImage, forKey: kCIInputImageKey)
+                filter.setValue(depthData, forKey: "inputDepthData")
+                // Focus area di tengah (normalized rect)
+                filter.setValue(CIVector(cgRect: CGRect(x: 0.45, y: 0.45, width: 0.1, height: 0.1)), forKey: "inputFocusRect")
+                filter.setValue(2.0, forKey: "inputAperture") // Bukaan lensa f/2.0
+                
+                if let outputCIImage = filter.outputImage {
+                    let context = CIContext(options: nil)
+                    if let cgImage = context.createCGImage(outputCIImage, from: outputCIImage.extent) {
+                        let uiImage = UIImage(cgImage: cgImage)
+                        if let jpegData = uiImage.jpegData(compressionQuality: 0.9) {
+                            photoData = jpegData
+                            HaispaceLogger.info("Efek Bokeh Portrait berhasil diterapkan pada foto final", category: "camera")
+                        } else {
+                            HaispaceLogger.warning("Gagal konversi bokeh UIImage ke JPEG. Menggunakan foto asli sebagai fallback.", category: "camera")
                         }
+                    } else {
+                        HaispaceLogger.warning("Gagal merender bokeh CGImage. Menggunakan foto asli sebagai fallback.", category: "camera")
                     }
+                } else {
+                    HaispaceLogger.warning("Gagal mendapatkan output image dari CIDepthBlurEffect. Menggunakan foto asli.", category: "camera")
                 }
-            } catch {
-                HaispaceLogger.error("Gagal menerapkan efek bokeh (CIDepthBlurEffect): \(error.localizedDescription). Menggunakan foto asli sebagai fallback.", category: "camera")
-                // photoData tetap berisi capture.fileDataRepresentation() asli, jadi tidak terputus aliran datanya
+            } else {
+                HaispaceLogger.warning("Gagal inisialisasi filter bokeh CIDepthBlurEffect. Menggunakan foto asli.", category: "camera")
             }
         }
         
