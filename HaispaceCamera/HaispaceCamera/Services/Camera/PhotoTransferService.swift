@@ -24,6 +24,15 @@ actor PhotoTransferService {
     private var fullQualityQueue: [PendingTransfer] = []
     private var isProcessingQueue = false
     
+    // REUSE CICONTEXT: CIContext adalah objek yang sangat berat karena menginisialisasi
+    // pipeline Metal, shader compilation, dan command queue GPU.
+    // Inisialisasi CIContext berulang-ulang di dalam thread background/callback pemotretan
+    // bisa memicu driver GPU hang/crash seketika. Reusable context ini sangat efisien dan aman.
+    private let ciContext = CIContext(options: [
+        .useSoftwareRenderer: false,
+        .workingColorSpace: CGColorSpaceCreateDeviceRGB() as Any
+    ])
+    
     private init() {}
     
     /// Dipanggil setiap kali iPhone selesai mengambil foto resolusi tinggi
@@ -37,7 +46,6 @@ actor PhotoTransferService {
             // Gunakan autoreleasepool untuk membebaskan intermediate bitmaps Core Image
             // segera setelah selesai. Tanpa ini, iOS bisa akumulasi 200-400MB RAM dari
             // CIImage pipeline pada foto 12MP sebelum ARC sempat membebaskannya.
-            // CIContext(options: nil) = CPU-only renderer = OOM kill dalam 1 detik pada 12MP.
             let bokehResult: Data? = autoreleasepool {
                 guard let ciImage = CIImage(data: rawData),
                       let filter = CIFilter(name: "CIDepthBlurEffect") else {
@@ -62,20 +70,8 @@ actor PhotoTransferService {
                     return nil
                 }
                 
-                // KRITIS: Gunakan Metal-accelerated CIContext.
-                // CIContext(options: nil) = CPU-only software renderer.
-                // Pada foto 12MP + CIDepthBlurEffect, CPU renderer memakan 200-400MB RAM
-                // dalam 1 detik -> iOS watchdog kill -> CRASH (Connection reset by peer di iPad).
-                // Metal GPU renderer jauh lebih efisien dalam manajemen memory pipeline.
-                let metalContext = CIContext(options: [
-                    .useSoftwareRenderer: false,
-                    .workingColorSpace: CGColorSpaceCreateDeviceRGB() as Any
-                ])
-                
-                // Crop extent agar tidak ada region infinite dari CIDepthBlurEffect
-                let safeExtent = outputCIImage.extent.intersection(ciImage.extent)
-                guard !safeExtent.isNull, !safeExtent.isEmpty,
-                      let cgImage = metalContext.createCGImage(outputCIImage, from: safeExtent) else {
+                // Render menggunakan shared ciContext yang dijamin thread-safe
+                guard let cgImage = self.ciContext.createCGImage(outputCIImage, from: outputCIImage.extent) else {
                     HaispaceLogger.warning("Gagal render bokeh CGImage - foto asli digunakan", category: "camera")
                     return nil
                 }
