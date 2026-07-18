@@ -649,12 +649,31 @@ extension CameraCaptureService {
     /// (menyebabkan EXC_BAD_ACCESS crash karena buffer masih dipegang AVFoundation).
     /// Render ke pixel buffer TERPISAH lalu kirim sebagai sampleBuffer baru.
     nonisolated private func applyDepthBokeh(to pixelBuffer: CVPixelBuffer, depthMap: CIImage) -> CVPixelBuffer? {
-        let original = CIImage(cvPixelBuffer: pixelBuffer)
+        var original = CIImage(cvPixelBuffer: pixelBuffer)
+        var depth = depthMap
+        
+        // PENTING: Jika Portrait mode di-set ke 2x (lastRequestedZoomFactor >= 1.8),
+        // lakukan 2x center crop pada buffer preview & depth map karena AVFoundation
+        // mengunci hardware videoZoomFactor di format depth DualWide.
+        if lastRequestedZoomFactor >= 1.8 {
+            let origW = original.extent.width
+            let origH = original.extent.height
+            let cropRect = CGRect(x: origW * 0.25, y: origH * 0.25, width: origW * 0.5, height: origH * 0.5)
+            
+            original = original.cropped(to: cropRect)
+                .transformed(by: CGAffineTransform(translationX: -cropRect.minX, y: -cropRect.minY))
+                .transformed(by: CGAffineTransform(scaleX: 2.0, y: 2.0))
+            
+            let depthW = depth.extent.width
+            let depthH = depth.extent.height
+            let depthCropRect = CGRect(x: depthW * 0.25, y: depthH * 0.25, width: depthW * 0.5, height: depthH * 0.5)
+            
+            depth = depth.cropped(to: depthCropRect)
+                .transformed(by: CGAffineTransform(translationX: -depthCropRect.minX, y: -depthCropRect.minY))
+                .transformed(by: CGAffineTransform(scaleX: 2.0, y: 2.0))
+        }
         
         // Step 1: Blur background menggunakan CIDiscBlur.
-        // CIDiscBlur mensimulasikan out-of-focus disk blur seperti lensa optik sungguhan
-        // (berbentuk lingkaran/disk, bukan Gaussian yang terlalu soft dan terlihat digital).
-        // Radius 14 di CIDiscBlur ≈ visual weight Gaussian radius 18 tapi jauh lebih natural.
         let blurred = original
             .clampedToExtent()
             .applyingFilter("CIDiscBlur", parameters: ["inputRadius": 14.0])
@@ -671,7 +690,7 @@ extension CameraCaptureService {
         let scale = 1.0 / (farPlane - nearPlane)
         let bias  = -nearPlane * scale
         
-        let normalizedDepth = depthMap.applyingFilter("CIColorMatrix", parameters: [
+        let normalizedDepth = depth.applyingFilter("CIColorMatrix", parameters: [
             "inputRVector": CIVector(x: scale, y: 0, z: 0, w: 0),
             "inputGVector": CIVector(x: 0, y: scale, z: 0, w: 0),
             "inputBVector": CIVector(x: 0, y: 0, z: scale, w: 0),

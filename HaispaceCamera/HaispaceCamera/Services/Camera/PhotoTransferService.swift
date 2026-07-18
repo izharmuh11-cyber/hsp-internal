@@ -38,21 +38,9 @@ actor PhotoTransferService {
     /// Tidak menggunakan CIDepthBlurEffect (undocumented internal API, OOM risk 400-800MB).
     ///
     /// Pipeline memori: ~180MB peak (aman di iPhone 14 dengan 6GB RAM).
-    func handleNewCapture(photoId: String, capture: AVCapturePhoto, sortOrder: Int, isPortraitActive: Bool) async {
+    func handleNewCapture(photoId: String, capture: AVCapturePhoto, sortOrder: Int, isPortraitActive: Bool, requestedZoom: CGFloat = 1.0) async {
         var photoData: Data? = capture.fileDataRepresentation()
         
-        // Fix #4 + #5: Variable DOF + Highlight Bloom
-        //
-        // Fix #4: Variable blur berbasis depth gradient
-        //   - Background dekat subjek (0.5–2m) → CIDiscBlur radius 8 (ringan, transisi natural)
-        //   - Background jauh subjek (2–3.5m+)  → CIDiscBlur radius 22 (berat, focal plane tegas)
-        //   - Gradient dikontrol oleh depth map dari capture.depthData
-        //   - Fallback ke heavy blur seragam jika depth nil
-        //
-        // Fix #5: Highlight Bloom (CIBloom sebelum blur)
-        //   - Bright highlights (lampu, jendela, refleksi) di background menjadi glowing circles
-        //   - Mensimulasikan specular bokeh dari lensa optik berkualitas tinggi (Zeiss, Leica style)
-        //   - Subject tetap menggunakan orientedPhoto asli (non-bloomed) → 100% crisp
         if isPortraitActive, let rawData = photoData {
             
             let bokehResult: Data? = autoreleasepool { () -> Data? in
@@ -79,7 +67,6 @@ actor PhotoTransferService {
                         by: CGAffineTransform(translationX: -rawExtent.minX, y: -rawExtent.minY)
                     )
                 }
-                let photoExtent = orientedPhoto.extent
                 let exifOrientation = capture.metadata[kCGImagePropertyOrientation as String] as? Int32 ?? 1
                 
                 // --- MATTE PROCESSING ---
@@ -96,6 +83,27 @@ actor PhotoTransferService {
                         by: CGAffineTransform(translationX: -matteRawExtent.minX, y: -matteRawExtent.minY)
                     )
                 }
+                
+                // PENTING: Jika Portrait mode di-set ke 2x (requestedZoom >= 1.8),
+                // lakukan 2x center crop pada foto & matte mask agar hasil akhir foto 2x Portrait presisi!
+                if requestedZoom >= 1.8 {
+                    let pW = orientedPhoto.extent.width
+                    let pH = orientedPhoto.extent.height
+                    let cropRect = CGRect(x: pW * 0.25, y: pH * 0.25, width: pW * 0.5, height: pH * 0.5)
+                    orientedPhoto = orientedPhoto.cropped(to: cropRect)
+                        .transformed(by: CGAffineTransform(translationX: -cropRect.minX, y: -cropRect.minY))
+                        .transformed(by: CGAffineTransform(scaleX: 2.0, y: 2.0))
+                    
+                    let mW = matteCIImage.extent.width
+                    let mH = matteCIImage.extent.height
+                    let mCropRect = CGRect(x: mW * 0.25, y: mH * 0.25, width: mW * 0.5, height: mH * 0.5)
+                    matteCIImage = matteCIImage.cropped(to: mCropRect)
+                        .transformed(by: CGAffineTransform(translationX: -mCropRect.minX, y: -mCropRect.minY))
+                        .transformed(by: CGAffineTransform(scaleX: 2.0, y: 2.0))
+                }
+                
+                let photoExtent = orientedPhoto.extent
+                
                 // Scale matte ke dimensi foto (matte selalu resolusi lebih rendah dari foto)
                 let scaleX = photoExtent.width / matteCIImage.extent.width
                 let scaleY = photoExtent.height / matteCIImage.extent.height

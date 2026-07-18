@@ -323,7 +323,8 @@ final class CameraAppState {
                         photoId: photoId,
                         capture: photo,
                         sortOrder: sortOrder,
-                        isPortraitActive: isPortraitActive
+                        isPortraitActive: isPortraitActive,
+                        requestedZoom: CameraCaptureService.shared.lastRequestedZoomFactor
                     )
                 }
             }
