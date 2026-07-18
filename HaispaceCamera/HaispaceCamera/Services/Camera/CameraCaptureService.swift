@@ -39,13 +39,35 @@ final class CameraCaptureService: NSObject {
     // jauh lebih natural dibanding Vision AI segmentation karena menggunakan
     // jarak fisik objek nyata (bukan binary mask) untuk menentukan intensitas blur.
     private let depthOutput = AVCaptureDepthDataOutput()
-    // CIContext Metal-accelerated untuk rendering bokeh composite
-    private lazy var ciContext = CIContext(options: [
+    
+    // FIX #4: Gunakan 'let' bukan 'lazy var' untuk CIContext.
+    // 'lazy var' di Swift TIDAK thread-safe — jika dua thread mengaksesnya pertama kali
+    // secara bersamaan (videoQueue & syncQueue), bisa terjadi double-init atau crash.
+    // 'let' diinisialisasi sekali di init() dan dijamin aman dari semua thread.
+    private let ciContext = CIContext(options: [
         .useSoftwareRenderer: false,
         .workingColorSpace: CGColorSpaceCreateDeviceRGB() as Any
     ])
-    // Cache depth CIImage terakhir untuk efisiensi (reuse antar frame)
-    nonisolated(unsafe) private var lastDepthImage: CIImage? = nil
+    
+    // FIX #2: Ganti nonisolated(unsafe) dengan NSLock-protected storage.
+    // lastDepthImage dibaca dari videoQueue (processVideoFrame) dan ditulis
+    // dari syncQueue (depthDataOutput delegate) secara concurrent — ini adalah
+    // race condition nyata yang dapat menyebabkan EXC_BAD_ACCESS di device fisik.
+    // NSLock adalah solusi lightweight dan zero-overhead untuk kasus ini.
+    private let depthLock = NSLock()
+    private var _lastDepthImage: CIImage? = nil
+    private var lastDepthImage: CIImage? {
+        get {
+            depthLock.lock()
+            defer { depthLock.unlock() }
+            return _lastDepthImage
+        }
+        set {
+            depthLock.lock()
+            defer { depthLock.unlock() }
+            _lastDepthImage = newValue
+        }
+    }
     
     // Dedicated queues untuk penanganan frame output
     private let videoQueue = DispatchQueue(label: "id.haispaceproject.camera.videoQueue")
@@ -53,6 +75,11 @@ final class CameraCaptureService: NSObject {
     
     // Simpan target zoom yang diinginkan agar bisa dikembalikan saat beralih mode
     nonisolated(unsafe) private var lastRequestedZoomFactor: CGFloat = 1.0
+    
+    // FIX #6: Simpan titik fokus terakhir dari operator (normalized 0.0-1.0).
+    // Digunakan sebagai inputFocusRect di CIDepthBlurEffect pada foto final
+    // sehingga area fokus mengikuti titik yang dipilih operator, bukan selalu di tengah.
+    nonisolated(unsafe) var lastFocusPoint: CGPoint = CGPoint(x: 0.5, y: 0.5)
     
     private override init() {
         super.init()
@@ -264,6 +291,9 @@ final class CameraCaptureService: NSObject {
             }
             
             device.unlockForConfiguration()
+            
+            // FIX #6: Simpan titik fokus untuk dipakai CIDepthBlurEffect pada foto final
+            lastFocusPoint = CGPoint(x: CGFloat(x), y: CGFloat(y))
             HaispaceLogger.info("[Focus] Continuous focus & exposure set at: (\(x), \(y))", category: "camera")
         } catch {
             HaispaceLogger.error("[Focus] Gagal set focus point: \(error)", category: "camera")
@@ -465,8 +495,18 @@ final class CameraCaptureService: NSObject {
                 self.photoOutput.maxPhotoQualityPrioritization = .balanced
                 HaispaceLogger.info("[PortraitMode] photoOutput maxPhotoQualityPrioritization: balanced", category: "camera")
                 
-                // Paksa zoom ke 1.0x agar depth map sinkron
-                self.applyZoomInternal(factor: 1.0)
+                // FIX #3: Hanya paksa zoom ke 1.0x jika saat ini di ultra-wide (< 1.0x).
+                // Ultra-wide TIDAK kompatibel dengan depth map pada dual/triple-lens device.
+                // Jika operator sudah di 1.0x atau 2.0x, pertahankan preferensi mereka —
+                // zoom 2.0x (telephoto/crop) justru menghasilkan kompresi perspektif wajah
+                // yang lebih flattering untuk portrait photobooth (setara lensa 85mm).
+                if self.lastRequestedZoomFactor < 1.0 {
+                    self.applyZoomInternal(factor: 1.0)
+                    HaispaceLogger.info("[PortraitMode] Zoom dinaikkan ke 1.0x — ultra-wide tidak kompatibel dengan depth (sebelumnya: \(self.lastRequestedZoomFactor)x)", category: "camera")
+                } else {
+                    self.applyZoomInternal(factor: self.lastRequestedZoomFactor)
+                    HaispaceLogger.info("[PortraitMode] Zoom dipertahankan di \(self.lastRequestedZoomFactor)x", category: "camera")
+                }
                 HaispaceLogger.info("[PortraitMode] Depth-Based Bokeh AKTIF (Asynchronous)", category: "camera")
             } else {
                 // LANGKAH 1: Matikan delegasi depthOutput
@@ -515,8 +555,30 @@ extension CameraCaptureService: AVCaptureDepthDataOutputDelegate {
         connection: AVCaptureConnection
     ) {
         let depthFloat32 = depthData.converting(toDepthDataType: kCVPixelFormatType_DepthFloat32)
-        let depthCI = CIImage(cvPixelBuffer: depthFloat32.depthDataMap)
-        self.lastDepthImage = depthCI
+        let newDepthCI = CIImage(cvPixelBuffer: depthFloat32.depthDataMap)
+        
+        // ENHANCEMENT #5: Temporal smoothing untuk mencegah bokeh flickering.
+        // Bokeh bisa berkedip jika depth map berubah drastis antar frame karena
+        // noise sensor atau gerakan kecil subjek.
+        // Solusi: EMA (Exponential Moving Average) — blend 70% frame lama + 30% frame baru.
+        // Hasilnya: transisi depth yang halus dan stabil, persis seperti iPhone Camera native.
+        let smoothed: CIImage
+        if let existing = lastDepthImage {
+            // CIBlendWithMask formula: output = foreground * mask + background * (1 - mask)
+            // mask 0.7 (abu-abu 70%) = 70% foreground (lama) + 30% background (baru)
+            let smoothingMask = CIImage(color: CIColor(red: 0.7, green: 0.7, blue: 0.7, alpha: 1.0))
+                .cropped(to: newDepthCI.extent)
+            smoothed = newDepthCI.applyingFilter("CIBlendWithMask", parameters: [
+                kCIInputBackgroundImageKey: newDepthCI, // 30% baru
+                kCIInputImageKey: existing,              // 70% lama
+                kCIInputMaskImageKey: smoothingMask
+            ])
+        } else {
+            // Frame pertama — langsung pakai tanpa smoothing
+            smoothed = newDepthCI
+        }
+        
+        self.lastDepthImage = smoothed
     }
 }
 
@@ -577,9 +639,13 @@ extension CameraCaptureService {
             .cropped(to: original.extent)
         
         // Step 2: Normalisasi depth Float32 (meter) ke mask 0.0–1.0
-        // near=0.3m → 1.0 (putih=tajam), far=3.0m → 0.0 (hitam=blur)
-        let nearPlane: CGFloat = 0.3
-        let farPlane:  CGFloat = 3.0
+        // IMPROVEMENT #1: Range disesuaikan untuk konteks photobooth:
+        // near=0.5m → 1.0 (putih=tajam) — jarak minimum tamu berdiri dari kamera
+        // far=4.0m  → 0.0 (hitam=blur)  — kedalaman background booth
+        // Range 0.3m-3.0m sebelumnya terlalu sempit — subjek di 1.5-2m terlihat
+        // separuh-blur yang tidak natural. Range 0.5m-4.0m lebih gradual dan realistis.
+        let nearPlane: CGFloat = 0.5
+        let farPlane:  CGFloat = 4.0
         let scale = 1.0 / (farPlane - nearPlane)
         let bias  = -nearPlane * scale
         

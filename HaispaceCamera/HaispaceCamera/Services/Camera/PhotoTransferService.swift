@@ -40,9 +40,22 @@ actor PhotoTransferService {
                 
                 filter.setValue(ciImage, forKey: kCIInputImageKey)
                 filter.setValue(depthData, forKey: "inputDepthData")
-                // Focus area di tengah (normalized rect)
-                filter.setValue(CIVector(cgRect: CGRect(x: 0.45, y: 0.45, width: 0.1, height: 0.1)), forKey: "inputFocusRect")
-                filter.setValue(2.0, forKey: "inputAperture") // Bukaan lensa f/2.0
+                
+                // ENHANCEMENT #6: Gunakan titik fokus dari operator (via remote tap-to-focus iPad)
+                // bukan hardcoded di tengah. Jika operator memfokuskan ke subjek di sisi kiri/kanan,
+                // area tersebut yang akan tajam di foto final, bukan pusat frame.
+                let fp = CameraCaptureService.shared.lastFocusPoint
+                // Clamp agar rect tidak keluar dari batas 0.0-1.0
+                let focusX = max(0.05, min(0.95, fp.x)) - 0.05
+                let focusY = max(0.05, min(0.95, fp.y)) - 0.05
+                let focusRect = CGRect(x: focusX, y: focusY, width: 0.1, height: 0.1)
+                filter.setValue(CIVector(cgRect: focusRect), forKey: "inputFocusRect")
+                
+                // IMPROVEMENT: Aperture f/4.5 lebih natural untuk portrait photobooth.
+                // f/2.0 terlalu agresif (blur terlalu dalam) untuk grup 2-4 orang —
+                // anggota di belakang akan blur berlebihan padahal masih dalam "subject area".
+                // f/4.5 menghasilkan DOF yang cinematic namun tetap merata untuk group shot.
+                filter.setValue(4.5, forKey: "inputAperture")
                 
                 if let outputCIImage = filter.outputImage {
                     let context = CIContext(options: nil)
