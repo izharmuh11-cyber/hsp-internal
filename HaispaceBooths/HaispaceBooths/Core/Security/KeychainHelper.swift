@@ -17,6 +17,8 @@ enum KeychainKey: String {
     case licenseToken       = "id.haispaceproject.booth.license_token"
     case operatorPIN        = "id.haispaceproject.booth.operator_pin"
     case deviceUUID         = "id.haispaceproject.booth.device_uuid"
+    // Token GitHub PAT untuk auto-upload log — disimpan di Keychain, tidak di source code
+    case githubPAT          = "id.haispaceproject.booth.github_pat"
 }
 
 // MARK: - KeychainHelper
@@ -179,6 +181,14 @@ struct KeychainHelper {
         HaispaceLogger.info("Device UUID baru dibuat: \(newUUID)", category: "security")
         return newUUID
     }
+
+    // MARK: - Convenience: GitHub PAT (Log Uploader)
+
+    static func getGitHubPAT() -> String? { read(for: .githubPAT) }
+    @discardableResult
+    static func saveGitHubPAT(_ token: String) -> Bool { save(token, for: .githubPAT) }
+    @discardableResult
+    static func deleteGitHubPAT() -> Bool { delete(.githubPAT) }
 }
 
 // MARK: - KeychainKey CaseIterable

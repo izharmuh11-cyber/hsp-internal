@@ -212,48 +212,53 @@ struct LocalLogWriter {
 // MARK: - GitHub Auto Log Uploader
 
 struct GitHubLogUploader {
-    // PENTING: Token TIDAK boleh di-hardcode di source code.
-    // GitHub Security akan otomatis merevoke token yang terekspos di public repo.
-    // Token harus diisi manual oleh operator lewat UI LogViewer (disimpan di UserDefaults).
-    private static let patKey = "github_pat"
-    
-    /// Ambil token dari UserDefaults. Return nil jika kosong atau format tidak valid.
+    // Token disimpan aman di iOS Keychain — input sekali, tidak perlu ulangi.
+    private static let repoOwner = "izharmuh11-cyber"
+    private static let repoName  = "hsp-internal"
+
     static func resolvedToken() -> String? {
-        let token = UserDefaults.standard.string(forKey: patKey) ?? ""
+        // Migrasi: jika ada di UserDefaults (versi lama), pindahkan ke Keychain lalu hapus
+        if let legacy = UserDefaults.standard.string(forKey: "github_pat"),
+           legacy.hasPrefix("ghp_") || legacy.hasPrefix("github_pat_") {
+            KeychainHelper.saveGitHubPAT(legacy)
+            UserDefaults.standard.removeObject(forKey: "github_pat")
+        }
+        guard let token = KeychainHelper.getGitHubPAT(), !token.isEmpty else { return nil }
         let isValid = token.hasPrefix("ghp_") || token.hasPrefix("github_pat_")
         return isValid ? token : nil
     }
-    
-    static func uploadLatestLog(eventName: String = "auto_event") {
-        guard let token = resolvedToken() else {
-            // Tidak log warning setiap kali — operator belum input token
-            return
-        }
-        
+
+    @discardableResult
+    static func saveToken(_ token: String) -> Bool {
+        return KeychainHelper.saveGitHubPAT(token)
+    }
+
+    /// Upload log ke GitHub. Completion dipanggil di main thread dengan URL file (jika sukses) atau nil.
+    static func uploadLatestLog(eventName: String = "auto_event", completion: ((String?) -> Void)? = nil) {
+        guard let token = resolvedToken() else { return }
+
         let logContent = LocalLogWriter.readLogContent()
         guard !logContent.isEmpty && logContent != "Log file tidak ditemukan atau kosong." else { return }
-        
+
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyyMMdd-HHmmss"
         let timestamp = formatter.string(from: Date())
-        
-        // Clean event name for safe filename
         let cleanEvent = eventName
             .replacingOccurrences(of: " ", with: "_")
             .replacingOccurrences(of: ":", with: "_")
-            
+
         let filename = "ipad-log-\(timestamp)-\(cleanEvent).txt"
-        
-        guard let url = URL(string: "https://api.github.com/repos/izharmuh11-cyber/hsp-internal/contents/logs/\(filename)") else {
-            HaispaceLogger.warning("Gagal membuat URL untuk upload log: \(filename)", category: "logging")
-            return
-        }
+        let apiURLString = "https://api.github.com/repos/\(repoOwner)/\(repoName)/contents/logs/\(filename)"
+        let rawURLString = "https://raw.githubusercontent.com/\(repoOwner)/\(repoName)/main/logs/\(filename)"
+
+        guard let url = URL(string: apiURLString) else { return }
+
         var request = URLRequest(url: url)
         request.httpMethod = "PUT"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/vnd.github.v3+json", forHTTPHeaderField: "Accept")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
+
         let base64Content = Data(logContent.utf8).base64EncodedString()
         let body: [String: Any] = [
             "message": "Auto upload log from iPad [\(cleanEvent)] at \(timestamp)",
@@ -261,19 +266,22 @@ struct GitHubLogUploader {
             "branch": "main"
         ]
         request.httpBody = try? JSONSerialization.data(withJSONObject: body)
-        
+
         URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
-                HaispaceLogger.warning("Auto upload log gagal: \(error.localizedDescription)", category: "logging")
-            } else if let httpResponse = response as? HTTPURLResponse {
-                if (200...299).contains(httpResponse.statusCode) {
-                    HaispaceLogger.info("Auto upload log sukses! File: \(filename)", category: "logging")
-                } else {
-                    HaispaceLogger.warning("Auto upload log gagal dengan status: \(httpResponse.statusCode)", category: "logging")
+            DispatchQueue.main.async {
+                if let error = error {
+                    HaispaceLogger.warning("Auto upload log gagal: \(error.localizedDescription)", category: "logging")
+                    completion?(nil)
+                } else if let httpResponse = response as? HTTPURLResponse {
+                    if (200...299).contains(httpResponse.statusCode) {
+                        HaispaceLogger.info("Auto upload log sukses → \(rawURLString)", category: "logging")
+                        completion?(rawURLString)
+                    } else {
+                        HaispaceLogger.warning("Auto upload log gagal dengan status: \(httpResponse.statusCode)", category: "logging")
+                        completion?(nil)
+                    }
                 }
             }
         }.resume()
     }
 }
-
-

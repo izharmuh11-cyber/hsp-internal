@@ -18,6 +18,9 @@ enum CameraKeychainKey: String, CaseIterable {
     case licenseToken  = "id.haispaceproject.camera.license_token"
     case deviceUUID    = "id.haispaceproject.camera.device_uuid"
     case operatorPIN   = "id.haispaceproject.camera.operator_pin"
+    // Token GitHub PAT untuk auto-upload log.
+    // Disimpan di Keychain (bukan UserDefaults) agar aman dan tidak perlu input ulang.
+    case githubPAT     = "id.haispaceproject.camera.github_pat"
 }
 
 // MARK: - KeychainHelper (Camera)
@@ -79,6 +82,13 @@ struct KeychainHelper {
     static func saveAuthToken(_ token: String) -> Bool { save(token, for: .authToken) }
     @discardableResult
     static func deleteAuthToken() -> Bool { delete(.authToken) }
+
+    // MARK: GitHub PAT (Log Uploader)
+    static func getGitHubPAT() -> String? { read(for: .githubPAT) }
+    @discardableResult
+    static func saveGitHubPAT(_ token: String) -> Bool { save(token, for: .githubPAT) }
+    @discardableResult
+    static func deleteGitHubPAT() -> Bool { delete(.githubPAT) }
 
     static func getOrCreateDeviceUUID() -> String {
         if let existing = read(for: .deviceUUID) { return existing }

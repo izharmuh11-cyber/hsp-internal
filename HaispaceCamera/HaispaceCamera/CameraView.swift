@@ -401,11 +401,11 @@ private struct CameraLogViewerSheet: View {
     @State private var logContent = ""
     @State private var isShowingToast = false
     
-    // Konfigurasi Auto-Upload GitHub
-    // Token tidak di-hardcode — user harus input manual lewat field di bawah.
-    // Token yang di-hardcode di source code akan di-revoke otomatis oleh GitHub Security.
-    @AppStorage("github_pat") private var githubPAT = ""
+    // Token dibaca/ditulis dari Keychain — input sekali, tidak perlu ulangi
+    @State private var githubPAT = ""
+    @State private var isTokenSaved = false
     @State private var isUploading = false
+    @State private var lastUploadURL: String? = nil   // URL raw file setelah upload sukses
     @State private var uploadMessage = ""
     @State private var showUploadAlert = false
     
@@ -428,12 +428,13 @@ private struct CameraLogViewerSheet: View {
                     .cornerRadius(12)
                     .padding(.horizontal)
                     
-                    // Panel Unggah ke GitHub
-                    VStack(alignment: .leading, spacing: 8) {
+                    // Panel Token + Upload
+                    VStack(alignment: .leading, spacing: 10) {
                         Text("KIRIM LOG OTOMATIS KE GITHUB")
                             .font(.caption.bold())
                             .foregroundStyle(.white.opacity(0.5))
                         
+                        // Input token (hanya perlu diisi sekali)
                         HStack(spacing: 8) {
                             SecureField("GitHub Personal Access Token (PAT)", text: $githubPAT)
                                 .textFieldStyle(.plain)
@@ -442,29 +443,87 @@ private struct CameraLogViewerSheet: View {
                                 .cornerRadius(8)
                                 .foregroundStyle(.white)
                                 .font(.system(size: 13, design: .monospaced))
+                                .autocorrectionDisabled()
+                                .textInputAutocapitalization(.never)
                             
                             Button {
-                                uploadLogToGitHub()
+                                // Simpan ke Keychain — tidak perlu input ulang setelah ini
+                                GitHubLogUploader.saveToken(githubPAT)
+                                withAnimation { isTokenSaved = true }
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                    withAnimation { isTokenSaved = false }
+                                }
+                            } label: {
+                                Label(isTokenSaved ? "Tersimpan" : "Simpan",
+                                      systemImage: isTokenSaved ? "checkmark.circle.fill" : "key.fill")
+                                    .font(.caption.bold())
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 10)
+                                    .background(isTokenSaved ? Color.green : Color.blue)
+                                    .foregroundStyle(.white)
+                                    .cornerRadius(8)
+                            }
+                            .disabled(githubPAT.count < 10)
+                        }
+                        
+                        if isTokenSaved {
+                            Text("✅ Token disimpan di Keychain — tidak perlu input ulang")
+                                .font(.caption2)
+                                .foregroundStyle(.green)
+                        } else if KeychainHelper.getGitHubPAT() != nil {
+                            Text("🔑 Token sudah tersimpan di Keychain")
+                                .font(.caption2)
+                                .foregroundStyle(.white.opacity(0.5))
+                        }
+                        
+                        // Tombol Upload + URL hasil upload
+                        HStack(spacing: 8) {
+                            Button {
+                                uploadLog()
                             } label: {
                                 if isUploading {
-                                    ProgressView()
-                                        .tint(.white)
-                                        .frame(width: 95)
+                                    ProgressView().tint(.white).frame(maxWidth: .infinity)
                                 } else {
-                                    Text("Unggah Log")
+                                    Label("Unggah Log ke GitHub", systemImage: "arrow.up.circle.fill")
                                         .font(.caption.bold())
-                                        .padding(.horizontal, 14)
-                                        .padding(.vertical, 10)
-                                        .background(githubPAT.isEmpty ? Color.gray.opacity(0.3) : Color.blue)
-                                        .foregroundStyle(.white)
-                                        .cornerRadius(8)
+                                        .frame(maxWidth: .infinity)
                                 }
                             }
-                            .disabled(githubPAT.isEmpty || isUploading)
+                            .padding(.vertical, 10)
+                            .background(GitHubLogUploader.resolvedToken() == nil ? Color.gray.opacity(0.3) : Color.indigo)
+                            .foregroundStyle(.white)
+                            .cornerRadius(8)
+                            .disabled(GitHubLogUploader.resolvedToken() == nil || isUploading)
+                        }
+                        
+                        // URL hasil upload — bisa langsung dikopi dan dikirim ke AI
+                        if let url = lastUploadURL {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("📎 URL Log (bagikan ke AI untuk dibaca langsung):")
+                                    .font(.caption2.bold())
+                                    .foregroundStyle(.white.opacity(0.6))
+                                HStack {
+                                    Text(url)
+                                        .font(.system(size: 11, design: .monospaced))
+                                        .foregroundStyle(.cyan)
+                                        .lineLimit(2)
+                                    Spacer()
+                                    Button {
+                                        UIPasteboard.general.string = url
+                                    } label: {
+                                        Image(systemName: "doc.on.doc.fill")
+                                            .foregroundStyle(.cyan)
+                                    }
+                                }
+                                .padding(8)
+                                .background(Color.cyan.opacity(0.1))
+                                .cornerRadius(8)
+                                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.cyan.opacity(0.3), lineWidth: 1))
+                            }
                         }
                     }
                     .padding(.horizontal)
-                    .padding(.vertical, 8)
+                    .padding(.vertical, 10)
                     .background(Color.white.opacity(0.04))
                     .cornerRadius(12)
                     .padding(.horizontal)
@@ -472,13 +531,9 @@ private struct CameraLogViewerSheet: View {
                     HStack(spacing: 16) {
                         Button {
                             UIPasteboard.general.string = logContent
-                            withAnimation(.spring) {
-                                isShowingToast = true
-                            }
+                            withAnimation(.spring) { isShowingToast = true }
                             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                                withAnimation {
-                                    isShowingToast = false
-                                }
+                                withAnimation { isShowingToast = false }
                             }
                         } label: {
                             HStack {
@@ -496,7 +551,7 @@ private struct CameraLogViewerSheet: View {
                         ShareLink(item: logContent) {
                             HStack {
                                 Image(systemName: "square.and.arrow.up.fill")
-                                Text("Bagikan Log (Teks)")
+                                Text("Bagikan Log")
                             }
                             .font(.headline)
                             .frame(maxWidth: .infinity)
@@ -517,17 +572,19 @@ private struct CameraLogViewerSheet: View {
                     Button("Hapus Log", role: .destructive) {
                         LocalLogWriter.clearLog(subsystem: "camera")
                         logContent = ""
+                        lastUploadURL = nil
                     }
                 }
-                
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Tutup") {
-                        dismiss()
-                    }
+                    Button("Tutup") { dismiss() }
                 }
             }
             .onAppear {
                 logContent = LocalLogWriter.readLogContent(subsystem: "camera")
+                // Load token dari Keychain jika ada (tampilkan sebagai masked)
+                if let stored = KeychainHelper.getGitHubPAT() {
+                    githubPAT = stored
+                }
             }
             .overlay {
                 if isShowingToast {
@@ -535,7 +592,6 @@ private struct CameraLogViewerSheet: View {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 40))
                             .foregroundStyle(.green)
-                        
                         Text("Log Berhasil Disalin")
                             .font(.headline)
                             .foregroundStyle(.white)
@@ -547,7 +603,7 @@ private struct CameraLogViewerSheet: View {
                     .transition(.scale.combined(with: .opacity))
                 }
             }
-            .alert("Unggah Log ke GitHub", isPresented: $showUploadAlert) {
+            .alert("Unggah Log", isPresented: $showUploadAlert) {
                 Button("OK", role: .cancel) {}
             } message: {
                 Text(uploadMessage)
@@ -555,55 +611,20 @@ private struct CameraLogViewerSheet: View {
         }
     }
     
-    private func uploadLogToGitHub() {
-        guard !githubPAT.isEmpty else { return }
+    private func uploadLog() {
         isUploading = true
-        uploadMessage = ""
-        
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyyMMdd-HHmmss"
-        let timestamp = formatter.string(from: Date())
-        let filename = "iphone-log-\(timestamp).txt"
-        
-        guard let url = URL(string: "https://api.github.com/repos/izharmuh11-cyber/hsp-internal/contents/logs/\(filename)") else {
-            uploadMessage = "Gagal membuat URL untuk upload log."
+        lastUploadURL = nil
+        GitHubLogUploader.uploadLatestLog(eventName: "manual_upload") { url in
             isUploading = false
-            return
-        }
-        var request = URLRequest(url: url)
-        request.httpMethod = "PUT"
-        request.setValue("Bearer \(githubPAT)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/vnd.github.v3+json", forHTTPHeaderField: "Accept")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        let base64Content = Data(logContent.utf8).base64EncodedString()
-        let body: [String: Any] = [
-            "message": "Upload log from iPhone at \(timestamp)",
-            "content": base64Content,
-            "branch": "main"
-        ]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
-        
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            DispatchQueue.main.async {
-                isUploading = false
-                if let error = error {
-                    uploadMessage = "Gagal mengunggah: \(error.localizedDescription)"
-                    showUploadAlert = true
-                    return
-                }
-                if let httpResponse = response as? HTTPURLResponse {
-                    if httpResponse.statusCode == 200 || httpResponse.statusCode == 201 {
-                        uploadMessage = "Log sukses diunggah ke GitHub di folder logs/\(filename). Klik sync/pull pada workspace kamu untuk membacanya langsung!"
-                    } else {
-                        let responseString = data.flatMap { String(data: $0, encoding: .utf8) } ?? "Tidak ada respons"
-                        uploadMessage = "Gagal (HTTP \(httpResponse.statusCode)):\n\(responseString)"
-                    }
-                } else {
-                    uploadMessage = "Respons server tidak dikenal."
-                }
+            if let url = url {
+                lastUploadURL = url
+                // Otomatis copy URL ke clipboard
+                UIPasteboard.general.string = url
+            } else {
+                uploadMessage = "Gagal upload. Pastikan token valid dan koneksi internet tersedia."
                 showUploadAlert = true
             }
-        }.resume()
+        }
     }
 }
+
