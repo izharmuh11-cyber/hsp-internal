@@ -436,31 +436,35 @@ extension CameraCaptureService: AVCaptureDataOutputSynchronizerDelegate {
                 lastDepthImage = depthCI.transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
             }
             
-            // Terapkan depth bokeh menggunakan depth map terakhir
-        if let depthCI = lastDepthImage,
-           let processedBuffer = applyDepthBokeh(to: pixelBuffer, depthMap: depthCI) {
-            // Buat CMSampleBuffer baru yang membungkus processedBuffer (aman, tidak crash)
-            var newSampleBuffer: CMSampleBuffer?
-            var timingInfo = CMSampleTimingInfo()
-            CMSampleBufferGetSampleTimingInfo(syncedVideo.sampleBuffer, at: 0, timingInfoOut: &timingInfo)
-            var formatDesc: CMFormatDescription?
-            CMVideoFormatDescriptionCreateForImageBuffer(allocator: kCFAllocatorDefault,
-                                                        imageBuffer: processedBuffer,
-                                                        formatDescriptionOut: &formatDesc)
-            if let formatDesc = formatDesc {
-                CMSampleBufferCreateForImageBuffer(
-                    allocator: kCFAllocatorDefault,
-                    imageBuffer: processedBuffer,
-                    dataReady: true,
-                    makeDataReadyCallback: nil,
-                    refcon: nil,
-                    formatDescription: formatDesc,
-                    sampleTiming: &timingInfo,
-                    sampleBufferOut: &newSampleBuffer
-                )
+                // Terapkan depth bokeh menggunakan depth map terakhir
+            if let depthCI = lastDepthImage,
+               let processedBuffer = applyDepthBokeh(to: pixelBuffer, depthMap: depthCI) {
+                // Buat CMSampleBuffer baru yang membungkus processedBuffer (aman, tidak crash)
+                var newSampleBuffer: CMSampleBuffer?
+                var timingInfo = CMSampleTimingInfo()
+                CMSampleBufferGetSampleTimingInfo(syncedVideo.sampleBuffer, at: 0, timingInfoOut: &timingInfo)
+                var formatDesc: CMFormatDescription?
+                CMVideoFormatDescriptionCreateForImageBuffer(allocator: kCFAllocatorDefault,
+                                                            imageBuffer: processedBuffer,
+                                                            formatDescriptionOut: &formatDesc)
+                if let formatDesc = formatDesc {
+                    CMSampleBufferCreateForImageBuffer(
+                        allocator: kCFAllocatorDefault,
+                        imageBuffer: processedBuffer,
+                        dataReady: true,
+                        makeDataReadyCallback: nil,
+                        refcon: nil,
+                        formatDescription: formatDesc,
+                        sampleTiming: &timingInfo,
+                        sampleBufferOut: &newSampleBuffer
+                    )
+                }
+                self.onVideoFrameCaptured?(newSampleBuffer ?? syncedVideo.sampleBuffer)
+            } else {
+                self.onVideoFrameCaptured?(syncedVideo.sampleBuffer)
             }
-            self.onVideoFrameCaptured?(newSampleBuffer ?? syncedVideo.sampleBuffer)
         } else {
+            // Jika portrait mode tidak aktif, kirim buffer asli langsung
             self.onVideoFrameCaptured?(syncedVideo.sampleBuffer)
         }
     }
