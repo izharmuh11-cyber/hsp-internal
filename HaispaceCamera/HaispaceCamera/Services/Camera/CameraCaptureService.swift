@@ -9,6 +9,7 @@
 import Foundation
 import AVFoundation
 import UIKit
+import CoreImage
 
 final class CameraCaptureService: NSObject {
     static let shared = CameraCaptureService()
@@ -32,6 +33,21 @@ final class CameraCaptureService: NSObject {
     // Status Portrait Mode
     nonisolated(unsafe) var isPortraitModeActive = false
     nonisolated(unsafe) var isSessionActive = false
+    
+    // MARK: - Depth-Based Bokeh (AVCaptureDepthDataOutput)
+    // Menggunakan depth data dari hardware stereo lensa Dual Wide iPhone 14 —
+    // jauh lebih natural dibanding Vision AI segmentation karena menggunakan
+    // jarak fisik objek nyata (bukan binary mask) untuk menentukan intensitas blur.
+    private let depthOutput = AVCaptureDepthDataOutput()
+    // Sinkronisasi depth data + video frame agar keduanya dari momen yang sama
+    private var outputSynchronizer: AVCaptureDataOutputSynchronizer?
+    // CIContext Metal-accelerated untuk rendering bokeh composite
+    private lazy var ciContext = CIContext(options: [
+        .useSoftwareRenderer: false,
+        .workingColorSpace: CGColorSpaceCreateDeviceRGB() as Any
+    ])
+    // Cache depth CIImage terakhir untuk efisiensi (reuse antar frame)
+    nonisolated(unsafe) private var lastDepthImage: CIImage? = nil
     
     private override init() {
         super.init()
@@ -141,8 +157,24 @@ final class CameraCaptureService: NSObject {
             HaispaceLogger.info("[setupSession] Langkah 4: photo output ditambahkan", category: "camera")
         }
         
+        // Setup Depth Output untuk live bokeh (dual-cam depth dari hardware stereo iPhone 14)
+        // isFilteringEnabled: smoothing temporal untuk depth map yang lebih stabil
+        depthOutput.isFilteringEnabled = true
+        if captureSession.canAddOutput(depthOutput) {
+            captureSession.addOutput(depthOutput)
+            HaispaceLogger.info("[setupSession] Langkah 4b: depth output ditambahkan (hardware depth bokeh aktif)", category: "camera")
+        } else {
+            HaispaceLogger.warning("[setupSession] Depth output tidak bisa ditambahkan — bokeh akan dinonaktifkan", category: "camera")
+        }
+        
         captureSession.commitConfiguration()
         HaispaceLogger.info("[setupSession] Langkah 5: commitConfiguration selesai", category: "camera")
+        
+        // Setup AVCaptureDataOutputSynchronizer: sinkronkan video + depth data
+        // Ini memastikan setiap frame video memiliki depth map yang tepat waktu
+        outputSynchronizer = AVCaptureDataOutputSynchronizer(dataOutputs: [videoOutput, depthOutput])
+        outputSynchronizer?.setDelegate(self, queue: DispatchQueue(label: "id.haispaceproject.camera.syncQueue", qos: .userInteractive))
+        HaispaceLogger.info("[setupSession] Langkah 5b: depth+video synchronizer dikonfigurasi", category: "camera")
         
         // FIX: maxPhotoQualityPrioritization HANYA boleh di-set SETELAH commitConfiguration
         // dan di-gate dengan videoDevice.activeFormat.isHighPhotoQualitySupported untuk mencegah NSInvalidArgumentException.
@@ -355,42 +387,100 @@ final class CameraCaptureService: NSObject {
         }
     }
     
-    /// Mengaktifkan atau mematikan mode Portrait menggunakan iOS 17 native Portrait Effect.
-    /// AVCaptureDevice.portraitEffectEnabled adalah hardware-accelerated Neural Engine API
-    /// yang sama persis digunakan oleh FaceTime, Camera Video mode, dan Studio Light pada iPhone.
-    /// Ini jauh lebih efisien dan natural dibandingkan Vision AI + CoreImage manual.
+    /// Mengaktifkan atau mematikan mode Portrait (Depth-Based Live Bokeh)
+    /// Menggunakan AVCaptureDepthDataOutput — hardware stereo depth dari Dual Wide camera
+    /// untuk menghasilkan bokeh natural berdasarkan jarak fisik objek, bukan flat mask.
     func setPortraitMode(enabled: Bool) {
         isPortraitModeActive = enabled
+        if !enabled { lastDepthImage = nil }
+        HaispaceLogger.info("[PortraitMode] Depth-Based Bokeh \(enabled ? "AKTIF" : "NONAKTIF")", category: "camera")
+    }
+}
+
+// MARK: - AVCaptureDataOutputSynchronizerDelegate
+// Menerima frame video + depth data yang tersinkronisasi secara hardware
+extension CameraCaptureService: AVCaptureDataOutputSynchronizerDelegate {
+    nonisolated func dataOutputSynchronizer(
+        _ synchronizer: AVCaptureDataOutputSynchronizer,
+        didOutput collection: AVCaptureSynchronizedDataCollection
+    ) {
+        // Ambil video frame
+        guard let syncedVideo = collection.synchronizedData(for: videoOutput)
+                as? AVCaptureSynchronizedSampleBufferData,
+              !syncedVideo.sampleBufferWasDropped,
+              let pixelBuffer = CMSampleBufferGetImageBuffer(syncedVideo.sampleBuffer)
+        else { return }
         
-        sessionQueue.async { [weak self] in
-            guard let self = self,
-                  let deviceInput = self.captureSession.inputs.first as? AVCaptureDeviceInput else { return }
-            let device = deviceInput.device
-            
-            // Cek dukungan Portrait Effect (iOS 17+, tersedia di iPhone 12 Pro ke atas)
-            guard device.isPortraitEffectSupported else {
-                HaispaceLogger.warning("[PortraitMode] Hardware Portrait Effect tidak didukung pada \(device.localizedName)", category: "camera")
-                return
+        // Jika portrait mode aktif, proses depth-based bokeh sebelum encode
+        if self.isPortraitModeActive {
+            // Ambil depth data jika tersedia di frame ini
+            if let syncedDepth = collection.synchronizedData(for: depthOutput)
+                    as? AVCaptureSynchronizedDepthData,
+               !syncedDepth.depthDataWasDropped {
+                
+                // Konversi depth map ke Float32 (jarak dalam meter per pixel)
+                let depthData = syncedDepth.depthData
+                    .converting(toDepthDataType: kCVPixelFormatType_DepthFloat32)
+                let depthCI = CIImage(cvPixelBuffer: depthData.depthDataMap)
+                
+                // Normalize + scale depth map ke resolusi video
+                let videoCI = CIImage(cvPixelBuffer: pixelBuffer)
+                let scaleX = videoCI.extent.width / depthCI.extent.width
+                let scaleY = videoCI.extent.height / depthCI.extent.height
+                lastDepthImage = depthCI.transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
             }
             
-            do {
-                try device.lockForConfiguration()
-                device.isPortraitEffectEnabled = enabled
-                device.unlockForConfiguration()
-                HaispaceLogger.info("[PortraitMode] Native Portrait Effect \(enabled ? "AKTIF" : "NONAKTIF") pada \(device.localizedName)", category: "camera")
-            } catch {
-                HaispaceLogger.error("[PortraitMode] Gagal set portrait effect: \(error.localizedDescription)", category: "camera")
+            // Terapkan depth bokeh menggunakan depth map terakhir
+            if let depthCI = lastDepthImage {
+                applyDepthBokeh(to: pixelBuffer, depthMap: depthCI)
             }
         }
+        
+        self.onVideoFrameCaptured?(syncedVideo.sampleBuffer)
+    }
+    
+    /// Menerapkan natural depth-of-field bokeh berdasarkan peta kedalaman fisik.
+    /// Orang di depth dekat = tajam, background di depth jauh = blur natural
+    /// dengan intensitas blur proporsional terhadap jarak (bukan flat mask biner).
+    nonisolated private func applyDepthBokeh(to pixelBuffer: CVPixelBuffer, depthMap: CIImage) {
+        let original = CIImage(cvPixelBuffer: pixelBuffer)
+        
+        // Step 1: Blur seluruh frame untuk background
+        let blurred = original
+            .clampedToExtent()
+            .applyingFilter("CIGaussianBlur", parameters: ["inputRadius": 18.0])
+            .cropped(to: original.extent)
+        
+        // Step 2: Inversi depth map — nilai tinggi (jauh) menjadi transparan (blur),
+        // nilai rendah (dekat, orang) menjadi opak (tajam).
+        // Tambahkan sedikit Gaussian blur pada mask untuk tepi yang smooth dan natural.
+        let depthMask = depthMap
+            .applyingFilter("CIColorMatrix", parameters: [
+                // Inversi: 1 - depth (agar dekat=putih=tajam, jauh=hitam=blur)
+                "inputRVector": CIVector(x: -3, y: 0, z: 0, w: 0),
+                "inputGVector": CIVector(x: 0, y: -3, z: 0, w: 0),
+                "inputBVector": CIVector(x: 0, y: 0, z: -3, w: 0),
+                "inputBiasVector": CIVector(x: 1, y: 1, z: 1, w: 1)
+            ])
+            .applyingFilter("CIGaussianBlur", parameters: ["inputRadius": 6.0]) // Soften mask edges
+            .cropped(to: original.extent)
+        
+        // Step 3: CIBlendWithMask: orang (mask terang) = original tajam, background (mask gelap) = blurred
+        let bokehComposite = original.applyingFilter("CIBlendWithMask", parameters: [
+            kCIInputBackgroundImageKey: blurred,
+            kCIInputMaskImageKey: depthMask
+        ])
+        
+        // Step 4: Render in-place ke pixelBuffer (tidak alokasi memori baru)
+        ciContext.render(bokehComposite, to: pixelBuffer)
     }
 }
 
 // MARK: - AVCaptureVideoDataOutputSampleBufferDelegate
+// Delegate ini hanya dipakai saat TIDAK ada synchronizer aktif (fallback)
 extension CameraCaptureService: AVCaptureVideoDataOutputSampleBufferDelegate {
     nonisolated func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        // Frame langsung dikirim ke VideoEncoderService.
-        // Portrait Effect sudah diproses oleh hardware Neural Engine iPhone secara otomatis
-        // saat device.isPortraitEffectEnabled = true — tidak perlu pemrosesan manual per-frame.
+        // Fallback: jika depth output tidak tersedia, kirim frame langsung tanpa bokeh
         self.onVideoFrameCaptured?(sampleBuffer)
     }
 }
