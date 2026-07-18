@@ -184,6 +184,9 @@ final class CameraCaptureService: NSObject {
         captureSession.startRunning()
         HaispaceLogger.info("Camera capture session started", category: "camera")
         
+        // Atur default zoom awal ke 1.0x (Wide Angle Utama, bukan 0.5x Ultra Wide)
+        self.applyZoomInternal(factor: 1.0)
+        
         isConfigured = true
     }
     
@@ -357,12 +360,11 @@ final class CameraCaptureService: NSObject {
             
             if let wideZoom = switchOvers.first {
                 if factor < 0.8 {
-                    // 0.5x → Ultra Wide: gunakan nilai tepat di BAWAH switchOver
-                    // (wideZoom - 0.1) memastikan masuk ke lensa Ultra Wide,
-                    // terlepas dari berapa nilai minZ saat ini (bisa 1.0 atau 2.0 tergantung format)
-                    let ultraWideZoom = max(wideZoom - 0.1, 1.0)
-                    targetInternalZoom = ultraWideZoom
-                    HaispaceLogger.info("[Zoom] 0.5x → Ultra Wide (internal: \(ultraWideZoom)x, switchOver: \(wideZoom)x)", category: "camera")
+                    // 0.5x → Ultra Wide: gunakan nilai minimum perangkat (minZ)
+                    // Pada mode normal (non-depth), minZ bernilai 1.0 (Ultra Wide super lebar).
+                    // Pada mode portrait (depth aktif), minZ menjadi 2.0 (Wide utama) secara otomatis oleh iOS.
+                    targetInternalZoom = minZ
+                    HaispaceLogger.info("[Zoom] 0.5x → Ultra Wide (internal: \(minZ)x, switchOver: \(wideZoom)x)", category: "camera")
                 } else if factor <= 1.2 {
                     // 1x → tepat di titik switch ke Wide Angle
                     targetInternalZoom = wideZoom
