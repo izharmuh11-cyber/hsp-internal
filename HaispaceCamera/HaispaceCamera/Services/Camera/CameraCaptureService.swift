@@ -221,6 +221,14 @@ final class CameraCaptureService: NSObject {
             
             HaispaceLogger.info("Mengambil foto dengan prioritization: \(photoSettings.photoQualityPrioritization.rawValue)", category: "camera")
             
+            // Matikan sementara koneksi depthOutput sebelum jepret untuk membebaskan 100% bandwidth hardware
+            if self.isPortraitModeActive {
+                for connection in self.depthOutput.connections {
+                    connection.isEnabled = false
+                }
+                HaispaceLogger.info("[PortraitMode] Koneksi depthOutput dinonaktifkan sementara untuk membebaskan bandwidth saat capture", category: "camera")
+            }
+            
             self.photoOutput.capturePhoto(with: photoSettings, delegate: self)
             HaispaceLogger.info("Memicu jepretan foto kualitas tinggi (Smart HDR/Deep Fusion)", category: "camera")
         }
@@ -641,6 +649,17 @@ extension CameraCaptureService: AVCapturePhotoCaptureDelegate {
             HaispaceLogger.error("Gagal capture foto: \(error.localizedDescription)", category: "camera")
         } else {
             self.onPhotoCaptured?(photo)
+        }
+        
+        // Aktifkan kembali koneksi depthOutput setelah pemotretan selesai
+        self.sessionQueue.async { [weak self] in
+            guard let self = self else { return }
+            if self.isPortraitModeActive {
+                for connection in self.depthOutput.connections {
+                    connection.isEnabled = true
+                }
+                HaispaceLogger.info("[PortraitMode] Koneksi depthOutput diaktifkan kembali setelah capture selesai", category: "camera")
+            }
         }
     }
 }
