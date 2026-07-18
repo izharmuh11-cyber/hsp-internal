@@ -288,7 +288,7 @@ final class CameraCaptureService: NSObject {
         }
     }
     
-    /// Mengatur faktor perbesaran (zoom) kamera secara dinamis (0.5x Ultra Wide, 1x Wide, 2x Tele/Digital)
+    /// Mengatur faktor perbesaran (zoom) kamera secara dinamis (iPhone 14 / Multi-Cam architecture)
     func setZoom(factor: CGFloat) {
         sessionQueue.async { [weak self] in
             guard let self = self else { return }
@@ -296,43 +296,52 @@ final class CameraCaptureService: NSObject {
             let currentInput = self.captureSession.inputs.first as? AVCaptureDeviceInput
             let currentDevice = currentInput?.device
             
-            // Tentukan target device type dan zoom factor
-            let targetDeviceType: AVCaptureDevice.DeviceType
-            let targetZoomFactor: CGFloat
+            // Logika Kamera iPhone 14 / Dual Cam / Triple Cam:
+            // 0.5x -> builtInUltraWideCamera (zoomFactor: 1.0)
+            // 1.0x -> builtInWideAngleCamera / builtInDualWideCamera (zoomFactor: 1.0)
+            // 2.0x -> builtInWideAngleCamera / builtInDualWideCamera (zoomFactor: 2.0 digital crop)
             
-            if factor < 0.8 {
-                targetDeviceType = .builtInUltraWideCamera
-                targetZoomFactor = 1.0
-            } else if factor > 1.5 {
-                // Untuk 2x: jika ada telephoto gunakan telephoto, jika tidak gunakan WideAngle dengan 2.0x
-                targetDeviceType = AVCaptureDevice.default(.builtInTelephotoCamera, for: .video, position: .back) != nil ? .builtInTelephotoCamera : .builtInWideAngleCamera
-                targetZoomFactor = (targetDeviceType == .builtInTelephotoCamera) ? 1.0 : 2.0
-            } else {
-                // Untuk 1x: utamakan WideAngleCamera / DualWideCamera
-                targetDeviceType = AVCaptureDevice.default(.builtInDualWideCamera, for: .video, position: .back) != nil ? .builtInDualWideCamera : .builtInWideAngleCamera
-                targetZoomFactor = 1.0
-            }
+            let targetDeviceType: AVCaptureDevice.DeviceType = (factor < 0.8) ? .builtInUltraWideCamera : .builtInWideAngleCamera
+            let targetZoomFactor: CGFloat = (factor < 0.8) ? 1.0 : (factor > 1.5 ? 2.0 : 1.0)
             
-            // Jika device saat ini sudah sama dengan targetDeviceType, cukup ubah videoZoomFactor
-            if let device = currentDevice, device.deviceType == targetDeviceType {
-                do {
-                    try device.lockForConfiguration()
-                    let minZ = device.minAvailableVideoZoomFactor
-                    let maxZ = min(device.maxAvailableVideoZoomFactor, 5.0)
-                    let finalZoom = max(min(targetZoomFactor, maxZ), minZ)
-                    device.videoZoomFactor = finalZoom
-                    device.unlockForConfiguration()
-                    HaispaceLogger.info("[Zoom] Zoom factor diubah menjadi \(finalZoom)x pada \(device.localizedName)", category: "camera")
-                    return
-                } catch {
-                    HaispaceLogger.error("[Zoom] Gagal set zoom: \(error.localizedDescription)", category: "camera")
+            // Cek apakah device saat ini mendukung zoom factor target secara langsung (misal Dual/Triple Camera)
+            if let device = currentDevice {
+                let minZ = device.minAvailableVideoZoomFactor
+                let maxZ = min(device.maxAvailableVideoZoomFactor, 5.0)
+                
+                // Jika device saat ini adalah Dual Wide / Triple Camera, zoom 0.5x hingga 2.0x didukung langsung di 1 device!
+                if device.deviceType == .builtInDualWideCamera || device.deviceType == .builtInTripleCamera {
+                    do {
+                        try device.lockForConfiguration()
+                        let finalZoom = max(min(factor, maxZ), minZ)
+                        device.ramp(toVideoZoomFactor: finalZoom, withRate: 8.0) // Smooth ramp zoom khas Apple!
+                        device.unlockForConfiguration()
+                        HaispaceLogger.info("[Zoom] Smooth ramp zoom ke \(finalZoom)x pada \(device.localizedName)", category: "camera")
+                        return
+                    } catch {
+                        HaispaceLogger.error("[Zoom] Gagal ramp zoom: \(error.localizedDescription)", category: "camera")
+                    }
+                }
+                
+                // Jika device saat ini sudah sama dengan targetDeviceType, lakukan smooth ramp zoom
+                if device.deviceType == targetDeviceType {
+                    do {
+                        try device.lockForConfiguration()
+                        let finalZoom = max(min(targetZoomFactor, maxZ), minZ)
+                        device.ramp(toVideoZoomFactor: finalZoom, withRate: 8.0)
+                        device.unlockForConfiguration()
+                        HaispaceLogger.info("[Zoom] Zoom factor diubah menjadi \(finalZoom)x pada \(device.localizedName)", category: "camera")
+                        return
+                    } catch {
+                        HaispaceLogger.error("[Zoom] Gagal set zoom: \(error.localizedDescription)", category: "camera")
+                    }
                 }
             }
             
-            // Jika device berbeda, lakukan pergantian AVCaptureDeviceInput
+            // Jika berbeda device (misal dari Ultra Wide kembali ke Wide Angle pada iPhone standar)
             guard let newDevice = AVCaptureDevice.default(targetDeviceType, for: .video, position: .back),
                   let newInput = try? AVCaptureDeviceInput(device: newDevice) else {
-                HaispaceLogger.warning("[Zoom] Device \(targetDeviceType) tidak tersedia", category: "camera")
+                HaispaceLogger.warning("[Zoom] Perangkat \(targetDeviceType) tidak tersedia", category: "camera")
                 return
             }
             

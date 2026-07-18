@@ -367,9 +367,11 @@ final class CameraAppState {
             CameraCaptureService.shared.setFocusAndExposurePoint(x: x, y: y)
             
         case .setZoom(let factor):
+            HaispaceLogger.info("[RemoteControl] Menerima sinyal setZoom(\(factor)x)", category: "camera")
             CameraCaptureService.shared.setZoom(factor: CGFloat(factor))
             
         case .setPortraitMode(let enabled):
+            HaispaceLogger.info("[RemoteControl] Menerima sinyal setPortraitMode(\(enabled))", category: "camera")
             CameraCaptureService.shared.setPortraitMode(enabled: enabled)
             
         default:
