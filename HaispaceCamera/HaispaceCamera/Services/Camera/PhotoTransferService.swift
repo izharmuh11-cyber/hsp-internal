@@ -49,11 +49,19 @@ actor PhotoTransferService {
                     return nil
                 }
                 
-                // PENTING: Gunakan gambar asli 12MP untuk input filter agar cocok dengan metadata
-                // kalibrasi di depthData. Jika inputImage di-scale sebelum filter, koordinat kalibrasi
-                // akan tidak sinkron dan menyebabkan crash instan pada GPU driver.
+                // Ambil metadata orientasi asli foto
+                let orientation = capture.metadata[kCGImagePropertyOrientation as String] as? Int32 ?? 1
+                
+                // Konversi depth pixel buffer ke CIImage dan terapkan orientasi yang sama agar sejajar dengan ciImage.
+                // Menggunakan CIImage (inputDepthMap) alih-alih AVDepthData (inputDepthData) mencegah Use-After-Free (UAF)
+                // crash karena CIImage memegang reference count sendiri ke memory buffer pixel kedalaman secara mandiri,
+                // tidak bergantung pada siklus hidup AVCapturePhoto yang segera dideallokasi oleh AVFoundation setelah delegate selesai.
+                let depthPixelBuffer = depthData.depthDataMap
+                var depthCI = CIImage(cvPixelBuffer: depthPixelBuffer)
+                depthCI = depthCI.oriented(forExifOrientation: orientation)
+                
                 filter.setValue(ciImage, forKey: kCIInputImageKey)
-                filter.setValue(depthData, forKey: "inputDepthData")
+                filter.setValue(depthCI, forKey: "inputDepthMap")
                 
                 // Titik fokus dari operator (tap-to-focus dari iPad)
                 let fp = CameraCaptureService.shared.lastFocusPoint
