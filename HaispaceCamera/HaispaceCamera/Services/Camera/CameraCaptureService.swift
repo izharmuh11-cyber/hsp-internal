@@ -364,22 +364,7 @@ final class CameraCaptureService: NSObject {
         sessionQueue.async { [weak self] in
             guard let self = self else { return }
             self.isPortraitModeActive = enabled
-            
-            if let input = self.captureSession.inputs.first as? AVCaptureDeviceInput {
-                let device = input.device
-                do {
-                    try device.lockForConfiguration()
-                    if device.isPortraitEffectSupported {
-                        device.isPortraitEffectEnabled = enabled
-                        HaispaceLogger.info("[PortraitMode] Live Portrait Effect (Bokeh) \(enabled ? "AKTIF" : "NONAKTIF") pada \(device.localizedName)", category: "camera")
-                    } else {
-                        HaispaceLogger.info("[PortraitMode] Depth Map foto \(enabled ? "AKTIF" : "NONAKTIF") (Live Portrait Effect tidak didukung hardware)", category: "camera")
-                    }
-                    device.unlockForConfiguration()
-                } catch {
-                    HaispaceLogger.error("[PortraitMode] Gagal mengonfigurasi Portrait Mode: \(error.localizedDescription)", category: "camera")
-                }
-            }
+            HaispaceLogger.info("[PortraitMode] Status Portrait diset ke \(enabled ? "AKTIF (Depth/Bokeh)" : "NONAKTIF")", category: "camera")
         }
     }
 }
