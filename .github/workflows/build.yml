@@ -24,6 +24,15 @@ jobs:
           gem install xcodeproj
           ruby sync_pbxproj.rb
 
+      - name: Stamp Build Version Info
+        run: |
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          BUILD_VER="${{ github.run_number }}"
+          SHORT_VER="0.1.0 (#${BUILD_VER}-${SHORT_SHA})"
+          plutil -replace CFBundleVersion -string "$BUILD_VER" HaispaceCamera/HaispaceCamera/Info.plist
+          plutil -replace CFBundleShortVersionString -string "$SHORT_VER" HaispaceCamera/HaispaceCamera/Info.plist
+          echo "Stamped HaispaceCamera version to: $SHORT_VER"
+
       - name: Build Archive (No Signing)
         run: |
           xcodebuild archive \
@@ -66,6 +75,15 @@ jobs:
         run: |
           gem install xcodeproj
           ruby sync_pbxproj.rb
+
+      - name: Stamp Build Version Info
+        run: |
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          BUILD_VER="${{ github.run_number }}"
+          SHORT_VER="0.1.0 (#${BUILD_VER}-${SHORT_SHA})"
+          plutil -replace CFBundleVersion -string "$BUILD_VER" HaispaceBooths/HaispaceBooths/Info.plist
+          plutil -replace CFBundleShortVersionString -string "$SHORT_VER" HaispaceBooths/HaispaceBooths/Info.plist
+          echo "Stamped HaispaceBooths version to: $SHORT_VER"
 
       - name: Build Archive (No Signing)
         run: |

@@ -48,7 +48,9 @@ class CameraAppDelegate: NSObject, UIApplicationDelegate {
         // Nonaktifkan auto-lock — iPhone harus selalu on selama event
         UIApplication.shared.isIdleTimerDisabled = true
 
-        HaispaceLogger.info("HaiCamera launched — model: \(UIDevice.current.model)", category: "app")
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "dev"
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.0"
+        HaispaceLogger.info("HaiCamera launched — build: #\(build) (\(version)) — model: \(UIDevice.current.model)", category: "app")
         return true
     }
 }

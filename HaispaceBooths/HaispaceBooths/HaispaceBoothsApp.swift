@@ -129,7 +129,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         // Nonaktifkan auto-lock saat event berlangsung
         UIApplication.shared.isIdleTimerDisabled = true
 
-        HaispaceLogger.info("HaiBooth launched — device: \(UIDevice.current.model)", category: "app")
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "dev"
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.0"
+        HaispaceLogger.info("HaiBooth launched — build: #\(build) (\(version)) — device: \(UIDevice.current.model)", category: "app")
     }
 
     // MARK: - Background URL Session Handler

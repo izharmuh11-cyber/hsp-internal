@@ -98,6 +98,14 @@ private struct CameraStandbyView: View {
                             .font(.system(size: 34, weight: .bold, design: .rounded))
                             .foregroundStyle(.white)
                         
+                        Text("Build #\(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "dev") • \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.0")")
+                            .font(.caption2.monospaced())
+                            .foregroundStyle(.white.opacity(0.45))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(.ultraThinMaterial)
+                            .clipShape(Capsule())
+                        
                         Text("Menunggu pairing dengan HaiBooth...")
                             .font(.subheadline)
                             .foregroundStyle(.white.opacity(0.6))
