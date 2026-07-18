@@ -186,14 +186,8 @@ final class VideoEncoderService {
     }
 }
 
-// C-function callback untuk VTCompressionSession
-private func compressionOutputCallback(
-    outputCallbackRefCon: UnsafeMutableRawPointer?,
-    sourceFrameRefCon: UnsafeMutableRawPointer?,
-    status: OSStatus,
-    infoFlags: VTEncodeInfoFlags,
-    sampleBuffer: CMSampleBuffer?
-) {
+// C-function callback untuk VTCompressionSession — Terjamin menggunakan C-calling convention (@convention(c)) untuk mencegah crash stack corruption
+private let compressionOutputCallback: VTCompressionOutputCallback = { outputCallbackRefCon, sourceFrameRefCon, status, infoFlags, sampleBuffer in
     guard status == noErr, let sampleBuffer = sampleBuffer, let refCon = outputCallbackRefCon else { return }
     let encoder = Unmanaged<VideoEncoderService>.fromOpaque(refCon).takeUnretainedValue()
     encoder.handleEncodedSampleBuffer(sampleBuffer)

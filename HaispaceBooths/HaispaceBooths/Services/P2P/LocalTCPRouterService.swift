@@ -138,8 +138,8 @@ actor LocalTCPRouterService {
                     let headerData = try await readExactBytes(connection: connection, count: 4)
                     guard headerData.count == 4 else { break }
                     
-                    // Convert 4 bytes to UInt32 (big-endian)
-                    let length = headerData.withUnsafeBytes { $0.load(as: UInt32.self).bigEndian }
+                    // Convert 4 bytes to UInt32 (big-endian) — Safe from unaligned memory access crash
+                    let length = headerData.reduce(0) { ($0 << 8) + UInt32($1) }
                     guard length > 0 else { continue }
                     
                     // 2. Baca exact body
@@ -194,9 +194,9 @@ actor LocalTCPRouterService {
             throw HaispaceError.p2pConnectionLost
         }
         
-        // Tambah header panjang data 4-byte (big-endian)
+        // Tambah header panjang data 4-byte (big-endian) — Safe from stack-escaping pointer issue
         var length = UInt32(data.count).bigEndian
-        let header = Data(bytes: &length, count: 4)
+        let header = withUnsafeBytes(of: &length) { Data($0) }
         let payload = header + data
         
         connection.send(content: payload, completion: .contentProcessed({ error in

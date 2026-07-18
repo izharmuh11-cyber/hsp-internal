@@ -93,9 +93,9 @@ final class StreamingDecoderService {
     }
     
     private func decodeFrame(nalu: Data, formatDescription: CMVideoFormatDescription) {
-        // Mengubah format panjang NALU dari Annex B (0x00000001) ke format AVCC (panjang 4-byte big endian)
+        // Mengubah format panjang NALU dari Annex B (0x00000001) ke format AVCC (panjang 4-byte big endian) — Safe from stack pointer escaping issue
         var length = CFSwapInt32HostToBig(UInt32(nalu.count - 4))
-        var avccNalu = Data(bytes: &length, count: 4)
+        var avccNalu = withUnsafeBytes(of: &length) { Data($0) }
         avccNalu.append(nalu.dropFirst(4))
         
         let memoryBlock = malloc(avccNalu.count)
