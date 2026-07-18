@@ -26,8 +26,8 @@ class StreamingDecoderView: UIView {
     override func layoutSubviews() {
         super.layoutSubviews()
         displayLayer.frame = self.bounds
-        // Transformasi Cermin Horizontal (Mirroring seperti kaca asli)
-        displayLayer.transform = CATransform3DMakeScale(-1.0, 1.0, 1.0)
+        // Gunakan orientasi visual kamera asli (tanpa pembalikan horizontal agar tulisan & logo baju tidak terbalik)
+        displayLayer.transform = CATransform3DIdentity
     }
 }
 
@@ -40,8 +40,6 @@ struct StreamingVideoView: UIViewRepresentable {
         // Layout disesuaikan oleh layoutSubviews
     }
 }
-
-// MARK: - Active Session View
 
 // MARK: - Active Session View
 
@@ -459,9 +457,6 @@ struct ActiveSessionView: View {
                 VStack(spacing: 14) {
                     zoomSelectorGroup
                     portraitBokehButton
-                    if isPortraitModeActive {
-                        apertureSelectorGroup
-                    }
                     colorFilterSelectorGroup
                 }
                 .padding(8)
@@ -480,7 +475,7 @@ struct ActiveSessionView: View {
     
     @ViewBuilder
     private var zoomSelectorGroup: some View {
-        let availableLenses = isPortraitModeActive ? ["1x", "2x"] : ["0.5x", "1x", "2x"]
+        let availableLenses = isPortraitModeActive ? ["1x"] : ["0.5x", "1x", "2x"]
         VStack(spacing: 6) {
             ForEach(availableLenses, id: \.self) { lens in
                 Button(action: {
