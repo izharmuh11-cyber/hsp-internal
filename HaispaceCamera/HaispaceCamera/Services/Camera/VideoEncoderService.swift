@@ -19,6 +19,9 @@ final class VideoEncoderService {
     // Callback saat NAL Unit siap dikirim
     var onNALUReady: ((Data) -> Void)?
     
+    private var currentWidth: Int32 = 0
+    private var currentHeight: Int32 = 0
+    
     private init() {}
     
     func setOnNALUReady(_ callback: @escaping (Data) -> Void) {
@@ -27,7 +30,16 @@ final class VideoEncoderService {
     
     func configure(width: Int32, height: Int32) {
         queue.sync {
-            guard !isConfigured else { return }
+            if isConfigured && width == currentWidth && height == currentHeight {
+                return
+            }
+            
+            // Jika resolusi berubah, invalidate session lama
+            if let oldSession = self.compressionSession {
+                VTCompressionSessionInvalidate(oldSession)
+                self.compressionSession = nil
+                HaispaceLogger.info("VideoEncoderService: Invalidate session lama karena resolusi berubah (\(currentWidth)x\(currentHeight) -> \(width)x\(height))", category: "camera")
+            }
             
             var sessionOut: VTCompressionSession?
             let status = VTCompressionSessionCreate(
@@ -48,6 +60,8 @@ final class VideoEncoderService {
                 return
             }
             self.compressionSession = sessionOut
+            self.currentWidth = width
+            self.currentHeight = height
             
             // Optimasi untuk real-time streaming berlatensi rendah
             VTSessionSetProperty(session, key: kVTCompressionPropertyKey_ProfileLevel, value: kVTProfileLevel_H264_Baseline_AutoLevel)

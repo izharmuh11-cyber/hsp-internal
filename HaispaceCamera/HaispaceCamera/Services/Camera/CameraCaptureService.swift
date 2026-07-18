@@ -192,22 +192,50 @@ final class CameraCaptureService: NSObject {
             let photoSettings = AVCapturePhotoSettings()
             photoSettings.flashMode = .off
             
-            // Aktifkan depth data hanya jika portrait mode aktif dan hardware mendukung
-            if self.isPortraitModeActive && self.photoOutput.isDepthDataDeliverySupported {
+            // Aktifkan depth data hanya jika portrait mode aktif DAN output level depth delivery sudah aktif
+            // ini mencegah crash akibat format mismatch jika dipanggil sebelum commit selesai sepenuhnya
+            if self.isPortraitModeActive && self.photoOutput.isDepthDataDeliveryEnabled {
                 photoSettings.isDepthDataDeliveryEnabled = true
                 photoSettings.embedsDepthDataInPhoto = true
                 HaispaceLogger.info("Depth data delivery diaktifkan untuk jepretan Portrait", category: "camera")
+            } else {
+                photoSettings.isDepthDataDeliveryEnabled = false
+                photoSettings.embedsDepthDataInPhoto = false
             }
             
-            // Gunakan .balanced saat portrait aktif (depth format tidak selalu support .quality)
-            // Gunakan .quality saat normal (preset 720p mendukung .quality)
+            // Pilih prioritization terbaik yang didukung oleh format aktif saat ini
+            let supportedPrioritizations = self.photoOutput.availablePhotoQualityPrioritizations
+            let bestPrioritization: AVCapturePhotoQualityPrioritization
+            
             if self.isPortraitModeActive {
-                photoSettings.photoQualityPrioritization = .balanced
-            } else if self.photoOutput.maxPhotoQualityPrioritization == .quality {
-                photoSettings.photoQualityPrioritization = .quality
+                // Saat Portrait aktif (format depth), utamakan .balanced atau .speed
+                if supportedPrioritizations.contains(.balanced) {
+                    bestPrioritization = .balanced
+                } else if supportedPrioritizations.contains(.speed) {
+                    bestPrioritization = .speed
+                } else {
+                    bestPrioritization = supportedPrioritizations.first ?? .balanced
+                }
             } else {
-                photoSettings.photoQualityPrioritization = .balanced
+                // Saat Normal (preset 720p), utamakan .quality
+                if supportedPrioritizations.contains(.quality) {
+                    bestPrioritization = .quality
+                } else if supportedPrioritizations.contains(.balanced) {
+                    bestPrioritization = .balanced
+                } else {
+                    bestPrioritization = supportedPrioritizations.first ?? .balanced
+                }
             }
+            
+            // Pastikan tidak melebihi maxPhotoQualityPrioritization milik output saat ini
+            let maxOutputPri = self.photoOutput.maxPhotoQualityPrioritization
+            if maxOutputPri.rawValue < bestPrioritization.rawValue {
+                photoSettings.photoQualityPrioritization = maxOutputPri
+            } else {
+                photoSettings.photoQualityPrioritization = bestPrioritization
+            }
+            
+            HaispaceLogger.info("Mengambil foto dengan prioritization: \(photoSettings.photoQualityPrioritization.rawValue)", category: "camera")
             
             self.photoOutput.capturePhoto(with: photoSettings, delegate: self)
             HaispaceLogger.info("Memicu jepretan foto kualitas tinggi (Smart HDR/Deep Fusion)", category: "camera")
@@ -407,6 +435,10 @@ final class CameraCaptureService: NSObject {
         sessionQueue.async { [weak self] in
             guard let self = self else { return }
             
+            // Dapatkan device video input yang aktif
+            guard let deviceInput = self.captureSession.inputs.first as? AVCaptureDeviceInput else { return }
+            let videoDevice = deviceInput.device
+            
             if enabled {
                 // LANGKAH 1: Ganti preset ke .photo + tambahkan depthOutput
                 self.captureSession.beginConfiguration()
@@ -436,6 +468,10 @@ final class CameraCaptureService: NSObject {
                     HaispaceLogger.warning("[PortraitMode] depth delivery tidak didukung perangkat ini", category: "camera")
                 }
                 
+                // LANGKAH 3b: Set maxPhotoQualityPrioritization ke .balanced (karena depth tidak mendukung .quality)
+                self.photoOutput.maxPhotoQualityPrioritization = .balanced
+                HaispaceLogger.info("[PortraitMode] photoOutput maxPhotoQualityPrioritization: balanced", category: "camera")
+                
                 // LANGKAH 4: Buat synchronizer SETELAH commit
                 self.outputSynchronizer = AVCaptureDataOutputSynchronizer(
                     dataOutputs: [self.videoOutput, self.depthOutput]
@@ -462,6 +498,15 @@ final class CameraCaptureService: NSObject {
                 self.captureSession.sessionPreset = .hd1280x720
                 self.captureSession.commitConfiguration()
                 HaispaceLogger.info("[PortraitMode] depth output dilepas, preset kembali ke hd1280x720", category: "camera")
+                
+                // LANGKAH 2b: Kembalikan maxPhotoQualityPrioritization ke .quality jika didukung format aktif
+                if videoDevice.activeFormat.isHighPhotoQualitySupported {
+                    self.photoOutput.maxPhotoQualityPrioritization = .quality
+                    HaispaceLogger.info("[PortraitMode] photoOutput maxPhotoQualityPrioritization dikembalikan ke: quality", category: "camera")
+                } else {
+                    self.photoOutput.maxPhotoQualityPrioritization = .balanced
+                    HaispaceLogger.info("[PortraitMode] photoOutput maxPhotoQualityPrioritization dikembalikan ke: balanced", category: "camera")
+                }
                 
                 // LANGKAH 3: Kembalikan video delegate ke normal
                 self.videoOutput.setSampleBufferDelegate(self, queue: self.videoQueue)
