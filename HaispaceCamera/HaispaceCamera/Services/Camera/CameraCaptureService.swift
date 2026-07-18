@@ -128,11 +128,14 @@ final class CameraCaptureService: NSObject {
             captureSession.addOutput(videoOutput)
         }
         
-        // Setup Photo Output untuk jepretan full quality
-        // Note: isHighResolutionCaptureEnabled is deprecated in iOS 16+, using default maxPhotoDimensions
+        // Setup Photo Output untuk jepretan full quality — Safe check before setting maxPhotoQualityPrioritization to prevent exception crash
         if captureSession.canAddOutput(photoOutput) {
             captureSession.addOutput(photoOutput)
-            photoOutput.maxPhotoQualityPrioritization = .quality
+            if photoOutput.supportedPhotoQualityPrioritizations.contains(.quality) {
+                photoOutput.maxPhotoQualityPrioritization = .quality
+            } else if photoOutput.supportedPhotoQualityPrioritizations.contains(.balanced) {
+                photoOutput.maxPhotoQualityPrioritization = .balanced
+            }
         }
         
         captureSession.commitConfiguration()

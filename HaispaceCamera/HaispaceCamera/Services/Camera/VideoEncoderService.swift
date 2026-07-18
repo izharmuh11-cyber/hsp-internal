@@ -29,6 +29,7 @@ final class VideoEncoderService {
         queue.sync {
             guard !isConfigured else { return }
             
+            var sessionOut: VTCompressionSession?
             let status = VTCompressionSessionCreate(
                 allocator: kCFAllocatorDefault,
                 width: width,
@@ -39,13 +40,14 @@ final class VideoEncoderService {
                 compressedDataAllocator: nil,
                 outputCallback: compressionOutputCallback,
                 refcon: UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque()),
-                compressionSessionOut: &compressionSession
+                compressionSessionOut: &sessionOut
             )
             
-            guard status == noErr, let session = compressionSession else {
+            guard status == noErr, let session = sessionOut else {
                 HaispaceLogger.error("Gagal membuat VTCompressionSession: \(status)", category: "camera")
                 return
             }
+            self.compressionSession = sessionOut
             
             // Optimasi untuk real-time streaming berlatensi rendah
             VTSessionSetProperty(session, key: kVTCompressionPropertyKey_ProfileLevel, value: kVTProfileLevel_H264_Baseline_AutoLevel)
@@ -187,7 +189,13 @@ final class VideoEncoderService {
 }
 
 // C-function callback untuk VTCompressionSession — Terjamin menggunakan C-calling convention (@convention(c)) untuk mencegah crash stack corruption
-private let compressionOutputCallback: VTCompressionOutputCallback = { outputCallbackRefCon, sourceFrameRefCon, status, infoFlags, sampleBuffer in
+private func compressionOutputCallback(
+    _ outputCallbackRefCon: UnsafeMutableRawPointer?,
+    _ sourceFrameRefCon: UnsafeMutableRawPointer?,
+    _ status: OSStatus,
+    _ infoFlags: VTEncodeInfoFlags,
+    _ sampleBuffer: CMSampleBuffer?
+) {
     guard status == noErr, let sampleBuffer = sampleBuffer, let refCon = outputCallbackRefCon else { return }
     let encoder = Unmanaged<VideoEncoderService>.fromOpaque(refCon).takeUnretainedValue()
     encoder.handleEncodedSampleBuffer(sampleBuffer)
