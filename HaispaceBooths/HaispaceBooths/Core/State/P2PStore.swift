@@ -295,7 +295,8 @@ final class P2PStore: @unchecked Sendable {
             
             let messageTypes: [P2PMessageType] = [
                 .ping, .sessionStart, .triggerCapture, .sessionPause,
-                .sessionResume, .sessionEnd, .focusPoint, .photoAck
+                .sessionResume, .sessionEnd, .focusPoint, .photoAck,
+                .setZoom, .setPortraitMode
             ]
             
             await withTaskGroup(of: Void.self) { group in
