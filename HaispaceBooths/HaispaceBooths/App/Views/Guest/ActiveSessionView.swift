@@ -457,150 +457,12 @@ struct ActiveSessionView: View {
         if localCountdown == 0 && !showFlash && !isBriefing {
             VStack {
                 VStack(spacing: 14) {
-                    // Zoom Selector Pills (Vertical)
-                    // Pada mode normal (Bokeh OFF): didukung 0.5x, 1x, 2x
-                    // Pada mode Portrait (Bokeh ON): didukung 1x dan 2x (0.5x disembunyikan karena UltraWide tidak mendukung depth hardware)
-                    let availableLenses = isPortraitModeActive ? ["1x", "2x"] : ["0.5x", "1x", "2x"]
-                    
-                    VStack(spacing: 6) {
-                        ForEach(availableLenses, id: \.self) { lens in
-                            Button(action: {
-                                activeZoom = lens
-                                let factor = lens == "0.5x" ? 0.5 : (lens == "2x" ? 2.0 : 1.0)
-                                Task {
-                                    await P2PMessageRouter.shared.route(.setZoom(factor: factor))
-                                }
-                                lastActivityTime = Date()
-                            }) {
-                                Text(lens)
-                                    .font(.system(size: 12, weight: .bold, design: .rounded))
-                                    .foregroundStyle(activeZoom == lens ? Color.black : Color.white)
-                                    .frame(width: 48, height: 38)
-                                    .background(activeZoom == lens ? Color.white : Color.white.opacity(0.12))
-                                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                            }
-                        }
-                    }
-                    .padding(4)
-                    .background(.ultraThinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                    )
-                    
-                    // Portrait Mode ('f' Bokeh) Button
-                    Button(action: {
-                        isPortraitModeActive.toggle()
-                        // Saat Mode Portrait diaktifkan, selalu mulai dari default 1x (Kamera Utama 26mm Portrait).
-                        if isPortraitModeActive {
-                            activeZoom = "1x"
-                            Task {
-                                await P2PMessageRouter.shared.route(.setZoom(factor: 1.0))
-                            }
-                        }
-                        Task {
-                            await P2PMessageRouter.shared.route(.setPortraitMode(enabled: isPortraitModeActive))
-                        }
-                        lastActivityTime = Date()
-                    }) {
-                        VStack(spacing: 2) {
-                            Image(systemName: isPortraitModeActive ? "f.circle.fill" : "f.circle")
-                                .font(.system(size: 18, weight: .bold))
-                            Text("Bokeh")
-                                .font(.system(size: 9, weight: .bold, design: .rounded))
-                        }
-                        .foregroundStyle(isPortraitModeActive ? Color.black : Color.white)
-                        .frame(width: 52, height: 50)
-                        .background(isPortraitModeActive ? Color(red: 255/255, green: 215/255, blue: 0/255) : Color.white.opacity(0.12))
-                        .background(.ultraThinMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .stroke(isPortraitModeActive ? Color(red: 255/255, green: 215/255, blue: 0/255).opacity(0.5) : Color.white.opacity(0.12), lineWidth: 1)
-                        )
-                    }
-                    
-                    // Aperture Quick-Picker Pills (Muncul jika Mode Portrait Aktif)
+                    zoomSelectorGroup
+                    portraitBokehButton
                     if isPortraitModeActive {
-                        VStack(spacing: 4) {
-                            let apertures: [(label: String, val: Double)] = [("f/1.4", 1.4), ("f/2.8", 2.8), ("f/5.6", 5.6)]
-                            ForEach(apertures, id: \.label) { ap in
-                                Button(action: {
-                                    activeAperture = ap.val
-                                    Task {
-                                        await P2PMessageRouter.shared.route(.setAperture(fNumber: ap.val))
-                                    }
-                                    lastActivityTime = Date()
-                                }) {
-                                    Text(ap.label)
-                                        .font(.system(size: 10, weight: .bold, design: .rounded))
-                                        .foregroundStyle(activeAperture == ap.val ? Color.black : Color.white.opacity(0.85))
-                                        .frame(width: 46, height: 26)
-                                        .background(activeAperture == ap.val ? Color(red: 255/255, green: 215/255, blue: 0/255) : Color.white.opacity(0.1))
-                                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                                }
-                            }
-                        }
-                        .padding(3)
-                        .background(.ultraThinMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        apertureSelectorGroup
                     }
-                    
-                    // Pro Color Filter Button & Selector
-                    VStack(spacing: 4) {
-                        Button(action: {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                showFilterSelector.toggle()
-                            }
-                            lastActivityTime = Date()
-                        }) {
-                            VStack(spacing: 2) {
-                                Image(systemName: activeFilter != "original" ? "wand.and.stars.inverse" : "wand.and.stars")
-                                    .font(.system(size: 16, weight: .bold))
-                                Text("Filter")
-                                    .font(.system(size: 9, weight: .bold, design: .rounded))
-                            }
-                            .foregroundStyle(activeFilter != "original" ? Color.black : Color.white)
-                            .frame(width: 52, height: 46)
-                            .background(activeFilter != "original" ? Color.cyan : Color.white.opacity(0.12))
-                            .background(.ultraThinMaterial)
-                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        }
-                        
-                        if showFilterSelector {
-                            let filters: [(id: String, name: String)] = [
-                                ("original", "Clean"),
-                                ("warm", "Warm"),
-                                ("clean", "Vogue"),
-                                ("vintage", "Retro"),
-                                ("bw_noir", "B&W")
-                            ]
-                            VStack(spacing: 4) {
-                                ForEach(filters, id: \.id) { flt in
-                                    Button(action: {
-                                        activeFilter = flt.id
-                                        Task {
-                                            await P2PMessageRouter.shared.route(.setColorPreset(presetId: flt.id))
-                                        }
-                                        withAnimation { showFilterSelector = false }
-                                        lastActivityTime = Date()
-                                    }) {
-                                        Text(flt.name)
-                                            .font(.system(size: 10, weight: .bold, design: .rounded))
-                                            .foregroundStyle(activeFilter == flt.id ? Color.black : Color.white)
-                                            .frame(width: 48, height: 28)
-                                            .background(activeFilter == flt.id ? Color.cyan : Color.white.opacity(0.12))
-                                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                                    }
-                                }
-                            }
-                            .padding(3)
-                            .background(.ultraThinMaterial)
-                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                            .transition(.scale.combined(with: .opacity))
-                        }
-                    }
+                    colorFilterSelectorGroup
                 }
                 .padding(8)
                 .background(.black.opacity(0.25))
@@ -613,6 +475,153 @@ struct ActiveSessionView: View {
                 .shadow(color: Color.black.opacity(0.25), radius: 10, y: 5)
             }
             .transition(.move(edge: .leading).combined(with: .opacity))
+        }
+    }
+    
+    @ViewBuilder
+    private var zoomSelectorGroup: some View {
+        let availableLenses = isPortraitModeActive ? ["1x", "2x"] : ["0.5x", "1x", "2x"]
+        VStack(spacing: 6) {
+            ForEach(availableLenses, id: \.self) { lens in
+                Button(action: {
+                    activeZoom = lens
+                    let factor = lens == "0.5x" ? 0.5 : (lens == "2x" ? 2.0 : 1.0)
+                    Task {
+                        await P2PMessageRouter.shared.route(.setZoom(factor: factor))
+                    }
+                    lastActivityTime = Date()
+                }) {
+                    Text(lens)
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundStyle(activeZoom == lens ? Color.black : Color.white)
+                        .frame(width: 48, height: 38)
+                        .background(activeZoom == lens ? Color.white : Color.white.opacity(0.12))
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+            }
+        }
+        .padding(4)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+        )
+    }
+    
+    @ViewBuilder
+    private var portraitBokehButton: some View {
+        Button(action: {
+            isPortraitModeActive.toggle()
+            if isPortraitModeActive {
+                activeZoom = "1x"
+                Task {
+                    await P2PMessageRouter.shared.route(.setZoom(factor: 1.0))
+                }
+            }
+            Task {
+                await P2PMessageRouter.shared.route(.setPortraitMode(enabled: isPortraitModeActive))
+            }
+            lastActivityTime = Date()
+        }) {
+            VStack(spacing: 2) {
+                Image(systemName: isPortraitModeActive ? "f.circle.fill" : "f.circle")
+                    .font(.system(size: 18, weight: .bold))
+                Text("Bokeh")
+                    .font(.system(size: 9, weight: .bold, design: .rounded))
+            }
+            .foregroundStyle(isPortraitModeActive ? Color.black : Color.white)
+            .frame(width: 52, height: 50)
+            .background(isPortraitModeActive ? Color(red: 255/255, green: 215/255, blue: 0/255) : Color.white.opacity(0.12))
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(isPortraitModeActive ? Color(red: 255/255, green: 215/255, blue: 0/255).opacity(0.5) : Color.white.opacity(0.12), lineWidth: 1)
+            )
+        }
+    }
+    
+    @ViewBuilder
+    private var apertureSelectorGroup: some View {
+        let apertures: [(label: String, val: Double)] = [("f/1.4", 1.4), ("f/2.8", 2.8), ("f/5.6", 5.6)]
+        VStack(spacing: 4) {
+            ForEach(apertures, id: \.label) { ap in
+                Button(action: {
+                    activeAperture = ap.val
+                    Task {
+                        await P2PMessageRouter.shared.route(.setAperture(fNumber: ap.val))
+                    }
+                    lastActivityTime = Date()
+                }) {
+                    Text(ap.label)
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .foregroundStyle(activeAperture == ap.val ? Color.black : Color.white.opacity(0.85))
+                        .frame(width: 46, height: 26)
+                        .background(activeAperture == ap.val ? Color(red: 255/255, green: 215/255, blue: 0/255) : Color.white.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                }
+            }
+        }
+        .padding(3)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+    
+    @ViewBuilder
+    private var colorFilterSelectorGroup: some View {
+        let filters: [(id: String, name: String)] = [
+            ("original", "Clean"),
+            ("warm", "Warm"),
+            ("clean", "Vogue"),
+            ("vintage", "Retro"),
+            ("bw_noir", "B&W")
+        ]
+        VStack(spacing: 4) {
+            Button(action: {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    showFilterSelector.toggle()
+                }
+                lastActivityTime = Date()
+            }) {
+                VStack(spacing: 2) {
+                    Image(systemName: activeFilter != "original" ? "wand.and.stars.inverse" : "wand.and.stars")
+                        .font(.system(size: 16, weight: .bold))
+                    Text("Filter")
+                        .font(.system(size: 9, weight: .bold, design: .rounded))
+                }
+                .foregroundStyle(activeFilter != "original" ? Color.black : Color.white)
+                .frame(width: 52, height: 46)
+                .background(activeFilter != "original" ? Color.cyan : Color.white.opacity(0.12))
+                .background(.ultraThinMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            }
+            
+            if showFilterSelector {
+                VStack(spacing: 4) {
+                    ForEach(filters, id: \.id) { flt in
+                        Button(action: {
+                            activeFilter = flt.id
+                            Task {
+                                await P2PMessageRouter.shared.route(.setColorPreset(presetId: flt.id))
+                            }
+                            withAnimation { showFilterSelector = false }
+                            lastActivityTime = Date()
+                        }) {
+                            Text(flt.name)
+                                .font(.system(size: 10, weight: .bold, design: .rounded))
+                                .foregroundStyle(activeFilter == flt.id ? Color.black : Color.white)
+                                .frame(width: 48, height: 28)
+                                .background(activeFilter == flt.id ? Color.cyan : Color.white.opacity(0.12))
+                                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        }
+                    }
+                }
+                .padding(3)
+                .background(.ultraThinMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .transition(.scale.combined(with: .opacity))
+            }
         }
     }
     
