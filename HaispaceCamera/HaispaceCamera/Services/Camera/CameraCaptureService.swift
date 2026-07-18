@@ -17,9 +17,16 @@ final class CameraCaptureService: NSObject {
     private let videoOutput = AVCaptureVideoDataOutput()
     private let photoOutput = AVCapturePhotoOutput()
     
+    // FIX #1 & #3: Serial queue khusus untuk semua operasi AVCaptureSession.
+    // AVCaptureSession bukan Sendable — dilarang diakses dari Task.detached atau thread sembarang.
+    // Queue ini menjadi single owner untuk captureSession dan isConfigured flag.
+    private let sessionQueue = DispatchQueue(label: "id.haispaceproject.camera.sessionQueue", qos: .userInitiated)
+    
     // Delegate untuk distribusi frame
     nonisolated(unsafe) var onVideoFrameCaptured: ((CMSampleBuffer) -> Void)?
     nonisolated(unsafe) var onPhotoCaptured: ((AVCapturePhoto) -> Void)?
+    
+    // FIX #3: isConfigured hanya boleh dibaca/ditulis dari dalam sessionQueue
     private var isConfigured = false
     
     // Status Portrait Mode
@@ -31,26 +38,34 @@ final class CameraCaptureService: NSObject {
     }
     
     func configureAndStart() {
-        startOrientationTracking()
-        
-        if isConfigured {
-            if !captureSession.isRunning {
-                Task.detached(priority: .userInitiated) {
-                    await self.captureSession.startRunning()
-                    HaispaceLogger.info("Camera capture session started (re-use)", category: "camera")
-                }
-            }
-            return
+        // FIX #2: startOrientationTracking() memanggil UIKit — harus dari main thread
+        if Thread.isMainThread {
+            startOrientationTracking()
+        } else {
+            DispatchQueue.main.async { self.startOrientationTracking() }
         }
         
-        // Membutuhkan izin kamera
-        AVCaptureDevice.requestAccess(for: .video) { [weak self] granted in
-            guard granted else {
-                HaispaceLogger.error("Akses kamera ditolak", category: "camera")
+        // FIX #1 & #3: Semua akses ke captureSession dan isConfigured melalui sessionQueue
+        sessionQueue.async { [weak self] in
+            guard let self = self else { return }
+            if self.isConfigured {
+                if !self.captureSession.isRunning {
+                    self.captureSession.startRunning() // Dipanggil di sessionQueue, aman
+                    HaispaceLogger.info("Camera capture session started (re-use)", category: "camera")
+                }
                 return
             }
-            Task {
-                self?.setupSession()
+            
+            // Membutuhkan izin kamera
+            AVCaptureDevice.requestAccess(for: .video) { [weak self] granted in
+                guard let self = self, granted else {
+                    HaispaceLogger.error("Akses kamera ditolak", category: "camera")
+                    return
+                }
+                // setupSession() langsung di sessionQueue (bukan Task baru)
+                self.sessionQueue.async {
+                    self.setupSession()
+                }
             }
         }
     }
@@ -122,11 +137,12 @@ final class CameraCaptureService: NSObject {
         
         captureSession.commitConfiguration()
         
-        Task.detached(priority: .userInitiated) {
-            await self.captureSession.startRunning()
-            HaispaceLogger.info("Camera capture session started", category: "camera")
-        }
+        // FIX #1: startRunning() dipanggil langsung di sessionQueue — tidak perlu Task.detached.
+        // AVCaptureSession bukan Sendable, memanggil via Task.detached menyebabkan EXC_BAD_ACCESS.
+        captureSession.startRunning()
+        HaispaceLogger.info("Camera capture session started", category: "camera")
         
+        // FIX #3: isConfigured ditulis di sessionQueue (sama dengan pembacaannya) — thread-safe
         isConfigured = true
     }
     
@@ -192,7 +208,10 @@ final class CameraCaptureService: NSObject {
     
     // MARK: - Orientation Tracking
     
+    // FIX #2: Semua method ini harus dipanggil dari main thread.
+    // configureAndStart() sudah menjamin ini.
     private func startOrientationTracking() {
+        assert(Thread.isMainThread, "startOrientationTracking() harus dipanggil dari main thread")
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleOrientationChange),
@@ -200,11 +219,21 @@ final class CameraCaptureService: NSObject {
             object: nil
         )
         UIDevice.current.beginGeneratingDeviceOrientationNotifications()
-        // Pemicu awal
+        // Pemicu awal — sudah di main thread, aman
         handleOrientationChange()
     }
     
     private func stopOrientationTracking() {
+        // stopOrientationTracking() dipanggil dari stop() — pastikan di main thread
+        if Thread.isMainThread {
+            _stopOrientationTrackingOnMain()
+        } else {
+            DispatchQueue.main.async { self._stopOrientationTrackingOnMain() }
+        }
+    }
+    
+    private func _stopOrientationTrackingOnMain() {
+        assert(Thread.isMainThread)
         NotificationCenter.default.removeObserver(
             self,
             name: UIDevice.orientationDidChangeNotification,
@@ -230,14 +259,18 @@ final class CameraCaptureService: NSObject {
             return // Tetap gunakan orientasi sebelumnya jika posisi datar (flat)
         }
         
-        // Perbarui orientasi koneksi video (preview stream)
-        if let videoConnection = videoOutput.connection(with: .video), videoConnection.isVideoOrientationSupported {
-            videoConnection.videoOrientation = avOrientation
-        }
-        
-        // Perbarui orientasi koneksi foto (jepretan resolusi tinggi)
-        if let photoConnection = photoOutput.connection(with: .video), photoConnection.isVideoOrientationSupported {
-            photoConnection.videoOrientation = avOrientation
+        // FIX #2: Perubahan orientasi pada AVCaptureConnection harus di sessionQueue
+        // (AVCaptureConnection bukan thread-safe)
+        sessionQueue.async { [weak self] in
+            guard let self = self else { return }
+            if let videoConnection = self.videoOutput.connection(with: .video),
+               videoConnection.isVideoOrientationSupported {
+                videoConnection.videoOrientation = avOrientation
+            }
+            if let photoConnection = self.photoOutput.connection(with: .video),
+               photoConnection.isVideoOrientationSupported {
+                photoConnection.videoOrientation = avOrientation
+            }
         }
     }
     
