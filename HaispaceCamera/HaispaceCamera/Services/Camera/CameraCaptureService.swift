@@ -394,12 +394,12 @@ final class CameraCaptureService: NSObject {
     
     /// Mengaktifkan atau mematikan mode Portrait (Depth-Based Live Bokeh) secara dinamis.
     ///
-    /// Cara kerja (persis seperti Apple Camera App):
-    /// - Portrait ON  → ganti preset ke .photo (kompatibel depth) + tambahkan depthOutput + buat synchronizer
-    /// - Portrait OFF → hapus depthOutput + kembali ke preset .hd1280x720 + kembalikan video delegate
+    /// Cara kerja:
+    /// - Portrait ON  → preset .photo + depthOutput + aktifkan depth delivery di photoOutput + synchronizer
+    /// - Portrait OFF → matikan depth delivery + hapus depthOutput + preset .hd1280x720
     ///
-    /// Preset .hd1280x720 TIDAK kompatibel dengan depthOutput.
-    /// Preset .photo mendukung depth dan digunakan Apple Camera App saat portrait aktif.
+    /// KRITIS: photoOutput.isDepthDataDeliveryEnabled HARUS di-set ke true setelah commitConfiguration
+    /// agar iOS tahu depth delivery sudah didukung oleh session yang aktif.
     func setPortraitMode(enabled: Bool) {
         isPortraitModeActive = enabled
         if !enabled { lastDepthImage = nil }
@@ -408,48 +408,60 @@ final class CameraCaptureService: NSObject {
             guard let self = self else { return }
             
             if enabled {
-                // LANGKAH 1: Ganti preset ke .photo yang mendukung depth data
+                // LANGKAH 1: Ganti preset ke .photo + tambahkan depthOutput
                 self.captureSession.beginConfiguration()
                 self.captureSession.sessionPreset = .photo
-                HaispaceLogger.info("[PortraitMode] preset diganti ke .photo (depth-kompatibel)", category: "camera")
                 
-                // LANGKAH 2: Tambahkan depthOutput ke session
                 self.depthOutput.isFilteringEnabled = true
                 if self.captureSession.canAddOutput(self.depthOutput) {
                     self.captureSession.addOutput(self.depthOutput)
                     HaispaceLogger.info("[PortraitMode] depth output ditambahkan", category: "camera")
                 } else {
-                    HaispaceLogger.warning("[PortraitMode] depth output sudah ada atau tidak bisa ditambahkan", category: "camera")
+                    HaispaceLogger.warning("[PortraitMode] depth output tidak bisa ditambahkan", category: "camera")
                 }
                 
                 // Lepaskan video delegate biasa agar tidak konflik dengan synchronizer
                 self.videoOutput.setSampleBufferDelegate(nil, queue: nil)
                 
-                // LANGKAH 3: Commit — depthOutput sekarang terdaftar di session
+                // LANGKAH 2: Commit — setelah ini depthOutput terdaftar di session
                 self.captureSession.commitConfiguration()
-                HaispaceLogger.info("[PortraitMode] session committed dengan depthOutput", category: "camera")
+                HaispaceLogger.info("[PortraitMode] session committed — preset:.photo + depthOutput aktif", category: "camera")
                 
-                // LANGKAH 4: Buat synchronizer SETELAH commit (wajib, output harus sudah terdaftar)
-                self.outputSynchronizer = AVCaptureDataOutputSynchronizer(dataOutputs: [self.videoOutput, self.depthOutput])
+                // LANGKAH 3: Aktifkan depth delivery di photoOutput (WAJIB setelah commit)
+                // Tanpa ini, photoSettings.isDepthDataDeliveryEnabled = true akan crash
+                if self.photoOutput.isDepthDataDeliverySupported {
+                    self.photoOutput.isDepthDataDeliveryEnabled = true
+                    HaispaceLogger.info("[PortraitMode] photoOutput depth delivery: ENABLED", category: "camera")
+                } else {
+                    HaispaceLogger.warning("[PortraitMode] depth delivery tidak didukung perangkat ini", category: "camera")
+                }
+                
+                // LANGKAH 4: Buat synchronizer SETELAH commit
+                self.outputSynchronizer = AVCaptureDataOutputSynchronizer(
+                    dataOutputs: [self.videoOutput, self.depthOutput]
+                )
                 self.outputSynchronizer?.setDelegate(self, queue: self.syncQueue)
                 HaispaceLogger.info("[PortraitMode] depth+video synchronizer dikonfigurasi", category: "camera")
                 
-                // Paksa zoom ke 1.0x agar depth map sinkron dengan lensa Wide Angle
+                // Paksa zoom ke 1.0x agar depth map sinkron
                 self.applyZoomInternal(factor: 1.0)
                 HaispaceLogger.info("[PortraitMode] Depth-Based Bokeh AKTIF", category: "camera")
-                
             } else {
                 // LANGKAH 1: Matikan synchronizer dahulu
                 self.outputSynchronizer?.setDelegate(nil, queue: nil)
                 self.outputSynchronizer = nil
                 HaispaceLogger.info("[PortraitMode] synchronizer dilepas", category: "camera")
                 
-                // LANGKAH 2: Hapus depthOutput + kembalikan preset ke 720p
+                // LANGKAH 2: Matikan depth delivery, hapus depthOutput, kembalikan preset
                 self.captureSession.beginConfiguration()
+                
+                // Matikan depth delivery sebelum remove output
+                self.photoOutput.isDepthDataDeliveryEnabled = false
+                
                 self.captureSession.removeOutput(self.depthOutput)
                 self.captureSession.sessionPreset = .hd1280x720
-                HaispaceLogger.info("[PortraitMode] depth output dilepas, preset kembali ke hd1280x720", category: "camera")
                 self.captureSession.commitConfiguration()
+                HaispaceLogger.info("[PortraitMode] depth output dilepas, preset kembali ke hd1280x720", category: "camera")
                 
                 // LANGKAH 3: Kembalikan video delegate ke normal
                 self.videoOutput.setSampleBufferDelegate(self, queue: self.videoQueue)
