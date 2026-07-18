@@ -440,38 +440,74 @@ extension CameraCaptureService: AVCaptureDataOutputSynchronizerDelegate {
     }
     
     /// Menerapkan natural depth-of-field bokeh berdasarkan peta kedalaman fisik.
-    /// Orang di depth dekat = tajam, background di depth jauh = blur natural
-    /// dengan intensitas blur proporsional terhadap jarak (bukan flat mask biner).
+    /// Orang di depth dekat = tajam, background di depth jauh = blur natural.
+    ///
+    /// Depth Float32 dari iPhone 14 Dual Wide Camera:
+    ///   - Nilai kecil (0.2–1.5m) = dekat kamera = orang = TAJAM
+    ///   - Nilai besar (1.5–5.0m+) = jauh dari kamera = background = BLUR
+    ///
+    /// Kita perlu: mask putih (1.0) = tajam, mask hitam (0.0) = blur
+    /// Jadi: mask = 1 - clamp(depth / maxDepth, 0, 1)
     nonisolated private func applyDepthBokeh(to pixelBuffer: CVPixelBuffer, depthMap: CIImage) {
         let original = CIImage(cvPixelBuffer: pixelBuffer)
         
-        // Step 1: Blur seluruh frame untuk background
+        // Step 1: Blur seluruh frame untuk latar belakang
         let blurred = original
             .clampedToExtent()
             .applyingFilter("CIGaussianBlur", parameters: ["inputRadius": 18.0])
             .cropped(to: original.extent)
         
-        // Step 2: Inversi depth map — nilai tinggi (jauh) menjadi transparan (blur),
-        // nilai rendah (dekat, orang) menjadi opak (tajam).
-        // Tambahkan sedikit Gaussian blur pada mask untuk tepi yang smooth dan natural.
-        let depthMask = depthMap
-            .applyingFilter("CIColorMatrix", parameters: [
-                // Inversi: 1 - depth (agar dekat=putih=tajam, jauh=hitam=blur)
-                "inputRVector": CIVector(x: -3, y: 0, z: 0, w: 0),
-                "inputGVector": CIVector(x: 0, y: -3, z: 0, w: 0),
-                "inputBVector": CIVector(x: 0, y: 0, z: -3, w: 0),
-                "inputBiasVector": CIVector(x: 1, y: 1, z: 1, w: 1)
-            ])
-            .applyingFilter("CIGaussianBlur", parameters: ["inputRadius": 6.0]) // Soften mask edges
-            .cropped(to: original.extent)
+        // Step 2: Normalisasi depth map ke range 0.0–1.0
+        // Depth Float32 dari dual-cam ~= 0.0 (sangat dekat) hingga 5.0+ (sangat jauh)
+        // Kita clamp ke range fokus yang relevan: 0.3m–3.0m
+        // Setelah normalisasi: dekat = 0.0 (hitam), jauh = 1.0 (putih)
+        // Lalu inversi agar: dekat = 1.0 (putih = tajam), jauh = 0.0 (hitam = blur)
+        let nearPlane: CGFloat = 0.3   // meter — titik terdekat yang masih tajam
+        let farPlane:  CGFloat = 3.0   // meter — titik terjauh yang masih relevan
         
-        // Step 3: CIBlendWithMask: orang (mask terang) = original tajam, background (mask gelap) = blurred
-        let bokehComposite = original.applyingFilter("CIBlendWithMask", parameters: [
-            kCIInputBackgroundImageKey: blurred,
-            kCIInputMaskImageKey: depthMask
+        // Normalisasi: (depth - nearPlane) / (farPlane - nearPlane)
+        //              = depth * scale + bias
+        // scale = 1 / (farPlane - nearPlane) = 1 / 2.7 ≈ 0.37
+        // bias  = -nearPlane * scale         = -0.3 * 0.37 ≈ -0.111
+        let scale = 1.0 / (farPlane - nearPlane)    // ~0.370
+        let bias  = -nearPlane * scale               // ~-0.111
+        
+        // Terapkan normalisasi via CIColorMatrix
+        let normalizedDepth = depthMap.applyingFilter("CIColorMatrix", parameters: [
+            "inputRVector": CIVector(x: scale, y: 0, z: 0, w: 0),
+            "inputGVector": CIVector(x: 0, y: scale, z: 0, w: 0),
+            "inputBVector": CIVector(x: 0, y: 0, z: scale, w: 0),
+            "inputBiasVector": CIVector(x: bias, y: bias, z: bias, w: 0)
         ])
         
-        // Step 4: Render in-place ke pixelBuffer (tidak alokasi memori baru)
+        // Clamp ke 0.0–1.0 dan INVERSI: dekat (kecil) → putih (tajam)
+        let invertedDepth = normalizedDepth.applyingFilter("CIColorMatrix", parameters: [
+            "inputRVector": CIVector(x: -1, y: 0, z: 0, w: 0),
+            "inputGVector": CIVector(x: 0, y: -1, z: 0, w: 0),
+            "inputBVector": CIVector(x: 0, y: 0, z: -1, w: 0),
+            "inputBiasVector": CIVector(x: 1, y: 1, z: 1, w: 1)
+        ])
+        
+        // Clamp ke range valid 0.0–1.0
+        let clampedMask = invertedDepth.applyingFilter("CIColorClamp", parameters: [
+            "inputMinComponents": CIVector(x: 0, y: 0, z: 0, w: 0),
+            "inputMaxComponents": CIVector(x: 1, y: 1, z: 1, w: 1)
+        ])
+        
+        // Softening tepi mask agar transisi bokeh terlihat natural (bukan garis keras)
+        let softMask = clampedMask
+            .applyingFilter("CIGaussianBlur", parameters: ["inputRadius": 8.0])
+            .cropped(to: original.extent)
+        
+        // Step 3: CIBlendWithMask:
+        //   mask putih (dekat/orang) → tampilkan original (tajam)
+        //   mask hitam (jauh/background) → tampilkan blurred
+        let bokehComposite = original.applyingFilter("CIBlendWithMask", parameters: [
+            kCIInputBackgroundImageKey: blurred,
+            kCIInputMaskImageKey: softMask
+        ])
+        
+        // Step 4: Render in-place ke pixelBuffer (Metal GPU, zero extra allocation)
         ciContext.render(bokehComposite, to: pixelBuffer)
     }
 }
