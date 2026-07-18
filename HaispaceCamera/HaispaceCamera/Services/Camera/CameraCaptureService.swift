@@ -71,6 +71,7 @@ final class CameraCaptureService: NSObject {
     }
     
     private func setupSession() {
+        HaispaceLogger.info("[setupSession] Langkah 1: beginConfiguration", category: "camera")
         captureSession.beginConfiguration()
         
         // Atur preset 720p untuk preview yang ringan, cepat, dan hemat bandwidth
@@ -86,16 +87,19 @@ final class CameraCaptureService: NSObject {
         
         if captureSession.canAddInput(videoDeviceInput) {
             captureSession.addInput(videoDeviceInput)
+            HaispaceLogger.info("[setupSession] Langkah 2: video input ditambahkan", category: "camera")
         }
         
         // Konfigurasi fitur kamera bawaan iPhone (HDR, Low Light, Autofokus)
         do {
             try videoDevice.lockForConfiguration()
             
-            // 1. Aktifkan Video HDR (Anti-Backlight & High Dynamic Range) untuk live preview
+            // 1. Aktifkan Video HDR secara aman tanpa memicu exception
             if videoDevice.activeFormat.isVideoHDRSupported {
-                videoDevice.isVideoHDREnabled = true
-                HaispaceLogger.info("Video HDR (Anti-Backlight) diaktifkan", category: "camera")
+                if videoDevice.automaticallyAdjustsVideoHDREnabled {
+                    videoDevice.automaticallyAdjustsVideoHDREnabled = true
+                }
+                HaispaceLogger.info("Video HDR diaktifkan", category: "camera")
             }
             
             // 2. Aktifkan Low Light Boost otomatis untuk ruangan redup
@@ -126,26 +130,31 @@ final class CameraCaptureService: NSObject {
         
         if captureSession.canAddOutput(videoOutput) {
             captureSession.addOutput(videoOutput)
+            HaispaceLogger.info("[setupSession] Langkah 3: video output ditambahkan", category: "camera")
         }
         
-        // Setup Photo Output untuk jepretan full quality — Safe check before setting maxPhotoQualityPrioritization to prevent exception crash
+        // Setup Photo Output untuk jepretan full quality
         if captureSession.canAddOutput(photoOutput) {
             captureSession.addOutput(photoOutput)
-            if videoDevice.activeFormat.isHighPhotoQualitySupported {
-                photoOutput.maxPhotoQualityPrioritization = .quality
-            } else {
-                photoOutput.maxPhotoQualityPrioritization = .speed
-            }
+            HaispaceLogger.info("[setupSession] Langkah 4: photo output ditambahkan", category: "camera")
         }
         
         captureSession.commitConfiguration()
+        HaispaceLogger.info("[setupSession] Langkah 5: commitConfiguration selesai", category: "camera")
         
-        // FIX #1: startRunning() dipanggil langsung di sessionQueue — tidak perlu Task.detached.
-        // AVCaptureSession bukan Sendable, memanggil via Task.detached menyebabkan EXC_BAD_ACCESS.
+        // FIX: maxPhotoQualityPrioritization HANYA boleh di-set SETELAH commitConfiguration
+        // dan HARUS divalidasi terhadap availablePhotoQualityPrioritizations untuk mencegah NSInvalidArgumentException.
+        if photoOutput.availablePhotoQualityPrioritizations.contains(.quality) {
+            photoOutput.maxPhotoQualityPrioritization = .quality
+            HaispaceLogger.info("[setupSession] maxPhotoQualityPrioritization set to quality", category: "camera")
+        } else if photoOutput.availablePhotoQualityPrioritizations.contains(.balanced) {
+            photoOutput.maxPhotoQualityPrioritization = .balanced
+            HaispaceLogger.info("[setupSession] maxPhotoQualityPrioritization set to balanced", category: "camera")
+        }
+        
         captureSession.startRunning()
         HaispaceLogger.info("Camera capture session started", category: "camera")
         
-        // FIX #3: isConfigured ditulis di sessionQueue (sama dengan pembacaannya) — thread-safe
         isConfigured = true
     }
     
