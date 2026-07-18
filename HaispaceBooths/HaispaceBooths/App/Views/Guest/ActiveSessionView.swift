@@ -93,24 +93,21 @@ struct ActiveSessionView: View {
                 
                 auroraBackgroundView
                 
-                // Konsep 1: Apple Studio Display — Studio Viewfinder Presisi di Tengah
-                HStack(spacing: 16) {
+                // Full Screen Live Video Preview (Full Layar 100% Memenuhi iPad)
+                fullScreenVideoFeed(geometry: screenGeo)
+                
+                // Panel Kontrol Melayang di Atas Video Full
+                HStack {
                     // Control Dock Melayang di Kiri (Zoom 0.5x, 1x, 2x & Bokeh 'f')
                     leftControlDock(ipadLandscape: ipadLandscape)
-                        .frame(width: 72)
+                        .padding(.leading, 24)
                     
-                    Spacer(minLength: 0)
-                    
-                    // Viewfinder Kamera Utama 4:3 Presisi di Tengah
-                    studioViewfinder(screenGeo: screenGeo)
-                    
-                    Spacer(minLength: 0)
+                    Spacer()
                     
                     // Galeri Polaroid Filmstrip Melayang di Kanan
                     filmStripGallery(ipadLandscape: ipadLandscape)
-                        .frame(width: 80)
+                        .padding(.trailing, 24)
                 }
-                .padding(.horizontal, 20)
                 .padding(.vertical, 80)
                 
                 // Header Sesi Melayang di Atas (Dynamic Island Top)
@@ -420,33 +417,15 @@ struct ActiveSessionView: View {
     }
     
     @ViewBuilder
-    private func studioViewfinder(screenGeo: GeometryProxy) -> some View {
-        let maxVfHeight = max(screenGeo.size.height - 180, 360)
-        let maxVfWidth = max(screenGeo.size.width - 220, 480)
-        let isLandscape = isStreamLandscape
-        
+    private func fullScreenVideoFeed(geometry: GeometryProxy) -> some View {
         ZStack {
-            GeometryReader { geometry in
-                videoFeedView(geometry: geometry)
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .stroke(
-                        LinearGradient(
-                            colors: [Color.white.opacity(0.35), Color.white.opacity(0.1)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 1.5
-                    )
-            )
-            .shadow(color: Color.black.opacity(0.45), radius: 24, x: 0, y: 12)
+            videoFeedView(geometry: geometry)
+                .ignoresSafeArea()
             
-            // Corner Brackets Alignment Guide (Presisi menempel di dalam Viewfinder 4:3)
+            // Corner Brackets Alignment Guide (Melayang presisi membantu posisi tamu)
             CornerBracketsShape()
                 .stroke(Color.white.opacity(0.35), lineWidth: 2)
-                .padding(24)
+                .padding(EdgeInsets(top: 80, leading: 140, bottom: 80, trailing: 140))
                 .allowsHitTesting(false)
                 .opacity(isBriefing ? 0 : 1)
                 .animation(.easeInOut, value: isBriefing)
@@ -456,15 +435,13 @@ struct ActiveSessionView: View {
             // Overlay Flash (Saat jepretan dipicu)
             if showFlash {
                 Color.white
-                    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                    .ignoresSafeArea()
                     .transition(.opacity)
                     .zIndex(10)
             }
             
             countdownOverlay
         }
-        .aspectRatio(isLandscape ? 4.0 / 3.0 : 3.0 / 4.0, contentMode: .fit)
-        .frame(maxWidth: maxVfWidth, maxHeight: maxVfHeight)
     }
     
     @ViewBuilder
