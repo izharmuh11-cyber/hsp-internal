@@ -97,10 +97,13 @@ final class CameraCaptureService: NSObject {
         HaispaceLogger.info("[setupSession] Langkah 1: beginConfiguration", category: "camera")
         captureSession.beginConfiguration()
         
-        // Atur preset 720p untuk preview yang ringan, cepat, dan hemat bandwidth
-        captureSession.sessionPreset = .hd1280x720
+        // PENDEKATAN APPLE: Gunakan .inputPriority bukan preset kaku.
+        // Ini memberi kebebasan kepada device untuk memilih format terbaik yang mendukung
+        // depth data (kamera portrait), zoom virtual (0.5x-2x), dan HDR sekaligus.
+        // sessionPreset = .hd1280x720 TIDAK kompatibel dengan depth output → crash portrait.
+        captureSession.sessionPreset = .inputPriority
         
-        // Cari kamera belakang (Utamakan virtual multi-cam Triple/Dual Wide agar zoom 0.5x-2x seamless, fallback ke Wide Angle)
+        // Cari kamera belakang (Utamakan virtual multi-cam agar zoom 0.5x-2x seamless)
         guard let videoDevice = AVCaptureDevice.default(.builtInTripleCamera, for: .video, position: .back)
             ?? AVCaptureDevice.default(.builtInDualWideCamera, for: .video, position: .back)
             ?? AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back),
@@ -115,11 +118,33 @@ final class CameraCaptureService: NSObject {
             HaispaceLogger.info("[setupSession] Langkah 2: video input ditambahkan", category: "camera")
         }
         
-        // Konfigurasi fitur kamera bawaan iPhone (HDR, Low Light, Autofokus)
+        // PENDEKATAN APPLE: Pilih format device secara manual yang mendukung depth.
+        // Kita cari format yang: (1) mendukung depth, (2) resolusi ≤ 1280x720 untuk hemat bandwidth,
+        // (3) frame rate ≥ 30fps. Jika tidak ada, fallback ke format aktif default.
+        let targetWidth = 1280
+        let targetHeight = 720
+        let depthSupportedFormat = videoDevice.formats.first { format in
+            let desc = format.formatDescription
+            let dims = CMVideoFormatDescriptionGetDimensions(desc)
+            let supportedRanges = format.videoSupportedFrameRateRanges
+            let maxFPS = supportedRanges.map { $0.maxFrameRate }.max() ?? 0
+            return format.supportedDepthDataFormats.isEmpty == false
+                && dims.width <= targetWidth
+                && dims.height <= targetHeight
+                && maxFPS >= 30
+        }
+        
         do {
             try videoDevice.lockForConfiguration()
             
-            // 1. Aktifkan Video HDR secara aman tanpa memicu exception
+            if let selectedFormat = depthSupportedFormat {
+                videoDevice.activeFormat = selectedFormat
+                HaispaceLogger.info("[setupSession] Format depth-kompatibel dipilih: \(selectedFormat.formatDescription)", category: "camera")
+            } else {
+                HaispaceLogger.warning("[setupSession] Tidak ditemukan format depth-kompatibel ≤720p, gunakan format aktif default", category: "camera")
+            }
+            
+            // Aktifkan Video HDR secara aman
             if videoDevice.activeFormat.isVideoHDRSupported {
                 if videoDevice.automaticallyAdjustsVideoHDREnabled {
                     videoDevice.automaticallyAdjustsVideoHDREnabled = true
@@ -127,13 +152,13 @@ final class CameraCaptureService: NSObject {
                 HaispaceLogger.info("Video HDR diaktifkan", category: "camera")
             }
             
-            // 2. Aktifkan Low Light Boost otomatis untuk ruangan redup
+            // Aktifkan Low Light Boost otomatis
             if videoDevice.isLowLightBoostSupported {
                 videoDevice.automaticallyEnablesLowLightBoostWhenAvailable = true
                 HaispaceLogger.info("Low Light Boost diaktifkan", category: "camera")
             }
             
-            // 3. Set Continuous Auto Focus & Exposure agar selalu stabil dan terang
+            // Set Continuous Auto Focus & Exposure
             if videoDevice.isFocusModeSupported(.continuousAutoFocus) {
                 videoDevice.focusMode = .continuousAutoFocus
             }
@@ -143,7 +168,7 @@ final class CameraCaptureService: NSObject {
             
             videoDevice.unlockForConfiguration()
         } catch {
-            HaispaceLogger.error("Gagal mengonfigurasi fitur kamera bawaan iPhone: \(error.localizedDescription)", category: "camera")
+            HaispaceLogger.error("Gagal mengonfigurasi format kamera: \(error.localizedDescription)", category: "camera")
         }
         
         // Setup Video Output untuk live stream P2P
@@ -164,27 +189,31 @@ final class CameraCaptureService: NSObject {
             HaispaceLogger.info("[setupSession] Langkah 4: photo output ditambahkan", category: "camera")
         }
         
-        // JANGAN menambahkan depthOutput di sini! Depth data output membatasi format kamera
-        // sehingga membatasi zoom range. Kita akan menambahkannya secara dinamis 
-        // HANYA ketika Portrait Mode aktif.
+        // PENDEKATAN APPLE: Tambahkan depthOutput SEKALI SAJA di awal (bukan dinamis add/remove).
+        // App Camera bawaan Apple selalu memiliki depth output terpasang sepanjang waktu.
+        // Kita kendalikan apakah depth diaktifkan via isDepthDataDeliveryEnabled di photoSettings,
+        // dan via outputSynchronizer untuk live preview bokeh.
+        depthOutput.isFilteringEnabled = true
+        if captureSession.canAddOutput(depthOutput) {
+            captureSession.addOutput(depthOutput)
+            HaispaceLogger.info("[setupSession] Langkah 4b: depth output ditambahkan (selalu aktif)", category: "camera")
+        } else {
+            HaispaceLogger.warning("[setupSession] Depth output tidak bisa ditambahkan ke session ini", category: "camera")
+        }
         
         captureSession.commitConfiguration()
         HaispaceLogger.info("[setupSession] Langkah 5: commitConfiguration selesai", category: "camera")
         
-        // FIX: maxPhotoQualityPrioritization HANYA boleh di-set SETELAH commitConfiguration
-        // dan di-gate dengan videoDevice.activeFormat.isHighPhotoQualitySupported untuk mencegah NSInvalidArgumentException.
-        if videoDevice.activeFormat.isHighPhotoQualitySupported {
-            photoOutput.maxPhotoQualityPrioritization = .quality
-            HaispaceLogger.info("[setupSession] maxPhotoQualityPrioritization set to quality", category: "camera")
-        } else {
-            photoOutput.maxPhotoQualityPrioritization = .balanced
-            HaispaceLogger.info("[setupSession] maxPhotoQualityPrioritization set to balanced", category: "camera")
-        }
+        // maxPhotoQualityPrioritization di-set SETELAH commitConfiguration
+        // Dengan format depth-kompatibel, gunakan .balanced (aman untuk semua format).
+        // .quality bisa crash pada depth format tertentu di iPhone 14.
+        photoOutput.maxPhotoQualityPrioritization = .balanced
+        HaispaceLogger.info("[setupSession] maxPhotoQualityPrioritization set to balanced (depth-safe)", category: "camera")
         
         captureSession.startRunning()
         HaispaceLogger.info("Camera capture session started", category: "camera")
         
-        // Atur default zoom awal ke 1.0x (Wide Angle Utama, bukan 0.5x Ultra Wide)
+        // Atur default zoom awal ke 1.0x (Wide Angle Utama)
         self.applyZoomInternal(factor: 1.0)
         
         isConfigured = true
@@ -192,32 +221,22 @@ final class CameraCaptureService: NSObject {
     
     /// Trigger pemotretan kualitas tinggi (dipanggil saat menerima instruksi dari iPad)
     func captureHighQualityPhoto() {
-        // PENTING: Seluruh logika foto harus dijalankan di sessionQueue.
-        // Ini memastikan eksekusi SETELAH setPortraitMode (yang juga di sessionQueue)
-        // selesai commitConfiguration — mencegah crash akibat race condition.
+        // Dijalankan di sessionQueue agar serialized dengan operasi session lainnya
         sessionQueue.async { [weak self] in
             guard let self = self else { return }
             
             let photoSettings = AVCapturePhotoSettings()
-            photoSettings.flashMode = .off // Flash menggunakan layar iPad, iPhone flash dimatikan
+            photoSettings.flashMode = .off
             
-            // Aktifkan data kedalaman (depth map) jika mode Portrait aktif dan didukung hardware
-            // Dicek di sini (setelah session commit) untuk membaca state yang akurat
+            // Aktifkan depth data hanya jika portrait mode aktif dan hardware mendukung
             if self.isPortraitModeActive && self.photoOutput.isDepthDataDeliverySupported {
                 photoSettings.isDepthDataDeliveryEnabled = true
                 photoSettings.embedsDepthDataInPhoto = true
                 HaispaceLogger.info("Depth data delivery diaktifkan untuk jepretan Portrait", category: "camera")
             }
             
-            // Aktifkan pemrosesan gambar penuh Apple (Smart HDR, Deep Fusion, Neural Engine ISP)
-            // PENTING: Saat portrait mode aktif, format kamera dipaksa iOS ke format depth.
-            // Format depth TIDAK selalu mendukung .quality prioritization → NSInvalidArgumentException → CRASH.
-            // Solusi: gunakan .balanced saat portrait (depth format), .quality saat normal.
-            if self.photoOutput.maxPhotoQualityPrioritization == .quality && !self.isPortraitModeActive {
-                photoSettings.photoQualityPrioritization = .quality
-            } else {
-                photoSettings.photoQualityPrioritization = .balanced
-            }
+            // Selalu gunakan .balanced — aman untuk semua format termasuk depth format
+            photoSettings.photoQualityPrioritization = .balanced
             
             self.photoOutput.capturePhoto(with: photoSettings, delegate: self)
             HaispaceLogger.info("Memicu jepretan foto kualitas tinggi (Smart HDR/Deep Fusion)", category: "camera")
@@ -403,8 +422,9 @@ final class CameraCaptureService: NSObject {
     }
     
     /// Mengaktifkan atau mematikan mode Portrait (Depth-Based Live Bokeh) secara dinamis.
-    /// Ketika portrait aktif, kita tambahkan depthOutput ke captureSession.
-    /// Ketika portrait mati, kita hapus depthOutput agar zoom range kembali normal ke 0.5x–8.0x.
+    /// PENDEKATAN APPLE: depthOutput sudah selalu terpasang di session (sejak setupSession).
+    /// setPortraitMode hanya perlu toggle outputSynchronizer untuk live preview bokeh.
+    /// Tidak ada add/remove output → tidak ada beginConfiguration/commitConfiguration → tidak ada crash.
     func setPortraitMode(enabled: Bool) {
         isPortraitModeActive = enabled
         if !enabled { lastDepthImage = nil }
@@ -412,28 +432,12 @@ final class CameraCaptureService: NSObject {
         sessionQueue.async { [weak self] in
             guard let self = self else { return }
             
-            self.captureSession.beginConfiguration()
-            
             if enabled {
-                // Setup Depth Output untuk live bokeh
-                self.depthOutput.isFilteringEnabled = true
-                if self.captureSession.canAddOutput(self.depthOutput) {
-                    self.captureSession.addOutput(self.depthOutput)
-                    HaispaceLogger.info("[PortraitMode] depth output ditambahkan ke captureSession", category: "camera")
-                } else {
-                    HaispaceLogger.warning("[PortraitMode] depth output TIDAK bisa ditambahkan ke session", category: "camera")
-                }
-                
                 // Lepaskan callback delegasi video biasa agar tidak double deliver frame
                 self.videoOutput.setSampleBufferDelegate(nil, queue: nil)
                 
-                // PENTING: commitConfiguration HARUS dilakukan SEBELUM membuat outputSynchronizer.
-                // AVCaptureDataOutputSynchronizer hanya valid jika semua dataOutputs sudah terdaftar
-                // di captureSession. Membuat synchronizer sebelum commit → synchronizer invalid → CRASH.
-                self.captureSession.commitConfiguration()
-                HaispaceLogger.info("[PortraitMode] session committed — depth output terdaftar", category: "camera")
-                
-                // Konfigurasi synchronizer SETELAH commit — depth output sudah diakui session
+                // Buat synchronizer untuk video + depth data
+                // depthOutput sudah terdaftar di session sejak setupSession → synchronizer langsung valid
                 self.outputSynchronizer = AVCaptureDataOutputSynchronizer(dataOutputs: [self.videoOutput, self.depthOutput])
                 self.outputSynchronizer?.setDelegate(self, queue: self.syncQueue)
                 HaispaceLogger.info("[PortraitMode] depth+video synchronizer dikonfigurasi", category: "camera")
@@ -442,21 +446,16 @@ final class CameraCaptureService: NSObject {
                 self.applyZoomInternal(factor: 1.0)
                 HaispaceLogger.info("[PortraitMode] Depth-Based Bokeh AKTIF", category: "camera")
             } else {
-                // Matikan synchronizer terlebih dahulu
+                // Matikan synchronizer
                 self.outputSynchronizer?.setDelegate(nil, queue: nil)
                 self.outputSynchronizer = nil
-                
-                // Hapus depth output dari session
-                self.captureSession.removeOutput(self.depthOutput)
-                HaispaceLogger.info("[PortraitMode] depth output dilepas dari captureSession", category: "camera")
+                HaispaceLogger.info("[PortraitMode] synchronizer dilepas", category: "camera")
                 
                 // Kembalikan video delegate ke normal
                 self.videoOutput.setSampleBufferDelegate(self, queue: self.videoQueue)
                 HaispaceLogger.info("[PortraitMode] videoOutput delegate dikembalikan ke normal", category: "camera")
                 
-                self.captureSession.commitConfiguration()
-                
-                // Kembalikan ke zoom factor terakhir yang diinginkan pengguna sebelum masuk mode portrait
+                // Kembalikan ke zoom factor terakhir yang diinginkan pengguna
                 self.applyZoomInternal(factor: self.lastRequestedZoomFactor)
                 HaispaceLogger.info("[PortraitMode] Depth-Based Bokeh NONAKTIF", category: "camera")
             }
