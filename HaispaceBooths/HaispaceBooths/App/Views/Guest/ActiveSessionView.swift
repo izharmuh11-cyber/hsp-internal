@@ -139,6 +139,11 @@ struct ActiveSessionView: View {
             }
         }
         .onAppear {
+            activeZoom = "1x"
+            Task {
+                await P2PMessageRouter.shared.route(.setZoom(factor: 1.0))
+            }
+            
             startSessionSequence()
             startGestureListener()
             
@@ -450,42 +455,47 @@ struct ActiveSessionView: View {
             VStack {
                 VStack(spacing: 14) {
                     // Zoom Selector Pills (Vertical)
-                    // Disembunyikan saat Portrait Mode aktif karena sistem membatasi kamera hanya pada lensa 1x (Wide)
-                    // untuk sinkronisasi depth data yang tepat dari hardware stereo.
-                    if !isPortraitModeActive {
-                        VStack(spacing: 6) {
-                            ForEach(["0.5x", "1x", "2x"], id: \.self) { lens in
-                                Button(action: {
-                                    activeZoom = lens
-                                    let factor = lens == "0.5x" ? 0.5 : (lens == "2x" ? 2.0 : 1.0)
-                                    Task {
-                                        await P2PMessageRouter.shared.route(.setZoom(factor: factor))
-                                    }
-                                    lastActivityTime = Date()
-                                }) {
-                                    Text(lens)
-                                        .font(.system(size: 12, weight: .bold, design: .rounded))
-                                        .foregroundStyle(activeZoom == lens ? Color.black : Color.white)
-                                        .frame(width: 48, height: 38)
-                                        .background(activeZoom == lens ? Color.white : Color.white.opacity(0.12))
-                                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    // Pada mode normal (Bokeh OFF): didukung 0.5x, 1x, 2x
+                    // Pada mode Portrait (Bokeh ON): didukung 1x dan 2x (0.5x disembunyikan karena UltraWide tidak mendukung depth hardware)
+                    let availableLenses = isPortraitModeActive ? ["1x", "2x"] : ["0.5x", "1x", "2x"]
+                    
+                    VStack(spacing: 6) {
+                        ForEach(availableLenses, id: \.self) { lens in
+                            Button(action: {
+                                activeZoom = lens
+                                let factor = lens == "0.5x" ? 0.5 : (lens == "2x" ? 2.0 : 1.0)
+                                Task {
+                                    await P2PMessageRouter.shared.route(.setZoom(factor: factor))
                                 }
+                                lastActivityTime = Date()
+                            }) {
+                                Text(lens)
+                                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                                    .foregroundStyle(activeZoom == lens ? Color.black : Color.white)
+                                    .frame(width: 48, height: 38)
+                                    .background(activeZoom == lens ? Color.white : Color.white.opacity(0.12))
+                                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                             }
                         }
-                        .padding(4)
-                        .background(.ultraThinMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                        )
                     }
+                    .padding(4)
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                    )
                     
                     // Portrait Mode ('f' Bokeh) Button
                     Button(action: {
                         isPortraitModeActive.toggle()
-                        if isPortraitModeActive {
-                            activeZoom = "1x" // Mode Portrait mengunci kamera ke 1x secara native
+                        // Jika mode Portrait diaktifkan saat di 0.5x, alihkan ke 1x karena UltraWide tidak mendukung depth
+                        // Jika sedang di 1x atau 2x, pertahankan pilihan zoom user (mendukung 2x Portrait!)
+                        if isPortraitModeActive && activeZoom == "0.5x" {
+                            activeZoom = "1x"
+                            Task {
+                                await P2PMessageRouter.shared.route(.setZoom(factor: 1.0))
+                            }
                         }
                         Task {
                             await P2PMessageRouter.shared.route(.setPortraitMode(enabled: isPortraitModeActive))

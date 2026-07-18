@@ -207,17 +207,18 @@ final class CameraCaptureService: NSObject {
         captureSession.startRunning()
         HaispaceLogger.info("Camera capture session started", category: "camera")
         
-        // Atur default zoom awal ke 1.0x (Wide Angle Utama)
-        self.applyZoomInternal(factor: 1.0)
-        
         // Cache switchOver factors dari format normal SETELAH session berjalan.
-        // Harus dilakukan SEBELUM portrait mode pernah aktif agar nilai yang tersimpan
-        // mencerminkan mapping zoom yang benar (UW → Wide → 2x digital).
+        // Harus dilakukan SEBELUM portrait mode pernah aktif dan SEBELUM applyZoomInternal
+        // agar nilai yang tersimpan mencerminkan mapping zoom yang benar (UW → Wide → 2x digital).
         if let input = captureSession.inputs.first as? AVCaptureDeviceInput {
             let raw = input.device.virtualDeviceSwitchOverVideoZoomFactors
             cachedSwitchOverFactors = raw.map { CGFloat($0.doubleValue) }
             HaispaceLogger.info("[Zoom] Cached switchOver factors: \(cachedSwitchOverFactors)", category: "camera")
         }
+        
+        // Atur default zoom awal ke 1.0x (Wide Angle Utama) secara INSTAN (tanpa ramp)
+        // Ini memastikan kamera langsung terkunci di 1.0x Wide Angle sejak detik pertama diluncurkan.
+        self.applyZoomInternal(factor: 1.0, animated: false)
         
         isConfigured = true
     }
@@ -428,7 +429,7 @@ final class CameraCaptureService: NSObject {
     }
     
     /// Fungsi helper internal untuk mengubah zoom factor. Harus dipanggil dalam sessionQueue.
-    private func applyZoomInternal(factor: CGFloat) {
+    private func applyZoomInternal(factor: CGFloat, animated: Bool = true) {
         guard let currentInput = self.captureSession.inputs.first as? AVCaptureDeviceInput else {
             HaispaceLogger.warning("[Zoom] Tidak ada active camera input", category: "camera")
             return
@@ -476,7 +477,11 @@ final class CameraCaptureService: NSObject {
             }
             
             let finalZoom = max(min(targetInternalZoom, maxZ), minZ)
-            device.ramp(toVideoZoomFactor: finalZoom, withRate: 8.0) // Smooth ramp khas Apple!
+            if animated {
+                device.ramp(toVideoZoomFactor: finalZoom, withRate: 8.0) // Smooth ramp khas Apple!
+            } else {
+                device.videoZoomFactor = finalZoom // Instant hardware lock!
+            }
             device.unlockForConfiguration()
             
         } catch {
@@ -553,10 +558,10 @@ final class CameraCaptureService: NSObject {
                 // zoom 2.0x (telephoto/crop) justru menghasilkan kompresi perspektif wajah
                 // yang lebih flattering untuk portrait photobooth (setara lensa 85mm).
                 if self.lastRequestedZoomFactor < 1.0 {
-                    self.applyZoomInternal(factor: 1.0)
+                    self.applyZoomInternal(factor: 1.0, animated: false)
                     HaispaceLogger.info("[PortraitMode] Zoom dinaikkan ke 1.0x — ultra-wide tidak kompatibel dengan depth (sebelumnya: \(self.lastRequestedZoomFactor)x)", category: "camera")
                 } else {
-                    self.applyZoomInternal(factor: self.lastRequestedZoomFactor)
+                    self.applyZoomInternal(factor: self.lastRequestedZoomFactor, animated: false)
                     HaispaceLogger.info("[PortraitMode] Zoom dipertahankan di \(self.lastRequestedZoomFactor)x", category: "camera")
                 }
                 HaispaceLogger.info("[PortraitMode] Depth-Based Bokeh AKTIF (Asynchronous)", category: "camera")
