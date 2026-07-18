@@ -281,7 +281,7 @@ final class CameraAppState {
             }
             VideoEncoderService.shared.encode(sampleBuffer: sampleBuffer)
             
-            guard let self = self else { return }
+            guard self != nil else { return }
             if CameraCaptureService.shared.isSessionActive {
                 HandGestureDetector.shared.processFrame(sampleBuffer) {
                     // FIX: Gunakan isConnectedSync() dan sendDataSync() — tidak ada actor hop per frame

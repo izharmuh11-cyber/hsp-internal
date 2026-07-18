@@ -556,33 +556,20 @@ final class CameraCaptureService: NSObject {
             }
         }
     }
-    nonisolated func depthDataOutput(
+}
+
+// MARK: - AVCaptureDepthDataOutputDelegate
+extension CameraCaptureService: AVCaptureDepthDataOutputDelegate {
+    @objc nonisolated func depthDataOutput(
         _ output: AVCaptureDepthDataOutput,
         didOutput depthData: AVDepthData,
         timestamp: CMTime,
         connection: AVCaptureConnection
     ) {
-        // FINAL FIX: Simpan depth CIImage langsung — tanpa temporal blend.
-        //
-        // ❌ PENDEKATAN SEBELUMNYA (temporal smoothing via CIBlendWithMask) MENYEBABKAN DUA BUG:
-        //
-        // BUG 1 — CIImage chain accumulation:
-        //   Setiap frame menyimpan referensi ke frame sebelumnya secara rekursif.
-        //   30 detik × 24fps = 720 lazy CIImage berantai. Saat ciContext.render() dipanggil
-        //   → iOS evaluasi semua 720 sekaligus → memory explosion → CRASH.
-        //
-        // BUG 2 — Invalid render target format (penyebab crash saat ini):
-        //   ciContext.render(_:to:) TIDAK mendukung kCVPixelFormatType_DepthFloat32 sebagai
-        //   render target. CIContext hanya bisa render ke BGRA/RGBA format.
-        //   Render ke Depth buffer = undefined behavior → CRASH langsung.
-        //
-        // ✅ SOLUSI AMAN:
-        //   Simpan CIImage langsung dari pixel buffer depth (backing = 1 pixel buffer saja).
-        //   Anti-flicker/noise ditangani oleh CIGaussianBlur radius 8.0 di applyDepthBokeh.
-        //   Setiap frame menggantikan lastDepthImage sepenuhnya — zero chain, O(1) memori.
         let depthFloat32 = depthData.converting(toDepthDataType: kCVPixelFormatType_DepthFloat32)
         self.lastDepthImage = CIImage(cvPixelBuffer: depthFloat32.depthDataMap)
     }
+}
 }
 
 extension CameraCaptureService {
