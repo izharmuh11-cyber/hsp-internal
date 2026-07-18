@@ -49,6 +49,13 @@ final class CameraCaptureService: NSObject {
     // Cache depth CIImage terakhir untuk efisiensi (reuse antar frame)
     nonisolated(unsafe) private var lastDepthImage: CIImage? = nil
     
+    // Dedicated queues untuk penanganan frame output
+    private let videoQueue = DispatchQueue(label: "id.haispaceproject.camera.videoQueue")
+    private let syncQueue = DispatchQueue(label: "id.haispaceproject.camera.syncQueue", qos: .userInteractive)
+    
+    // Simpan target zoom yang diinginkan agar bisa dikembalikan saat beralih mode
+    nonisolated(unsafe) private var lastRequestedZoomFactor: CGFloat = 1.0
+    
     private override init() {
         super.init()
     }
@@ -140,7 +147,7 @@ final class CameraCaptureService: NSObject {
         }
         
         // Setup Video Output untuk live stream P2P
-        videoOutput.setSampleBufferDelegate(self, queue: DispatchQueue(label: "id.haispaceproject.camera.videoQueue"))
+        videoOutput.setSampleBufferDelegate(self, queue: videoQueue)
         videoOutput.alwaysDiscardsLateVideoFrames = true
         videoOutput.videoSettings = [
             kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_32BGRA)
@@ -157,24 +164,12 @@ final class CameraCaptureService: NSObject {
             HaispaceLogger.info("[setupSession] Langkah 4: photo output ditambahkan", category: "camera")
         }
         
-        // Setup Depth Output untuk live bokeh (dual-cam depth dari hardware stereo iPhone 14)
-        // isFilteringEnabled: smoothing temporal untuk depth map yang lebih stabil
-        depthOutput.isFilteringEnabled = true
-        if captureSession.canAddOutput(depthOutput) {
-            captureSession.addOutput(depthOutput)
-            HaispaceLogger.info("[setupSession] Langkah 4b: depth output ditambahkan (hardware depth bokeh aktif)", category: "camera")
-        } else {
-            HaispaceLogger.warning("[setupSession] Depth output tidak bisa ditambahkan — bokeh akan dinonaktifkan", category: "camera")
-        }
+        // JANGAN menambahkan depthOutput di sini! Depth data output membatasi format kamera
+        // sehingga membatasi zoom range. Kita akan menambahkannya secara dinamis 
+        // HANYA ketika Portrait Mode aktif.
         
         captureSession.commitConfiguration()
         HaispaceLogger.info("[setupSession] Langkah 5: commitConfiguration selesai", category: "camera")
-        
-        // Setup AVCaptureDataOutputSynchronizer: sinkronkan video + depth data
-        // Ini memastikan setiap frame video memiliki depth map yang tepat waktu
-        outputSynchronizer = AVCaptureDataOutputSynchronizer(dataOutputs: [videoOutput, depthOutput])
-        outputSynchronizer?.setDelegate(self, queue: DispatchQueue(label: "id.haispaceproject.camera.syncQueue", qos: .userInteractive))
-        HaispaceLogger.info("[setupSession] Langkah 5b: depth+video synchronizer dikonfigurasi", category: "camera")
         
         // FIX: maxPhotoQualityPrioritization HANYA boleh di-set SETELAH commitConfiguration
         // dan di-gate dengan videoDevice.activeFormat.isHighPhotoQualitySupported untuk mencegah NSInvalidArgumentException.
@@ -323,10 +318,7 @@ final class CameraCaptureService: NSObject {
                photoConnection.isVideoOrientationSupported {
                 photoConnection.videoOrientation = avOrientation
             }
-        }
-    }
-    
-    /// Mengatur zoom kamera menggunakan Apple native multi-cam approach.
+         /// Mengatur zoom kamera menggunakan Apple native multi-cam approach.
     /// Selalu menggunakan SATU device virtual (DualWide/Triple) tanpa mengganti input.
     /// Memetakan user zoom (0.5x, 1x, 2x) ke internal device zoomFactor menggunakan
     /// virtualDeviceSwitchOverVideoZoomFactors — persis seperti app Camera bawaan Apple.
@@ -334,72 +326,118 @@ final class CameraCaptureService: NSObject {
     /// CATATAN: Saat depthOutput aktif, format DualWide berubah sehingga minZ menjadi ~2.0.
     /// 0.5x (Ultra Wide) harus menggunakan nilai TEPAT DI BAWAH switchOver, bukan minZ.
     func setZoom(factor: CGFloat) {
+        lastRequestedZoomFactor = factor
         sessionQueue.async { [weak self] in
             guard let self = self else { return }
-            
-            guard let currentInput = self.captureSession.inputs.first as? AVCaptureDeviceInput else {
-                HaispaceLogger.warning("[Zoom] Tidak ada active camera input", category: "camera")
-                return
-            }
-            let device = currentInput.device
-            
-            do {
-                try device.lockForConfiguration()
-                
-                let maxZ = min(device.maxAvailableVideoZoomFactor, 8.0)
-                
-                // Baca switch-over points dari virtual device (DualWide / Triple)
-                // iPhone 14 DualWide: switchOvers = [2.0]
-                //   • zoomFactor < 2.0  → lensa Ultra Wide fisik aktif (0.5x tampilan)
-                //   • zoomFactor = 2.0  → lensa Wide Angle fisik aktif (1x tampilan)
-                //   • zoomFactor = 4.0  → 2x digital zoom pada Wide Angle
-                let switchOvers = device.virtualDeviceSwitchOverVideoZoomFactors.map { CGFloat($0.doubleValue) }
-                
-                let targetInternalZoom: CGFloat
-                
-                if let wideZoom = switchOvers.first {
-                    if factor < 0.8 {
-                        // 0.5x → Ultra Wide: gunakan nilai tepat di BAWAH switchOver
-                        // (wideZoom - 0.1) memastikan masuk ke lensa Ultra Wide,
-                        // terlepas dari berapa nilai minZ saat ini (bisa 1.0 atau 2.0 tergantung format)
-                        let ultraWideZoom = max(wideZoom - 0.1, 1.0)
-                        targetInternalZoom = ultraWideZoom
-                        HaispaceLogger.info("[Zoom] 0.5x → Ultra Wide (internal: \(ultraWideZoom)x, switchOver: \(wideZoom)x)", category: "camera")
-                    } else if factor <= 1.2 {
-                        // 1x → tepat di titik switch ke Wide Angle
-                        targetInternalZoom = wideZoom
-                        HaispaceLogger.info("[Zoom] 1x → Wide Angle (internal: \(wideZoom)x)", category: "camera")
-                    } else {
-                        // 2x → 2x digital pada Wide Angle
-                        let zoom2x = min(wideZoom * 2.0, maxZ)
-                        targetInternalZoom = zoom2x
-                        HaispaceLogger.info("[Zoom] 2x → Digital zoom (internal: \(zoom2x)x)", category: "camera")
-                    }
-                } else {
-                    // Device single-lens (WideAngle saja): gunakan factor langsung
-                    let minZ = device.minAvailableVideoZoomFactor
-                    targetInternalZoom = max(min(factor, maxZ), minZ)
-                    HaispaceLogger.info("[Zoom] Single-lens zoom ke \(targetInternalZoom)x", category: "camera")
-                }
-                
-                let minZ = device.minAvailableVideoZoomFactor
-                let finalZoom = max(min(targetInternalZoom, maxZ), minZ)
-                device.ramp(toVideoZoomFactor: finalZoom, withRate: 8.0) // Smooth ramp khas Apple!
-                device.unlockForConfiguration()
-                
-            } catch {
-                HaispaceLogger.error("[Zoom] Gagal set zoom: \(error.localizedDescription)", category: "camera")
-            }
+            self.applyZoomInternal(factor: factor)
         }
     }
     
-    /// Mengaktifkan atau mematikan mode Portrait (Depth-Based Live Bokeh)
-    /// Menggunakan AVCaptureDepthDataOutput — hardware stereo depth dari Dual Wide camera
-    /// untuk menghasilkan bokeh natural berdasarkan jarak fisik objek, bukan flat mask.
+    /// Fungsi helper internal untuk mengubah zoom factor. Harus dipanggil dalam sessionQueue.
+    private func applyZoomInternal(factor: CGFloat) {
+        guard let currentInput = self.captureSession.inputs.first as? AVCaptureDeviceInput else {
+            HaispaceLogger.warning("[Zoom] Tidak ada active camera input", category: "camera")
+            return
+        }
+        let device = currentInput.device
+        
+        do {
+            try device.lockForConfiguration()
+            
+            let maxZ = min(device.maxAvailableVideoZoomFactor, 8.0)
+            let minZ = device.minAvailableVideoZoomFactor
+            
+            // Baca switch-over points dari virtual device (DualWide / Triple)
+            let switchOvers = device.virtualDeviceSwitchOverVideoZoomFactors.map { CGFloat($0.doubleValue) }
+            
+            let targetInternalZoom: CGFloat
+            
+            if let wideZoom = switchOvers.first {
+                if factor < 0.8 {
+                    // 0.5x → Ultra Wide: gunakan nilai tepat di BAWAH switchOver
+                    // (wideZoom - 0.1) memastikan masuk ke lensa Ultra Wide,
+                    // terlepas dari berapa nilai minZ saat ini (bisa 1.0 atau 2.0 tergantung format)
+                    let ultraWideZoom = max(wideZoom - 0.1, 1.0)
+                    targetInternalZoom = ultraWideZoom
+                    HaispaceLogger.info("[Zoom] 0.5x → Ultra Wide (internal: \(ultraWideZoom)x, switchOver: \(wideZoom)x)", category: "camera")
+                } else if factor <= 1.2 {
+                    // 1x → tepat di titik switch ke Wide Angle
+                    targetInternalZoom = wideZoom
+                    HaispaceLogger.info("[Zoom] 1x → Wide Angle (internal: \(wideZoom)x)", category: "camera")
+                } else {
+                    // 2x → 2x digital pada Wide Angle
+                    let zoom2x = min(wideZoom * 2.0, maxZ)
+                    targetInternalZoom = zoom2x
+                    HaispaceLogger.info("[Zoom] 2x → Digital zoom (internal: \(zoom2x)x)", category: "camera")
+                }
+            } else {
+                // Device single-lens (WideAngle saja): gunakan factor langsung
+                targetInternalZoom = max(min(factor, maxZ), minZ)
+                HaispaceLogger.info("[Zoom] Single-lens zoom ke \(targetInternalZoom)x", category: "camera")
+            }
+            
+            let finalZoom = max(min(targetInternalZoom, maxZ), minZ)
+            device.ramp(toVideoZoomFactor: finalZoom, withRate: 8.0) // Smooth ramp khas Apple!
+            device.unlockForConfiguration()
+            
+        } catch {
+            HaispaceLogger.error("[Zoom] Gagal set zoom: \(error.localizedDescription)", category: "camera")
+        }
+    }
+    
+    /// Mengaktifkan atau mematikan mode Portrait (Depth-Based Live Bokeh) secara dinamis.
+    /// Ketika portrait aktif, kita tambahkan depthOutput ke captureSession.
+    /// Ketika portrait mati, kita hapus depthOutput agar zoom range kembali normal ke 0.5x–8.0x.
     func setPortraitMode(enabled: Bool) {
         isPortraitModeActive = enabled
         if !enabled { lastDepthImage = nil }
-        HaispaceLogger.info("[PortraitMode] Depth-Based Bokeh \(enabled ? "AKTIF" : "NONAKTIF")", category: "camera")
+        
+        sessionQueue.async { [weak self] in
+            guard let self = self else { return }
+            
+            self.captureSession.beginConfiguration()
+            
+            if enabled {
+                // Setup Depth Output untuk live bokeh
+                self.depthOutput.isFilteringEnabled = true
+                if self.captureSession.canAddOutput(self.depthOutput) {
+                    self.captureSession.addOutput(self.depthOutput)
+                    HaispaceLogger.info("[PortraitMode] depth output ditambahkan ke captureSession", category: "camera")
+                }
+                
+                // Lepaskan callback delegasi video biasa agar tidak double deliver frame
+                self.videoOutput.setSampleBufferDelegate(nil, queue: nil)
+                
+                // Konfigurasi synchronizer untuk video + depth data
+                self.outputSynchronizer = AVCaptureDataOutputSynchronizer(dataOutputs: [self.videoOutput, self.depthOutput])
+                self.outputSynchronizer?.setDelegate(self, queue: self.syncQueue)
+                HaispaceLogger.info("[PortraitMode] depth+video synchronizer dikonfigurasi", category: "camera")
+                
+                self.captureSession.commitConfiguration()
+                
+                // Paksa zoom ke 1.0x (Wide Angle) agar sinkronisasi depth map dari dual camera pas
+                self.applyZoomInternal(factor: 1.0)
+                HaispaceLogger.info("[PortraitMode] Depth-Based Bokeh AKTIF", category: "camera")
+            } else {
+                // Matikan synchronizer terlebih dahulu
+                self.outputSynchronizer?.setDelegate(nil, queue: nil)
+                self.outputSynchronizer = nil
+                
+                // Hapus depth output dari session
+                self.captureSession.removeOutput(self.depthOutput)
+                HaispaceLogger.info("[PortraitMode] depth output dilepas dari captureSession", category: "camera")
+                
+                // Kembalikan video delegate ke normal
+                self.videoOutput.setSampleBufferDelegate(self, queue: self.videoQueue)
+                HaispaceLogger.info("[PortraitMode] videoOutput delegate dikembalikan ke normal", category: "camera")
+                
+                self.captureSession.commitConfiguration()
+                
+                // Kembalikan ke zoom factor terakhir yang diinginkan pengguna sebelum masuk mode portrait
+                self.applyZoomInternal(factor: self.lastRequestedZoomFactor)
+                HaispaceLogger.info("[PortraitMode] Depth-Based Bokeh NONAKTIF", category: "camera")
+            }
+        }
     }
 }
 
