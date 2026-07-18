@@ -68,8 +68,9 @@ final class VideoEncoderService {
     }
     
     func encode(sampleBuffer: CMSampleBuffer) {
-        queue.sync {
-            guard isConfigured, let session = compressionSession,
+        // FIX: queue.async agar tidak memblokir video capture thread (sebelumnya .sync menyebabkan contention)
+        queue.async {
+            guard self.isConfigured, let session = self.compressionSession,
                   let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
             
             let presentationTimeStamp = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)

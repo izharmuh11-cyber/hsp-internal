@@ -25,6 +25,14 @@ actor P2PClientService: NSObject {
     private var onConnectionStateChange: (@Sendable (P2PConnectionState) -> Void)?
     private var onDataReceived: (@Sendable (Data) -> Void)?
     
+    // FIX: nonisolated flag untuk cek koneksi tanpa actor hop dari video frame callback (30-60fps).
+    // Dibaca tanpa await — aman karena hanya bool yang di-set satu kali saat connected/disconnected.
+    nonisolated(unsafe) private var _isConnectedFlag: Bool = false
+    
+    // FIX: nonisolated references untuk TCP dan MPC agar sendDataSync() bisa dipanggil langsung.
+    nonisolated(unsafe) private var _tcpConnectionRef: NWConnection? = nil
+    nonisolated(unsafe) private var _mpcSessionRef: MCSession? = nil
+    
     func registerConnectionStateCallback(_ callback: @escaping @Sendable (P2PConnectionState) -> Void) {
         self.onConnectionStateChange = callback
     }
@@ -141,6 +149,9 @@ actor P2PClientService: NSObject {
     }
     
     private func handleTCPReady(connection: NWConnection, ip: String, port: Int) {
+        // FIX: Update nonisolated flag dan reference sebelum callback agar video frame langsung bisa kirim
+        self._tcpConnectionRef = connection
+        self._isConnectedFlag = true
         if let callback = self.onConnectionStateChange { callback(.connected) }
         HaispaceLogger.info("Koneksi TCP Client terhubung ke iPad: \(ip):\(port)", category: "p2p")
         self.receiveTCPData(connection)
@@ -149,6 +160,11 @@ actor P2PClientService: NSObject {
     private func cancelTCPConnection() {
         tcpConnection?.cancel()
         tcpConnection = nil
+        // FIX: Reset nonisolated references
+        self._tcpConnectionRef = nil
+        if self.session == nil || self.session?.connectedPeers.isEmpty == true {
+            self._isConnectedFlag = false
+        }
     }
     
     private func receiveTCPData(_ connection: NWConnection) {
@@ -234,6 +250,9 @@ actor P2PClientService: NSObject {
         browser = nil
         session = nil
         isBrowsing = false
+        // FIX: Reset all nonisolated references
+        self._mpcSessionRef = nil
+        self._isConnectedFlag = false
         Task {
             if let callback = self.onConnectionStateChange { callback(.disconnected) }
         }
@@ -261,6 +280,28 @@ actor P2PClientService: NSObject {
             let mode: MCSessionSendDataMode = isVideoFrame ? .unreliable : .reliable
             try session.send(data, toPeers: session.connectedPeers, with: mode)
         }
+    }
+    
+    /// FIX: sendDataSync — dipanggil dari video encoder callback (per-frame, 30-60fps) tanpa actor hop.
+    /// Menggunakan nonisolated(unsafe) references ke NWConnection/MCSession yang sudah divalidasi saat connect.
+    /// NWConnection.send() dan MCSession.send() keduanya thread-safe dari perspektif pemanggil.
+    nonisolated func sendDataSync(_ data: Data) {
+        if let tcp = _tcpConnectionRef, tcp.state == .ready {
+            var length = UInt32(data.count).bigEndian
+            let header = withUnsafeBytes(of: &length) { Data($0) }
+            let payload = header + data
+            tcp.send(content: payload, completion: .contentProcessed({ error in
+                if let error = error {
+                    HaispaceLogger.error("[sendDataSync] TCP send error: \(error)", category: "p2p")
+                }
+            }))
+        } else if let mpc = _mpcSessionRef, !mpc.connectedPeers.isEmpty {
+            // Cek apakah data adalah video frame (dimulai dengan start code 0x00000001)
+            let isVideoFrame = data.count > 4 && data[0] == 0 && data[1] == 0 && data[2] == 0 && data[3] == 1
+            let mode: MCSessionSendDataMode = isVideoFrame ? .unreliable : .reliable
+            try? mpc.send(data, toPeers: mpc.connectedPeers, with: mode)
+        }
+        // Jika tidak ada koneksi aktif, drop frame — lebih baik drop daripada crash
     }
     
     /// Mengirim foto resolusi tinggi secara aman. Menggunakan TCP jika siap, atau fallbacks ke MPC sendResource untuk file besar.
@@ -301,6 +342,11 @@ actor P2PClientService: NSObject {
         }
         return false
     }
+    
+    /// FIX: nonisolated version — dibaca dari video frame callback tanpa await
+    nonisolated func isConnectedSync() -> Bool {
+        return _isConnectedFlag
+    }
 }
 
 // MARK: - MCSessionDelegate
@@ -310,11 +356,19 @@ extension P2PClientService: MCSessionDelegate {
             let callback = await self.onConnectionStateChange
             switch state {
             case .connected:
+                // FIX: Set nonisolated MPC reference agar sendDataSync bisa dipakai tanpa actor hop
+                self._mpcSessionRef = session
+                self._isConnectedFlag = true
                 callback?(.connected)
                 HaispaceLogger.info("MPC terhubung ke: \(peerID.displayName)", category: "p2p")
             case .connecting:
                 callback?(.connecting)
             case .notConnected:
+                // FIX: Clear nonisolated flag saat MPC terputus (jika TCP juga tidak aktif)
+                if self._tcpConnectionRef == nil {
+                    self._mpcSessionRef = nil
+                    self._isConnectedFlag = false
+                }
                 callback?(.disconnected)
                 HaispaceLogger.warning("MPC terputus dari: \(peerID.displayName)", category: "p2p")
             @unknown default:

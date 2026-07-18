@@ -203,18 +203,22 @@ final class CameraAppState {
 
     @MainActor
     func setup() async {
+        HaispaceLogger.info("[setup] Langkah 1: battery monitoring", category: "app")
         UIDevice.current.isBatteryMonitoringEnabled = true
         batteryLevel = UIDevice.current.batteryLevel
         thermalState = CameraThermalState.from(ProcessInfo.processInfo.thermalState)
         
+        HaispaceLogger.info("[setup] Langkah 2: setupCameraPipeline", category: "app")
         setupCameraPipeline()
         
+        HaispaceLogger.info("[setup] Langkah 3: register connection callback", category: "app")
         // Setup connection callbacks
         await P2PClientService.shared.registerConnectionStateCallback { [weak self] state in
             Task { @MainActor in
                 self?.p2p.updateConnectionState(state)
                 switch state {
                 case .connected:
+                    HaispaceLogger.info("P2P connected — switching to paired state", category: "app")
                     self?.cameraStatus = .paired
                     self?.updateStreamingState()
                     // Haptic feedback sukses
@@ -254,6 +258,7 @@ final class CameraAppState {
             }
         }
         
+        HaispaceLogger.info("[setup] Langkah 4: register data callback", category: "app")
         // Setup data message callback
         await P2PClientService.shared.registerDataCallback { [weak self] data in
             guard let message = try? P2PMessage.decode(from: data) else { return }
@@ -268,6 +273,7 @@ final class CameraAppState {
     @MainActor
     private func setupCameraPipeline() {
         // Setup capture service callbacks
+        HaispaceLogger.info("[setupPipeline] Configuring capture callbacks", category: "app")
         CameraCaptureService.shared.onVideoFrameCaptured = { [weak self] sampleBuffer in
             if let formatDesc = CMSampleBufferGetFormatDescription(sampleBuffer) {
                 let dimensions = CMVideoFormatDescriptionGetDimensions(formatDesc)
@@ -278,12 +284,13 @@ final class CameraAppState {
             guard let self = self else { return }
             if CameraCaptureService.shared.isSessionActive {
                 HandGestureDetector.shared.processFrame(sampleBuffer) {
-                    Task {
-                        if await P2PClientService.shared.isConnected() {
-                            try? await P2PClientService.shared.sendData(P2PMessage.gestureDetected.encode())
-                            HaispaceLogger.info("Gesture 'Hai' terdeteksi! Mengirim sinyal pemicu ke iPad.", category: "camera")
-                            
-                            // Feedback haptic pada iPhone saat gesture berhasil dibaca
+                    // FIX: Gunakan isConnectedSync() dan sendDataSync() — tidak ada actor hop per frame
+                    if P2PClientService.shared.isConnectedSync() {
+                        P2PClientService.shared.sendDataSync(P2PMessage.gestureDetected.encode())
+                        HaispaceLogger.info("Gesture 'Hai' terdeteksi! Mengirim sinyal pemicu ke iPad.", category: "camera")
+                        
+                        // Feedback haptic pada iPhone saat gesture berhasil dibaca
+                        DispatchQueue.main.async {
                             let generator = UINotificationFeedbackGenerator()
                             generator.notificationOccurred(.success)
                         }
@@ -311,11 +318,12 @@ final class CameraAppState {
         }
         
         // Setup encoder callback
+        // FIX: Gunakan sendDataSync() — tidak ada actor hop untuk setiap NALU (30-60 kali per detik!)
+        // Sebelumnya: Task { if await isConnected() { try? await sendData(nalu) } } — ini menyebabkan
+        // ratusan Task mengantre di P2PClientService actor dalam hitungan detik → watchdog kill.
         VideoEncoderService.shared.setOnNALUReady { nalu in
-            Task {
-                if await P2PClientService.shared.isConnected() {
-                    try? await P2PClientService.shared.sendData(nalu)
-                }
+            if P2PClientService.shared.isConnectedSync() {
+                P2PClientService.shared.sendDataSync(nalu)
             }
         }
     }
