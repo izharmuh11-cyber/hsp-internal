@@ -570,7 +570,6 @@ extension CameraCaptureService: AVCaptureDepthDataOutputDelegate {
         self.lastDepthImage = CIImage(cvPixelBuffer: depthFloat32.depthDataMap)
     }
 }
-}
 
 extension CameraCaptureService {
     func processVideoFrame(_ sampleBuffer: CMSampleBuffer) {
