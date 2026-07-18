@@ -39,8 +39,6 @@ final class CameraCaptureService: NSObject {
     // jauh lebih natural dibanding Vision AI segmentation karena menggunakan
     // jarak fisik objek nyata (bukan binary mask) untuk menentukan intensitas blur.
     private let depthOutput = AVCaptureDepthDataOutput()
-    // Sinkronisasi depth data + video frame agar keduanya dari momen yang sama
-    private var outputSynchronizer: AVCaptureDataOutputSynchronizer?
     // CIContext Metal-accelerated untuk rendering bokeh composite
     private lazy var ciContext = CIContext(options: [
         .useSoftwareRenderer: false,
@@ -188,14 +186,6 @@ final class CameraCaptureService: NSObject {
         // setelah setPortraitMode selesai mengubah konfigurasi session
         sessionQueue.async { [weak self] in
             guard let self = self else { return }
-            
-            // Hentikan sementara synchronizer streaming depth untuk membebaskan bandwidth hardware
-            // sehingga sensor dapat fokus 100% pada pengambilan data depth kualitas tinggi untuk foto final
-            if self.isPortraitModeActive && self.outputSynchronizer != nil {
-                self.outputSynchronizer?.setDelegate(nil, queue: nil)
-                self.outputSynchronizer = nil
-                HaispaceLogger.info("[PortraitMode] synchronizer dimatikan sementara untuk membebaskan bandwidth hardware saat capture", category: "camera")
-            }
             
             // Inisialisasi photo settings dengan container format yang mendukung depth data (HEVC / JPEG)
             // Default AVCapturePhotoSettings() tanpa format dapat memilih format TIFF/RAW yang tidak mendukung depth metadata, menyebabkan crash instan.
@@ -446,15 +436,16 @@ final class CameraCaptureService: NSObject {
                     HaispaceLogger.warning("[PortraitMode] depth output tidak bisa ditambahkan", category: "camera")
                 }
                 
-                // Lepaskan video delegate biasa agar tidak konflik dengan synchronizer
-                self.videoOutput.setSampleBufferDelegate(nil, queue: nil)
+                // LANGKAH 2: Set delegasi secara asinkron
+                // Kedua output berjalan secara independen di queue masing-masing
+                self.depthOutput.setDelegate(self, queue: self.syncQueue)
+                self.videoOutput.setSampleBufferDelegate(self, queue: self.videoQueue)
                 
-                // LANGKAH 2: Commit — setelah ini depthOutput terdaftar di session
+                // LANGKAH 3: Commit — setelah ini depthOutput terdaftar di session
                 self.captureSession.commitConfiguration()
                 HaispaceLogger.info("[PortraitMode] session committed — preset:.photo + depthOutput aktif", category: "camera")
                 
-                // LANGKAH 3: Aktifkan depth delivery di photoOutput (WAJIB setelah commit)
-                // Tanpa ini, photoSettings.isDepthDataDeliveryEnabled = true akan crash
+                // LANGKAH 4: Aktifkan depth delivery di photoOutput (WAJIB setelah commit)
                 if self.photoOutput.isDepthDataDeliverySupported {
                     self.photoOutput.isDepthDataDeliveryEnabled = true
                     HaispaceLogger.info("[PortraitMode] photoOutput depth delivery: ENABLED", category: "camera")
@@ -462,25 +453,17 @@ final class CameraCaptureService: NSObject {
                     HaispaceLogger.warning("[PortraitMode] depth delivery tidak didukung perangkat ini", category: "camera")
                 }
                 
-                // LANGKAH 3b: Set maxPhotoQualityPrioritization ke .balanced (karena depth tidak mendukung .quality)
+                // LANGKAH 5: Set maxPhotoQualityPrioritization ke .balanced (karena depth tidak mendukung .quality)
                 self.photoOutput.maxPhotoQualityPrioritization = .balanced
                 HaispaceLogger.info("[PortraitMode] photoOutput maxPhotoQualityPrioritization: balanced", category: "camera")
                 
-                // LANGKAH 4: Buat synchronizer SETELAH commit
-                self.outputSynchronizer = AVCaptureDataOutputSynchronizer(
-                    dataOutputs: [self.videoOutput, self.depthOutput]
-                )
-                self.outputSynchronizer?.setDelegate(self, queue: self.syncQueue)
-                HaispaceLogger.info("[PortraitMode] depth+video synchronizer dikonfigurasi", category: "camera")
-                
                 // Paksa zoom ke 1.0x agar depth map sinkron
                 self.applyZoomInternal(factor: 1.0)
-                HaispaceLogger.info("[PortraitMode] Depth-Based Bokeh AKTIF", category: "camera")
+                HaispaceLogger.info("[PortraitMode] Depth-Based Bokeh AKTIF (Asynchronous)", category: "camera")
             } else {
-                // LANGKAH 1: Matikan synchronizer dahulu
-                self.outputSynchronizer?.setDelegate(nil, queue: nil)
-                self.outputSynchronizer = nil
-                HaispaceLogger.info("[PortraitMode] synchronizer dilepas", category: "camera")
+                // LANGKAH 1: Matikan delegasi depthOutput
+                self.depthOutput.setDelegate(nil, queue: nil)
+                HaispaceLogger.info("[PortraitMode] depthOutput delegate dilepas", category: "camera")
                 
                 // LANGKAH 2: Matikan depth delivery, hapus depthOutput, kembalikan preset
                 self.captureSession.beginConfiguration()
@@ -502,9 +485,9 @@ final class CameraCaptureService: NSObject {
                     HaispaceLogger.info("[PortraitMode] photoOutput maxPhotoQualityPrioritization dikembalikan ke: balanced", category: "camera")
                 }
                 
-                // LANGKAH 3: Kembalikan video delegate ke normal
+                // LANGKAH 3: Pastikan video delegate tetap normal
                 self.videoOutput.setSampleBufferDelegate(self, queue: self.videoQueue)
-                HaispaceLogger.info("[PortraitMode] videoOutput delegate dikembalikan ke normal", category: "camera")
+                HaispaceLogger.info("[PortraitMode] videoOutput delegate dipastikan aktif", category: "camera")
                 
                 // Kembalikan ke zoom terakhir yang dipilih pengguna
                 self.applyZoomInternal(factor: self.lastRequestedZoomFactor)
@@ -514,46 +497,38 @@ final class CameraCaptureService: NSObject {
     }
 }
 
-// MARK: - AVCaptureDataOutputSynchronizerDelegate
-// Menerima frame video + depth data yang tersinkronisasi secara hardware
-extension CameraCaptureService: AVCaptureDataOutputSynchronizerDelegate {
-    nonisolated func dataOutputSynchronizer(
-        _ synchronizer: AVCaptureDataOutputSynchronizer,
-        didOutput collection: AVCaptureSynchronizedDataCollection
+// MARK: - AVCaptureDepthDataOutputDelegate
+// Menyimpan peta kedalaman fisik (depth map) secara asinkron ke cache memori
+extension CameraCaptureService: AVCaptureDepthDataOutputDelegate {
+    nonisolated func depthDataOutput(
+        _ output: AVCaptureDepthDataOutput,
+        didOutput depthData: AVDepthData,
+        timestamp: CMTime,
+        connection: AVCaptureConnection
     ) {
-        // Ambil video frame
-        guard let syncedVideo = collection.synchronizedData(for: videoOutput)
-                as? AVCaptureSynchronizedSampleBufferData,
-              !syncedVideo.sampleBufferWasDropped,
-              let pixelBuffer = CMSampleBufferGetImageBuffer(syncedVideo.sampleBuffer)
-        else { return }
+        let depthFloat32 = depthData.converting(toDepthDataType: kCVPixelFormatType_DepthFloat32)
+        let depthCI = CIImage(cvPixelBuffer: depthFloat32.depthDataMap)
+        self.lastDepthImage = depthCI
+    }
+}
+
+extension CameraCaptureService {
+    func processVideoFrame(_ sampleBuffer: CMSampleBuffer) {
+        guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
         
         // Jika portrait mode aktif, proses depth-based bokeh sebelum encode
-        if self.isPortraitModeActive {
-            // Ambil depth data jika tersedia di frame ini
-            if let syncedDepth = collection.synchronizedData(for: depthOutput)
-                    as? AVCaptureSynchronizedDepthData,
-               !syncedDepth.depthDataWasDropped {
-                
-                // Konversi depth map ke Float32 (jarak dalam meter per pixel)
-                let depthData = syncedDepth.depthData
-                    .converting(toDepthDataType: kCVPixelFormatType_DepthFloat32)
-                let depthCI = CIImage(cvPixelBuffer: depthData.depthDataMap)
-                
-                // Normalize + scale depth map ke resolusi video
-                let videoCI = CIImage(cvPixelBuffer: pixelBuffer)
-                let scaleX = videoCI.extent.width / depthCI.extent.width
-                let scaleY = videoCI.extent.height / depthCI.extent.height
-                lastDepthImage = depthCI.transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
-            }
+        if self.isPortraitModeActive, let depthCI = lastDepthImage {
+            // Terapkan depth bokeh menggunakan depth map terakhir (di-scale ke resolusi video)
+            let videoCI = CIImage(cvPixelBuffer: pixelBuffer)
+            let scaleX = videoCI.extent.width / depthCI.extent.width
+            let scaleY = videoCI.extent.height / depthCI.extent.height
+            let scaledDepthCI = depthCI.transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
             
-                // Terapkan depth bokeh menggunakan depth map terakhir
-            if let depthCI = lastDepthImage,
-               let processedBuffer = applyDepthBokeh(to: pixelBuffer, depthMap: depthCI) {
-                // Buat CMSampleBuffer baru yang membungkus processedBuffer (aman, tidak crash)
+            if let processedBuffer = applyDepthBokeh(to: pixelBuffer, depthMap: scaledDepthCI) {
+                // Buat CMSampleBuffer baru yang membungkus processedBuffer
                 var newSampleBuffer: CMSampleBuffer?
                 var timingInfo = CMSampleTimingInfo()
-                CMSampleBufferGetSampleTimingInfo(syncedVideo.sampleBuffer, at: 0, timingInfoOut: &timingInfo)
+                CMSampleBufferGetSampleTimingInfo(sampleBuffer, at: 0, timingInfoOut: &timingInfo)
                 var formatDesc: CMFormatDescription?
                 CMVideoFormatDescriptionCreateForImageBuffer(allocator: kCFAllocatorDefault,
                                                             imageBuffer: processedBuffer,
@@ -570,13 +545,13 @@ extension CameraCaptureService: AVCaptureDataOutputSynchronizerDelegate {
                         sampleBufferOut: &newSampleBuffer
                     )
                 }
-                self.onVideoFrameCaptured?(newSampleBuffer ?? syncedVideo.sampleBuffer)
+                self.onVideoFrameCaptured?(newSampleBuffer ?? sampleBuffer)
             } else {
-                self.onVideoFrameCaptured?(syncedVideo.sampleBuffer)
+                self.onVideoFrameCaptured?(sampleBuffer)
             }
         } else {
             // Jika portrait mode tidak aktif, kirim buffer asli langsung
-            self.onVideoFrameCaptured?(syncedVideo.sampleBuffer)
+            self.onVideoFrameCaptured?(sampleBuffer)
         }
     }
     
@@ -652,10 +627,10 @@ extension CameraCaptureService: AVCaptureDataOutputSynchronizerDelegate {
 }
 
 // MARK: - AVCaptureVideoDataOutputSampleBufferDelegate
-// Fallback delegate — tidak aktif saat synchronizer digunakan
+// Menerima frame video secara berkala
 extension CameraCaptureService: AVCaptureVideoDataOutputSampleBufferDelegate {
     nonisolated func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        self.onVideoFrameCaptured?(sampleBuffer)
+        self.processVideoFrame(sampleBuffer)
     }
 }
 
@@ -666,26 +641,6 @@ extension CameraCaptureService: AVCapturePhotoCaptureDelegate {
             HaispaceLogger.error("Gagal capture foto: \(error.localizedDescription)", category: "camera")
         } else {
             self.onPhotoCaptured?(photo)
-        }
-        
-        // Hidupkan kembali synchronizer preview bokeh setelah pemotretan selesai
-        self.resumePortraitSynchronizerIfNeeded()
-    }
-}
-
-extension CameraCaptureService {
-    func resumePortraitSynchronizerIfNeeded() {
-        sessionQueue.async { [weak self] in
-            guard let self = self else { return }
-            if self.isPortraitModeActive && self.outputSynchronizer == nil {
-                // Pastikan delegasi video normal dilepas
-                self.videoOutput.setSampleBufferDelegate(nil, queue: nil)
-                
-                // Buat synchronizer baru untuk video + depth data
-                self.outputSynchronizer = AVCaptureDataOutputSynchronizer(dataOutputs: [self.videoOutput, self.depthOutput])
-                self.outputSynchronizer?.setDelegate(self, queue: self.syncQueue)
-                HaispaceLogger.info("[PortraitMode] depth+video synchronizer diaktifkan kembali setelah capture selesai", category: "camera")
-            }
         }
     }
 }
