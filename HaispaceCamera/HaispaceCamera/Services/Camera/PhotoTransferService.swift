@@ -70,14 +70,19 @@ actor PhotoTransferService {
                     return nil
                 }
                 
-                // Render menggunakan shared ciContext yang dijamin thread-safe
-                guard let cgImage = self.ciContext.createCGImage(outputCIImage, from: outputCIImage.extent) else {
-                    HaispaceLogger.warning("Gagal render bokeh CGImage - foto asli digunakan", category: "camera")
-                    return nil
-                }
+                // Crop output ke original extent agar terhindar dari crash infinite extent
+                let croppedOutput = outputCIImage.cropped(to: ciImage.extent)
+                let colorSpace = CGColorSpaceCreateDeviceRGB()
                 
-                let uiImage = UIImage(cgImage: cgImage)
-                guard let jpegData = uiImage.jpegData(compressionQuality: 0.9) else {
+                // OPTIMASI RADIKAL: Gunakan jpegRepresentation langsung dari CIContext.
+                // Ini merender CIImage langsung ke JPEG terkompresi di GPU.
+                // Menghindari alokasi intermediate bitmaps (createCGImage + UIImage) 
+                // yang memakan 100-200MB RAM di main heap, membuat pemrosesan O(1) memory.
+                guard let jpegData = self.ciContext.jpegRepresentation(
+                    of: croppedOutput,
+                    colorSpace: colorSpace,
+                    options: [kCGImageDestinationLossyCompressionQuality as String: 0.9]
+                ) else {
                     HaispaceLogger.warning("Gagal konversi bokeh ke JPEG - foto asli digunakan", category: "camera")
                     return nil
                 }

@@ -581,42 +581,48 @@ extension CameraCaptureService {
     func processVideoFrame(_ sampleBuffer: CMSampleBuffer) {
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
         
-        // Jika portrait mode aktif, proses depth-based bokeh sebelum encode
-        if self.isPortraitModeActive, let depthCI = lastDepthImage {
-            // Terapkan depth bokeh menggunakan depth map terakhir (di-scale ke resolusi video)
-            let videoCI = CIImage(cvPixelBuffer: pixelBuffer)
-            let scaleX = videoCI.extent.width / depthCI.extent.width
-            let scaleY = videoCI.extent.height / depthCI.extent.height
-            let scaledDepthCI = depthCI.transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
-            
-            if let processedBuffer = applyDepthBokeh(to: pixelBuffer, depthMap: scaledDepthCI) {
-                // Buat CMSampleBuffer baru yang membungkus processedBuffer
-                var newSampleBuffer: CMSampleBuffer?
-                var timingInfo = CMSampleTimingInfo()
-                CMSampleBufferGetSampleTimingInfo(sampleBuffer, at: 0, timingInfoOut: &timingInfo)
-                var formatDesc: CMFormatDescription?
-                CMVideoFormatDescriptionCreateForImageBuffer(allocator: kCFAllocatorDefault,
-                                                            imageBuffer: processedBuffer,
-                                                            formatDescriptionOut: &formatDesc)
-                if let formatDesc = formatDesc {
-                    CMSampleBufferCreateForImageBuffer(
-                        allocator: kCFAllocatorDefault,
-                        imageBuffer: processedBuffer,
-                        dataReady: true,
-                        makeDataReadyCallback: nil,
-                        refcon: nil,
-                        formatDescription: formatDesc,
-                        sampleTiming: &timingInfo,
-                        sampleBufferOut: &newSampleBuffer
-                    )
+        // PENTING: Bungkus dengan autoreleasepool karena method ini terpanggil 24-30 kali per detik.
+        // Tanpa autoreleasepool, objek temporal Core Image (CIImage, CGAffineTransform)
+        // akan menumpuk di memori heap background thread sebelum sempat dideallokasi oleh ARC,
+        // mengakibatkan slow memory leak (OOM) setelah beberapa menit live preview.
+        autoreleasepool {
+            // Jika portrait mode aktif, proses depth-based bokeh sebelum encode
+            if self.isPortraitModeActive, let depthCI = lastDepthImage {
+                // Terapkan depth bokeh menggunakan depth map terakhir (di-scale ke resolusi video)
+                let videoCI = CIImage(cvPixelBuffer: pixelBuffer)
+                let scaleX = videoCI.extent.width / depthCI.extent.width
+                let scaleY = videoCI.extent.height / depthCI.extent.height
+                let scaledDepthCI = depthCI.transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
+                
+                if let processedBuffer = applyDepthBokeh(to: pixelBuffer, depthMap: scaledDepthCI) {
+                    // Buat CMSampleBuffer baru yang membungkus processedBuffer
+                    var newSampleBuffer: CMSampleBuffer?
+                    var timingInfo = CMSampleTimingInfo()
+                    CMSampleBufferGetSampleTimingInfo(sampleBuffer, at: 0, timingInfoOut: &timingInfo)
+                    var formatDesc: CMFormatDescription?
+                    CMVideoFormatDescriptionCreateForImageBuffer(allocator: kCFAllocatorDefault,
+                                                                imageBuffer: processedBuffer,
+                                                                formatDescriptionOut: &formatDesc)
+                    if let formatDesc = formatDesc {
+                        CMSampleBufferCreateForImageBuffer(
+                            allocator: kCFAllocatorDefault,
+                            imageBuffer: processedBuffer,
+                            dataReady: true,
+                            makeDataReadyCallback: nil,
+                            refcon: nil,
+                            formatDescription: formatDesc,
+                            sampleTiming: &timingInfo,
+                            sampleBufferOut: &newSampleBuffer
+                        )
+                    }
+                    self.onVideoFrameCaptured?(newSampleBuffer ?? sampleBuffer)
+                } else {
+                    self.onVideoFrameCaptured?(sampleBuffer)
                 }
-                self.onVideoFrameCaptured?(newSampleBuffer ?? sampleBuffer)
             } else {
+                // Jika portrait mode tidak aktif, kirim buffer asli langsung
                 self.onVideoFrameCaptured?(sampleBuffer)
             }
-        } else {
-            // Jika portrait mode tidak aktif, kirim buffer asli langsung
-            self.onVideoFrameCaptured?(sampleBuffer)
         }
     }
     
