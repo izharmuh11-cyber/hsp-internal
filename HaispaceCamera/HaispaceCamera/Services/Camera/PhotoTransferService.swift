@@ -34,47 +34,64 @@ actor PhotoTransferService {
            let depthData = capture.depthData,
            let rawData = photoData {
             
-            // Rendering gambar resolusi tinggi (12 Megapixel) diolah secara aman dengan unwrapping bertahap
-            if let ciImage = CIImage(data: rawData),
-               let filter = CIFilter(name: "CIDepthBlurEffect") {
+            // Gunakan autoreleasepool untuk membebaskan intermediate bitmaps Core Image
+            // segera setelah selesai. Tanpa ini, iOS bisa akumulasi 200-400MB RAM dari
+            // CIImage pipeline pada foto 12MP sebelum ARC sempat membebaskannya.
+            // CIContext(options: nil) = CPU-only renderer = OOM kill dalam 1 detik pada 12MP.
+            let bokehResult: Data? = autoreleasepool {
+                guard let ciImage = CIImage(data: rawData),
+                      let filter = CIFilter(name: "CIDepthBlurEffect") else {
+                    HaispaceLogger.warning("Gagal inisialisasi CIDepthBlurEffect \u2014 foto asli digunakan", category: "camera")
+                    return nil
+                }
                 
                 filter.setValue(ciImage, forKey: kCIInputImageKey)
                 filter.setValue(depthData, forKey: "inputDepthData")
                 
-                // ENHANCEMENT #6: Gunakan titik fokus dari operator (via remote tap-to-focus iPad)
-                // bukan hardcoded di tengah. Jika operator memfokuskan ke subjek di sisi kiri/kanan,
-                // area tersebut yang akan tajam di foto final, bukan pusat frame.
+                // Titik fokus dari operator (tap-to-focus dari iPad)
                 let fp = CameraCaptureService.shared.lastFocusPoint
-                // Clamp agar rect tidak keluar dari batas 0.0-1.0
                 let focusX = max(0.05, min(0.95, fp.x)) - 0.05
                 let focusY = max(0.05, min(0.95, fp.y)) - 0.05
-                let focusRect = CGRect(x: focusX, y: focusY, width: 0.1, height: 0.1)
-                filter.setValue(CIVector(cgRect: focusRect), forKey: "inputFocusRect")
-                
-                // IMPROVEMENT: Aperture f/4.5 lebih natural untuk portrait photobooth.
-                // f/2.0 terlalu agresif (blur terlalu dalam) untuk grup 2-4 orang —
-                // anggota di belakang akan blur berlebihan padahal masih dalam "subject area".
-                // f/4.5 menghasilkan DOF yang cinematic namun tetap merata untuk group shot.
+                filter.setValue(CIVector(cgRect: CGRect(x: focusX, y: focusY, width: 0.1, height: 0.1)),
+                                forKey: "inputFocusRect")
+                // f/4.5 \u2014 natural untuk group portrait 2-4 orang di photobooth
                 filter.setValue(4.5, forKey: "inputAperture")
                 
-                if let outputCIImage = filter.outputImage {
-                    let context = CIContext(options: nil)
-                    if let cgImage = context.createCGImage(outputCIImage, from: outputCIImage.extent) {
-                        let uiImage = UIImage(cgImage: cgImage)
-                        if let jpegData = uiImage.jpegData(compressionQuality: 0.9) {
-                            photoData = jpegData
-                            HaispaceLogger.info("Efek Bokeh Portrait berhasil diterapkan pada foto final", category: "camera")
-                        } else {
-                            HaispaceLogger.warning("Gagal konversi bokeh UIImage ke JPEG. Menggunakan foto asli sebagai fallback.", category: "camera")
-                        }
-                    } else {
-                        HaispaceLogger.warning("Gagal merender bokeh CGImage. Menggunakan foto asli sebagai fallback.", category: "camera")
-                    }
-                } else {
-                    HaispaceLogger.warning("Gagal mendapatkan output image dari CIDepthBlurEffect. Menggunakan foto asli.", category: "camera")
+                guard let outputCIImage = filter.outputImage else {
+                    HaispaceLogger.warning("CIDepthBlurEffect tidak menghasilkan output \u2014 foto asli digunakan", category: "camera")
+                    return nil
                 }
-            } else {
-                HaispaceLogger.warning("Gagal inisialisasi filter bokeh CIDepthBlurEffect. Menggunakan foto asli.", category: "camera")
+                
+                // KRITIS: Gunakan Metal-accelerated CIContext.
+                // CIContext(options: nil) = CPU-only software renderer.
+                // Pada foto 12MP + CIDepthBlurEffect, CPU renderer memakan 200-400MB RAM
+                // dalam 1 detik \u2192 iOS watchdog kill \u2192 CRASH (Connection reset by peer di iPad).
+                // Metal GPU renderer jauh lebih efisien dalam manajemen memory pipeline.
+                let metalContext = CIContext(options: [
+                    .useSoftwareRenderer: false,
+                    .workingColorSpace: CGColorSpaceCreateDeviceRGB() as Any
+                ])
+                
+                // Crop extent agar tidak ada region infinite dari CIDepthBlurEffect
+                let safeExtent = outputCIImage.extent.intersection(ciImage.extent)
+                guard !safeExtent.isNull, !safeExtent.isEmpty,
+                      let cgImage = metalContext.createCGImage(outputCIImage, from: safeExtent) else {
+                    HaispaceLogger.warning("Gagal render bokeh CGImage \u2014 foto asli digunakan", category: "camera")
+                    return nil
+                }
+                
+                let uiImage = UIImage(cgImage: cgImage)
+                guard let jpegData = uiImage.jpegData(compressionQuality: 0.9) else {
+                    HaispaceLogger.warning("Gagal konversi bokeh ke JPEG \u2014 foto asli digunakan", category: "camera")
+                    return nil
+                }
+                
+                HaispaceLogger.info("Bokeh Portrait berhasil diterapkan: \(jpegData.count / 1024)KB", category: "camera")
+                return jpegData
+            }
+            
+            if let result = bokehResult {
+                photoData = result
             }
         }
         
