@@ -49,29 +49,10 @@ actor PhotoTransferService {
                     return nil
                 }
                 
-                // LAKUKAN DOWNSCALING ADAPTIF: Foto 12MP (4032x3024) membutuhkan VRAM sangat besar
-                // untuk filter multi-pass CIDepthBlurEffect, menyebabkan SIGKILL OOM crash instant.
-                // Dengan melakukan downscale ke resolusi stabil 5.4MP (2688x2016) menggunakan GPU,
-                // pemakaian memori ditekan hingga 4x lipat lebih hemat sementara kualitas cetak 4R tetap prima.
-                var inputImage = ciImage
-                let originalExtent = ciImage.extent
-                let targetWidth: CGFloat = 2688.0
-                let scale = targetWidth / originalExtent.width
-                
-                if scale < 1.0 {
-                    if let scaleFilter = CIFilter(name: "CILanczosScaleTransform") {
-                        scaleFilter.setValue(ciImage, forKey: kCIInputImageKey)
-                        scaleFilter.setValue(scale, forKey: kCIInputScaleKey)
-                        scaleFilter.setValue(1.0, forKey: kCIInputAspectRatioKey)
-                        if let scaledImage = scaleFilter.outputImage {
-                            inputImage = scaledImage
-                        }
-                    } else {
-                        inputImage = ciImage.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
-                    }
-                }
-                
-                filter.setValue(inputImage, forKey: kCIInputImageKey)
+                // PENTING: Gunakan gambar asli 12MP untuk input filter agar cocok dengan metadata
+                // kalibrasi di depthData. Jika inputImage di-scale sebelum filter, koordinat kalibrasi
+                // akan tidak sinkron dan menyebabkan crash instan pada GPU driver.
+                filter.setValue(ciImage, forKey: kCIInputImageKey)
                 filter.setValue(depthData, forKey: "inputDepthData")
                 
                 // Titik fokus dari operator (tap-to-focus dari iPad)
@@ -88,11 +69,23 @@ actor PhotoTransferService {
                     return nil
                 }
                 
-                // Crop output ke target extent agar terhindar dari crash infinite extent
-                let croppedOutput = outputCIImage.cropped(to: inputImage.extent)
+                // Crop output ke original extent agar terhindar dari crash infinite extent
+                let croppedOutput = outputCIImage.cropped(to: ciImage.extent)
+                
+                // DOWNSCALING SETELAH FILTER (Post-Filter Downscaling):
+                // Kita menata skala transformasi di akhir rantai filter. Core Image adalah pull-model renderer,
+                // sehingga penataan skala di akhir ini membuat GPU hanya merender bokeh pada resolusi target
+                // 5.4MP (2688x2016), yang menghemat VRAM dan mencegah OOM crash dengan sangat stabil.
+                let targetWidth: CGFloat = 2688.0
+                let scale = targetWidth / ciImage.extent.width
+                var finalCIImage = croppedOutput
+                
+                if scale < 1.0 {
+                    finalCIImage = croppedOutput.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+                }
                 
                 // Render menggunakan shared ciContext terakselerasi GPU (Metal) ke CGImage
-                guard let cgImage = self.ciContext.createCGImage(croppedOutput, from: inputImage.extent) else {
+                guard let cgImage = self.ciContext.createCGImage(finalCIImage, from: finalCIImage.extent) else {
                     HaispaceLogger.warning("Gagal render bokeh CGImage - foto asli digunakan", category: "camera")
                     return nil
                 }
@@ -103,7 +96,7 @@ actor PhotoTransferService {
                     return nil
                 }
                 
-                HaispaceLogger.info("Bokeh Portrait berhasil diterapkan: \(jpegData.count / 1024)KB (Resolusi: \(Int(inputImage.extent.width))x\(Int(inputImage.extent.height)))", category: "camera")
+                HaispaceLogger.info("Bokeh Portrait berhasil diterapkan: \(jpegData.count / 1024)KB (Resolusi: \(Int(finalCIImage.extent.width))x\(Int(finalCIImage.extent.height)))", category: "camera")
                 return jpegData
             }
             
