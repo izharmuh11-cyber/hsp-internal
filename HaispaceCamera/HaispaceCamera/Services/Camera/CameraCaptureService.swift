@@ -77,8 +77,10 @@ final class CameraCaptureService: NSObject {
         // Atur preset 720p untuk preview yang ringan, cepat, dan hemat bandwidth
         captureSession.sessionPreset = .hd1280x720
         
-        // Cari kamera utama (Wide Angle)
-        guard let videoDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back),
+        // Cari kamera belakang (Utamakan virtual multi-cam Triple/Dual Wide agar zoom 0.5x-2x seamless, fallback ke Wide Angle)
+        guard let videoDevice = AVCaptureDevice.default(.builtInTripleCamera, for: .video, position: .back)
+            ?? AVCaptureDevice.default(.builtInDualWideCamera, for: .video, position: .back)
+            ?? AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back),
               let videoDeviceInput = try? AVCaptureDeviceInput(device: videoDevice) else {
             HaispaceLogger.error("Tidak bisa menemukan kamera belakang", category: "camera")
             captureSession.commitConfiguration()

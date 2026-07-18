@@ -93,40 +93,37 @@ struct ActiveSessionView: View {
                 
                 auroraBackgroundView
                 
-                ZStack {
-                    // Aliran video utama dengan aspek rasio dinamis (16:9 / 9:16) dan deteksi ketukan fokus (tap-to-focus)
-                    GeometryReader { geometry in
-                        videoFeedView(geometry: geometry)
-                    }
-                    .aspectRatio(isStreamLandscape ? 16.0 / 9.0 : 9.0 / 16.0, contentMode: .fill)
-                    .ignoresSafeArea()
+                // Konsep 1: Apple Studio Display — Studio Viewfinder Presisi di Tengah
+                HStack(spacing: 16) {
+                    // Control Dock Melayang di Kiri (Zoom 0.5x, 1x, 2x & Bokeh 'f')
+                    leftControlDock(ipadLandscape: ipadLandscape)
+                        .frame(width: 72)
                     
-                    focusIndicatorOverlay
+                    Spacer(minLength: 0)
                     
-                    // Corner Brackets Alignment Guide (Tampil tipis membantu tamu memposisikan diri)
-                    CornerBracketsShape()
-                        .stroke(Color.white.opacity(0.3), lineWidth: 2)
-                        .padding(EdgeInsets(top: 80, leading: 100, bottom: 80, trailing: 100))
-                        .allowsHitTesting(false)
-                        .opacity(isBriefing ? 0 : 1)
-                        .animation(.easeInOut, value: isBriefing)
+                    // Viewfinder Kamera Utama 4:3 Presisi di Tengah
+                    studioViewfinder(screenGeo: screenGeo)
                     
-                    // Overlay Flash (Saat jepretan dipicu)
-                    if showFlash {
-                        Color.white
-                            .ignoresSafeArea()
-                            .zIndex(10)
-                    }
+                    Spacer(minLength: 0)
                     
-                    countdownOverlay
+                    // Galeri Polaroid Filmstrip Melayang di Kanan
+                    filmStripGallery(ipadLandscape: ipadLandscape)
+                        .frame(width: 80)
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 80)
+                
+                // Header Sesi Melayang di Atas (Dynamic Island Top)
+                timerAndQuotaHeader
+                
+                // Shutter Button & AI Pose Hint Melayang di Bawah
+                VStack {
+                    Spacer()
+                    poseHintBanner
+                    shutterOnlyOverlay
                 }
                 
-                // Overlays & Panels (Decoupled to keep type-checking limits low)
-                poseHintBanner
                 poseOverlaySelection(ipadLandscape: ipadLandscape)
-                filmStripGallery(ipadLandscape: ipadLandscape)
-                timerAndQuotaHeader
-                shutterAndControlsOverlay
                 doneButtonOverlay
             }
             
@@ -423,13 +420,60 @@ struct ActiveSessionView: View {
     }
     
     @ViewBuilder
-    private var shutterAndControlsOverlay: some View {
+    private func studioViewfinder(screenGeo: GeometryProxy) -> some View {
+        let maxVfHeight = max(screenGeo.size.height - 180, 360)
+        let maxVfWidth = max(screenGeo.size.width - 220, 480)
+        let isLandscape = isStreamLandscape
+        
+        ZStack {
+            GeometryReader { geometry in
+                videoFeedView(geometry: geometry)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(
+                        LinearGradient(
+                            colors: [Color.white.opacity(0.35), Color.white.opacity(0.1)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1.5
+                    )
+            )
+            .shadow(color: Color.black.opacity(0.45), radius: 24, x: 0, y: 12)
+            
+            // Corner Brackets Alignment Guide (Presisi menempel di dalam Viewfinder 4:3)
+            CornerBracketsShape()
+                .stroke(Color.white.opacity(0.35), lineWidth: 2)
+                .padding(24)
+                .allowsHitTesting(false)
+                .opacity(isBriefing ? 0 : 1)
+                .animation(.easeInOut, value: isBriefing)
+            
+            focusIndicatorOverlay
+            
+            // Overlay Flash (Saat jepretan dipicu)
+            if showFlash {
+                Color.white
+                    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                    .transition(.opacity)
+                    .zIndex(10)
+            }
+            
+            countdownOverlay
+        }
+        .aspectRatio(isLandscape ? 4.0 / 3.0 : 3.0 / 4.0, contentMode: .fit)
+        .frame(maxWidth: maxVfWidth, maxHeight: maxVfHeight)
+    }
+    
+    @ViewBuilder
+    private func leftControlDock(ipadLandscape: Bool) -> some View {
         if localCountdown == 0 && !showFlash && !isBriefing {
-            VStack(spacing: 20) {
-                Spacer()
-                
-                HStack(spacing: 12) {
-                    HStack(spacing: 4) {
+            VStack {
+                VStack(spacing: 14) {
+                    // Zoom Selector Pills (Vertical)
+                    VStack(spacing: 6) {
                         ForEach(["0.5x", "1x", "2x"], id: \.self) { lens in
                             Button(action: {
                                 activeZoom = lens
@@ -439,26 +483,24 @@ struct ActiveSessionView: View {
                                 }
                                 lastActivityTime = Date()
                             }) {
-                                Text(lens.replacingOccurrences(of: "x", with: ""))
-                                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                                Text(lens)
+                                    .font(.system(size: 12, weight: .bold, design: .rounded))
                                     .foregroundStyle(activeZoom == lens ? Color.black : Color.white)
-                                    .frame(width: 32, height: 32)
-                                    .background(activeZoom == lens ? Color.white : Color.clear)
-                                    .clipShape(Circle())
-                                    .shadow(color: activeZoom == lens ? .black.opacity(0.15) : .clear, radius: 2)
+                                    .frame(width: 48, height: 38)
+                                    .background(activeZoom == lens ? Color.white : Color.white.opacity(0.12))
+                                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                             }
                         }
                     }
-                    .padding(3)
-                    .background(.black.opacity(0.35))
+                    .padding(4)
                     .background(.ultraThinMaterial)
-                    .cornerRadius(20)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 20)
-                            .stroke(.white.opacity(0.08), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
                     )
-                    .shadow(color: .black.opacity(0.2), radius: 8, y: 4)
                     
+                    // Portrait Mode ('f' Bokeh) Button
                     Button(action: {
                         isPortraitModeActive.toggle()
                         Task {
@@ -466,40 +508,57 @@ struct ActiveSessionView: View {
                         }
                         lastActivityTime = Date()
                     }) {
-                        Image(systemName: isPortraitModeActive ? "f.circle.fill" : "f.circle")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundStyle(isPortraitModeActive ? Color.black : Color.white)
-                            .frame(width: 38, height: 38)
-                            .background(isPortraitModeActive ? Color.yellow : Color.black.opacity(0.35))
-                            .background(.ultraThinMaterial)
-                            .clipShape(Circle())
-                            .overlay(
-                                Circle()
-                                    .stroke(isPortraitModeActive ? Color.yellow.opacity(0.4) : .white.opacity(0.08), lineWidth: 1)
-                            )
-                            .shadow(color: .black.opacity(0.2), radius: 8, y: 4)
+                        VStack(spacing: 2) {
+                            Image(systemName: isPortraitModeActive ? "f.circle.fill" : "f.circle")
+                                .font(.system(size: 18, weight: .bold))
+                            Text("Bokeh")
+                                .font(.system(size: 9, weight: .bold, design: .rounded))
+                        }
+                        .foregroundStyle(isPortraitModeActive ? Color.black : Color.white)
+                        .frame(width: 52, height: 50)
+                        .background(isPortraitModeActive ? Color(red: 255/255, green: 215/255, blue: 0/255) : Color.white.opacity(0.12))
+                        .background(.ultraThinMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .stroke(isPortraitModeActive ? Color(red: 255/255, green: 215/255, blue: 0/255).opacity(0.5) : Color.white.opacity(0.12), lineWidth: 1)
+                        )
                     }
                 }
-                
-                Button(action: {
-                    startManualCaptureSequence()
-                }) {
+                .padding(8)
+                .background(.black.opacity(0.25))
+                .background(.ultraThinMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                )
+                .shadow(color: Color.black.opacity(0.25), radius: 10, y: 5)
+            }
+            .transition(.move(edge: .leading).combined(with: .opacity))
+        }
+    }
+    
+    @ViewBuilder
+    private var shutterOnlyOverlay: some View {
+        if localCountdown == 0 && !showFlash && !isBriefing {
+            Button(action: {
+                startManualCaptureSequence()
+            }) {
+                ZStack {
                     Circle()
                         .fill(.white)
-                        .frame(width: 78, height: 78)
-                        .overlay(
-                            Circle()
-                                .stroke(.black.opacity(0.15), lineWidth: 5)
-                                .padding(4)
-                        )
-                        .scaleEffect(isCapturing ? 0.90 : 1.0)
-                        .shadow(color: .black.opacity(0.35), radius: 12, y: 6)
-                        .animation(.spring(response: 0.2, dampingFraction: 0.5), value: isCapturing)
+                        .frame(width: 76, height: 76)
+                    Circle()
+                        .stroke(.white, lineWidth: 3.5)
+                        .frame(width: 88, height: 88)
                 }
-                .disabled(isCapturing)
-                .padding(.bottom, 32)
+                .scaleEffect(isCapturing ? 0.90 : 1.0)
+                .shadow(color: Color.black.opacity(0.4), radius: 14, y: 6)
+                .animation(.spring(response: 0.2, dampingFraction: 0.5), value: isCapturing)
             }
-            .zIndex(15)
+            .disabled(isCapturing)
+            .padding(.bottom, 20)
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
     }
