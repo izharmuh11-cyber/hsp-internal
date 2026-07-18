@@ -442,35 +442,30 @@ final class CameraCaptureService: NSObject {
             let maxZ = min(device.maxAvailableVideoZoomFactor, 8.0)
             let minZ = device.minAvailableVideoZoomFactor
             
-            // Baca switch-over factors langsung dari format aktif device saat ini.
+            // Dapatkan titik switch-over ke Kamera Utama (Wide Angle 1.0x).
+            // Pada DualWide iPhone 14:
+            //   - factor 0.5x -> minZ = 1.0x internal (Lensa UltraWide)
+            //   - factor 1.0x -> switchOver = 2.0x internal (Kamera Utama 1.0x)
+            //   - factor 2.0x -> switchOver * 2.0 = 4.0x internal (Crop 2x Kamera Utama)
+            // Saat mode Portrait aktif, liveSwitchOvers mungkin kosong. Kita gunakan fallback ke cachedSwitchOverFactors atau 2.0.
             let liveSwitchOvers = device.virtualDeviceSwitchOverVideoZoomFactors.map { CGFloat($0.doubleValue) }
+            let wideSwitchOver = liveSwitchOvers.first ?? cachedSwitchOverFactors.first ?? 2.0
             
             let targetInternalZoom: CGFloat
             
-            if let wideZoom = liveSwitchOvers.first {
-                if factor < 0.8 {
-                    // 0.5x → Ultra Wide
-                    targetInternalZoom = minZ
-                    HaispaceLogger.info("[Zoom] 0.5x → Ultra Wide (internal: \(targetInternalZoom)x)", category: "camera")
-                } else if factor <= 1.2 {
-                    // 1x → Wide Angle utama (titik switchOver, biasanya 2.0x internal)
-                    targetInternalZoom = wideZoom
-                    HaispaceLogger.info("[Zoom] 1x → Wide Angle (internal: \(targetInternalZoom)x)", category: "camera")
-                } else {
-                    // 2x → 2x Digital Crop dari Wide Angle (biasanya 4.0x internal)
-                    let zoom2x = min(wideZoom * 2.0, maxZ)
-                    targetInternalZoom = zoom2x
-                    HaispaceLogger.info("[Zoom] 2x → Digital Crop (internal: \(targetInternalZoom)x)", category: "camera")
-                }
+            if factor < 0.8 {
+                // 0.5x → Ultra Wide (lensa 0.5x)
+                targetInternalZoom = minZ
+                HaispaceLogger.info("[Zoom] 0.5x → Ultra Wide (internal: \(targetInternalZoom)x)", category: "camera")
+            } else if factor <= 1.2 {
+                // 1x → Kamera Utama Wide Angle (internal 2.0x)
+                targetInternalZoom = max(wideSwitchOver, minZ)
+                HaispaceLogger.info("[Zoom] 1x → Kamera Utama Wide Angle (internal: \(targetInternalZoom)x)", category: "camera")
             } else {
-                // Perangkat single-lens atau format yang tidak mendukung multi-lens switching
-                if factor <= 1.2 {
-                    targetInternalZoom = minZ
-                    HaispaceLogger.info("[Zoom] 1x → Single-lens base (\(targetInternalZoom)x)", category: "camera")
-                } else {
-                    targetInternalZoom = min(minZ * factor, maxZ)
-                    HaispaceLogger.info("[Zoom] 2x → Single-lens scaled (\(targetInternalZoom)x)", category: "camera")
-                }
+                // 2x → Digital Crop 2x dari Kamera Utama (internal 4.0x)
+                let zoom2x = min(wideSwitchOver * 2.0, maxZ)
+                targetInternalZoom = max(zoom2x, minZ)
+                HaispaceLogger.info("[Zoom] 2x → Digital Crop Kamera Utama (internal: \(targetInternalZoom)x)", category: "camera")
             }
             
             let finalZoom = max(min(targetInternalZoom, maxZ), minZ)
