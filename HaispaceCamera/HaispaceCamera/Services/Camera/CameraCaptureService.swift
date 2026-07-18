@@ -55,6 +55,7 @@ final class CameraCaptureService: NSObject {
     // NSLock adalah solusi lightweight dan zero-overhead untuk kasus ini.
     private let depthLock = NSLock()
     private var _lastDepthImage: CIImage? = nil
+    private var _isCapturingPhoto = false
     private var lastDepthImage: CIImage? {
         get {
             depthLock.lock()
@@ -212,6 +213,11 @@ final class CameraCaptureService: NSObject {
         // setelah setPortraitMode selesai mengubah konfigurasi session
         sessionQueue.async { [weak self] in
             guard let self = self else { return }
+            
+            // Tandai sedang mengambil foto untuk menunda rendering bokeh preview
+            self.depthLock.lock()
+            self._isCapturingPhoto = true
+            self.depthLock.unlock()
             
             // Inisialisasi photo settings dengan container format yang mendukung depth data (HEVC / JPEG)
             // Default AVCapturePhotoSettings() tanpa format dapat memilih format TIFF/RAW yang tidak mendukung depth metadata, menyebabkan crash instan.
@@ -585,8 +591,15 @@ extension CameraCaptureService {
         // akan menumpuk di memori heap background thread sebelum sempat dideallokasi oleh ARC,
         // mengakibatkan slow memory leak (OOM) setelah beberapa menit live preview.
         autoreleasepool {
-            // Jika portrait mode aktif, proses depth-based bokeh sebelum encode
-            if self.isPortraitModeActive, let depthCI = lastDepthImage {
+            // Periksa apakah sedang mengambil foto
+            self.depthLock.lock()
+            let isCapturing = self._isCapturingPhoto
+            self.depthLock.unlock()
+            
+            // Jika portrait mode aktif DAN tidak sedang memotret, proses bokeh.
+            // Menangguhkan bokeh preview selama memotret membebaskan 100% kapasitas GPU/Metal
+            // untuk memproses file 12MP high-res, mencegah crash tabrakan resource GPU.
+            if self.isPortraitModeActive && !isCapturing, let depthCI = lastDepthImage {
                 // Terapkan depth bokeh menggunakan depth map terakhir (di-scale ke resolusi video)
                 let videoCI = CIImage(cvPixelBuffer: pixelBuffer)
                 let scaleX = videoCI.extent.width / depthCI.extent.width
@@ -717,9 +730,14 @@ extension CameraCaptureService: AVCapturePhotoCaptureDelegate {
             self.onPhotoCaptured?(photo)
         }
         
-        // Aktifkan kembali koneksi depthOutput setelah pemotretan selesai
+        // Aktifkan kembali koneksi depthOutput dan matikan flag capture
         self.sessionQueue.async { [weak self] in
             guard let self = self else { return }
+            
+            self.depthLock.lock()
+            self._isCapturingPhoto = false
+            self.depthLock.unlock()
+            
             if self.isPortraitModeActive {
                 for connection in self.depthOutput.connections {
                     connection.isEnabled = true
