@@ -23,10 +23,11 @@ class HandGestureDetector {
     // Tracking Dwell Time / Temporal Persistence
     private var holdFrameCount: Int = 0
     private var firstDetectedTime: Date? = nil
+    private var lastWristPosition: CGPoint? = nil
     
-    // Syarat kelayakan gestur: ditahan minimal 18 frame (~0.6 detik pada 30fps)
-    private let requiredHoldFrames: Int = 18
-    private let requiredHoldDuration: TimeInterval = 0.6
+    // Syarat kelayakan gestur: ditahan stabil minimal 22 frame (~0.75 detik pada 30fps)
+    private let requiredHoldFrames: Int = 22
+    private let requiredHoldDuration: TimeInterval = 0.75
     
     private init() {
         handPoseRequest.maximumHandCount = 1
@@ -50,9 +51,42 @@ class HandGestureDetector {
             
             // Dapatkan titik pergelangan tangan (wrist) sebagai referensi dasar
             let wrist = try observation.recognizedPoint(.wrist)
-            guard wrist.confidence >= 0.60 else {
+            guard wrist.confidence >= 0.65 else {
                 resetHoldState()
                 return
+            }
+            
+            // Motion Stability Check: Jika tangan bergerak terlalu cepat (gerakan tidak stabil),
+            // abaikan frame ini (mencegah pemicuan dari gerakan tangan yang sedang berpindah/memegang wajah)
+            if let lastWrist = lastWristPosition {
+                let movement = distance(from: wrist.location, to: lastWrist)
+                if movement > 0.04 {
+                    resetHoldState()
+                    lastWristPosition = wrist.location
+                    return
+                }
+            }
+            lastWristPosition = wrist.location
+            
+            // FILTER ANTI MEMEGANG WAJAH (Finger Spread Fan-Out Check):
+            // Saat telapak tangan terbuka menyapa "Hai" (🖐️), jari-jari mekar melebar keluar.
+            // Saat memegang wajah/pipi/dagu, jari-jari sejajar atau rapat melengkung.
+            let indexTip = try observation.recognizedPoint(.indexTip)
+            let littleTip = try observation.recognizedPoint(.littleTip)
+            let indexMCP = try observation.recognizedPoint(.indexMCP)
+            let littleMCP = try observation.recognizedPoint(.littleMCP)
+            
+            if indexTip.confidence >= 0.60 && littleTip.confidence >= 0.60 &&
+                indexMCP.confidence >= 0.60 && littleMCP.confidence >= 0.60 {
+                let tipSpread = distance(from: indexTip.location, to: littleTip.location)
+                let mcpSpread = distance(from: indexMCP.location, to: littleMCP.location)
+                
+                // Jari-jari HARUS mekar (tipSpread minimal 1.30x lebih lebar daripada pangkal MCP)
+                // Jika kurang dari 1.30x (jari rapat/memegang wajah), anggap BUKAN gestur Hai!
+                guard tipSpread >= mcpSpread * 1.30 else {
+                    resetHoldState()
+                    return
+                }
             }
             
             var extendedFingers = 0
@@ -66,7 +100,6 @@ class HandGestureDetector {
                 let mcp = try observation.recognizedPoint(mcpJoints[i])
                 let tip = try observation.recognizedPoint(tipJoints[i])
                 
-                // Strict confidence check: minimal 0.60
                 if mcp.confidence >= 0.60 && tip.confidence >= 0.60 {
                     let distWristToMCP = distance(from: wrist.location, to: mcp.location)
                     let distWristToTip = distance(from: wrist.location, to: tip.location)
@@ -109,7 +142,7 @@ class HandGestureDetector {
                 
                 let elapsedTime = now.timeIntervalSince(firstDetectedTime ?? now)
                 
-                // Hanya picu pemicu jika gestur DITAHAN stabil selama 0.6 detik & 18+ frame
+                // Hanya picu jika gestur DITAHAN diam & mekar stabil selama 0.75 detik & 22+ frame
                 if holdFrameCount >= requiredHoldFrames && elapsedTime >= requiredHoldDuration {
                     lastTriggerTime = now
                     resetHoldState()
@@ -128,6 +161,7 @@ class HandGestureDetector {
     private func resetHoldState() {
         holdFrameCount = 0
         firstDetectedTime = nil
+        lastWristPosition = nil
     }
     
     private func distance(from p1: CGPoint, to p2: CGPoint) -> CGFloat {
