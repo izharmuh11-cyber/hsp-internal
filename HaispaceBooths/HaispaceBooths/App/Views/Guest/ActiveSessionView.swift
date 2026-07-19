@@ -56,6 +56,7 @@ struct ActiveSessionView: View {
     
     // Vision AI Pose Guide States
     @State private var detectedFaceCount: Int = 0
+    @State private var detectedFaceRect: CGRect? = nil
     @State private var currentPoseCategory: PoseCategory = .waiting
     @State private var recommendedZoom: ZoomRecommendation? = nil
     @State private var isStreamLandscape: Bool = true
@@ -149,11 +150,14 @@ struct ActiveSessionView: View {
             startGestureListener()
             
             // Set Vision AI callback
-            StreamingDecoderService.shared.onFrameAnalyzed = { count, category, zoom in
+            StreamingDecoderService.shared.onFrameAnalyzed = { count, category, zoom, faceRect in
                 Task { @MainActor in
-                    self.detectedFaceCount = count
-                    self.currentPoseCategory = category
-                    self.recommendedZoom = zoom
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                        self.detectedFaceCount = count
+                        self.currentPoseCategory = category
+                        self.recommendedZoom = zoom
+                        self.detectedFaceRect = faceRect
+                    }
                 }
             }
             
@@ -428,22 +432,28 @@ struct ActiveSessionView: View {
             videoFeedView(geometry: geometry)
                 .ignoresSafeArea()
             
-            // Authentic iPhone Camera AF Yellow Focus Box (Melayang di tengah/area subjek)
+            // Authentic Dynamic iPhone Camera AF Yellow Focus Box (Mengikuti Posisi Wajah Real-Time)
             if localCountdown == 0 && !isBriefing && !showFlash {
+                let boxWidth: CGFloat = detectedFaceRect != nil ? max(130, detectedFaceRect!.width * geometry.size.width * 1.3) : 160
+                let boxHeight: CGFloat = detectedFaceRect != nil ? max(150, detectedFaceRect!.height * geometry.size.height * 1.3) : 160
+                let centerX: CGFloat = detectedFaceRect != nil ? (1.0 - detectedFaceRect!.midX) * geometry.size.width : geometry.size.width / 2.0
+                let centerY: CGFloat = detectedFaceRect != nil ? (1.0 - detectedFaceRect!.midY) * geometry.size.height : geometry.size.height / 2.0
+                let isVisible: Bool = detectedFaceCount > 0 || detectedFaceRect != nil
+
                 ZStack {
-                    // Siku Kotak AF Kuning khas Kamera iPhone
                     CornerBracketsShape()
                         .stroke(Color(red: 255/255, green: 215/255, blue: 0/255), lineWidth: 1.8)
-                        .frame(width: 160, height: 160)
+                        .frame(width: boxWidth, height: boxHeight)
                         .shadow(color: Color(red: 255/255, green: 215/255, blue: 0/255).opacity(0.6), radius: 6, y: 0)
                     
-                    // Titik AF Tengah
                     Rectangle()
                         .fill(Color(red: 255/255, green: 215/255, blue: 0/255))
                         .frame(width: 4, height: 4)
                 }
-                .transition(.scale(scale: 0.9).combined(with: .opacity))
-                .animation(.spring(response: 0.35, dampingFraction: 0.75), value: detectedFaceCount)
+                .position(x: centerX, y: centerY)
+                .opacity(isVisible ? 1.0 : 0.0)
+                .scaleEffect(isVisible ? 1.0 : 0.85)
+                .animation(.spring(response: 0.35, dampingFraction: 0.75), value: detectedFaceRect)
             }
             
             focusIndicatorOverlay

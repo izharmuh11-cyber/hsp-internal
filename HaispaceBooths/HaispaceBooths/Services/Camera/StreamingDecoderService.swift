@@ -23,7 +23,7 @@ final class StreamingDecoderService {
     let displayLayer = AVSampleBufferDisplayLayer()
     
     // Callback untuk hasil analisis Vision AI
-    var onFrameAnalyzed: (@Sendable (Int, PoseCategory, ZoomRecommendation?) -> Void)?
+    var onFrameAnalyzed: (@Sendable (Int, PoseCategory, ZoomRecommendation?, CGRect?) -> Void)?
     
     // Callback saat orientasi video stream berubah (dideteksi dari dimensi frame)
     var onVideoDimensionsChanged: (@Sendable (Bool) -> Void)?
@@ -171,8 +171,8 @@ final class StreamingDecoderService {
             
             // Analisis Vision AI secara periodik (di-throttled secara internal)
             if let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuf) {
-                PoseIntelligenceService.shared.analyzeFrame(pixelBuffer: pixelBuffer) { count, category, zoom in
-                    self.onFrameAnalyzed?(count, category, zoom)
+                PoseIntelligenceService.shared.analyzeFrame(pixelBuffer: pixelBuffer) { count, category, zoom, faceRect in
+                    self.onFrameAnalyzed?(count, category, zoom, faceRect)
                 }
             }
         }

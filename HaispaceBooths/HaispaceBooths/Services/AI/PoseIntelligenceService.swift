@@ -42,14 +42,14 @@ final class PoseIntelligenceService: @unchecked Sendable {
     private let faceRequest = VNDetectFaceRectanglesRequest()
     private var isAnalyzing = false
     
-    // Throttle untuk mencegah analisis setiap frame
+    // Throttle untuk mencegah analisis terlalu sering
     private var lastAnalysisTime: Date = .distantPast
-    private let analysisInterval: TimeInterval = 2.0 // Analisis setiap 2 detik
+    private let analysisInterval: TimeInterval = 0.4 // Analisis setiap 400ms untuk responsivitas AF
     
     private init() {}
     
     /// Menganalisis CVPixelBuffer dari feed kamera (dipanggil oleh FrameCompositor atau StreamDecoder)
-    func analyzeFrame(pixelBuffer: CVPixelBuffer, completion: @escaping (Int, PoseCategory, ZoomRecommendation?) -> Void) {
+    func analyzeFrame(pixelBuffer: CVPixelBuffer, completion: @escaping @Sendable (Int, PoseCategory, ZoomRecommendation?, CGRect?) -> Void) {
         let now = Date()
         guard !isAnalyzing, now.timeIntervalSince(lastAnalysisTime) > analysisInterval else {
             return
@@ -63,7 +63,9 @@ final class PoseIntelligenceService: @unchecked Sendable {
         Task.detached(priority: .userInitiated) {
             do {
                 try handler.perform([self.faceRequest])
-                let count = self.faceRequest.results?.count ?? 0
+                let results = self.faceRequest.results
+                let count = results?.count ?? 0
+                let firstFaceRect = results?.first?.boundingBox
                 
                 let category: PoseCategory
                 let zoom: ZoomRecommendation?
@@ -89,13 +91,13 @@ final class PoseIntelligenceService: @unchecked Sendable {
                 
                 await MainActor.run {
                     self.isAnalyzing = false
-                    completion(count, category, zoom)
+                    completion(count, category, zoom, firstFaceRect)
                 }
             } catch {
                 HaispaceLogger.error(error)
                 await MainActor.run {
                     self.isAnalyzing = false
-                    completion(0, .waiting, nil)
+                    completion(0, .waiting, nil, nil)
                 }
             }
         }
