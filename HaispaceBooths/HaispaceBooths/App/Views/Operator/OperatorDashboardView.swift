@@ -94,31 +94,33 @@ struct OperatorDashboardView: View {
                 .frame(width: 500, height: 500)
                 .offset(x: -180, y: 280)
             
-            VStack(spacing: 20) {
-                // MARK: - 1. Top Navbar
-                topNavbar
-                
-                // MARK: - 2. Event Tabs Scroller
-                eventTabsScroller
-                
-                // MARK: - 3. Main Dashboard Grid (Wallet Card + Bento 2.0)
-                if events.isEmpty || activeEvent == nil {
-                    emptyStateDropzone
-                } else if let currentEvent = activeEvent {
-                    HStack(alignment: .top, spacing: 24) {
-                        // Left Column: The Physical Wallet Card (Hero)
-                        walletCardHero(event: currentEvent)
-                            .frame(maxWidth: .infinity)
-                        
-                        // Right Column: Dashboard Widgets
-                        rightColumnWidgets(event: currentEvent)
-                            .frame(width: 420)
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: 16) {
+                    // MARK: - 1. Top Navbar
+                    topNavbar
+                        .padding(.top, 20)
+                    
+                    // MARK: - 2. Event Tabs Scroller
+                    eventTabsScroller
+                    
+                    // MARK: - 3. Main Dashboard Grid (Wallet Card + Bento 2.0)
+                    if events.isEmpty || activeEvent == nil {
+                        emptyStateDropzone
+                    } else if let currentEvent = activeEvent {
+                        HStack(alignment: .top, spacing: 20) {
+                            // Left Column: The Physical Wallet Card (Hero)
+                            walletCardHero(event: currentEvent)
+                                .frame(maxWidth: .infinity)
+                            
+                            // Right Column: Dashboard Widgets
+                            rightColumnWidgets(event: currentEvent)
+                                .frame(width: 420)
+                        }
                     }
                 }
+                .padding(.horizontal, 28)
+                .padding(.bottom, 28)
             }
-            .padding(.horizontal, 28)
-            .padding(.top, 40)
-            .padding(.bottom, 28)
             
             // MARK: - Kiosk Countdown Overlay
             if let countdown = kioskCountdown {
@@ -527,8 +529,8 @@ struct OperatorDashboardView: View {
                 }
                 .buttonStyle(HeroCardButtonStyle())
             }
-            .padding(32)
-            .frame(maxWidth: .infinity, minHeight: 460)
+            .padding(28)
+            .frame(maxWidth: .infinity, minHeight: 410)
             .background(
                 LinearGradient(
                     colors: [Color(hex: activeTheme.startHex), Color(hex: activeTheme.endHex)],
