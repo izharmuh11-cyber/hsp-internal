@@ -64,15 +64,12 @@ actor PhotoTransferService {
                     }
                     let photoExtF = flatPhoto.extent
                     
-                    // Layer 2-like: warm lift + shadow protection langsung ke seluruh foto
+                    // Layer 2-like: warm lift langsung ke seluruh foto
                     let warmed = flatPhoto.applyingFilter("CIColorMatrix", parameters: [
                         "inputRVector": CIVector(x: 1.04, y: 0, z: 0, w: 0),
                         "inputGVector": CIVector(x: 0, y: 1.01, z: 0, w: 0),
                         "inputBVector": CIVector(x: 0, y: 0, z: 0.97, w: 0),
                         "inputBiasVector": CIVector(x: 0, y: 0, z: 0, w: 0)
-                    ]).applyingFilter("CIHighlightShadowAdjust", parameters: [
-                        "inputHighlightAmount": 0.88,
-                        "inputShadowAmount":    0.55
                     ])
                     
                     // Vignette sinematik ringan
@@ -80,25 +77,9 @@ actor PhotoTransferService {
                         .applyingFilter("CIVignette", parameters: ["inputRadius": 1.6, "inputIntensity": 0.45])
                         .cropped(to: photoExtF)
                     
-                    // Film grain
-                    let noiseFlat = (CIFilter(name: "CIRandomGenerator")?.outputImage ?? CIImage.empty())
-                        .cropped(to: photoExtF)
-                        .transformed(by: CGAffineTransform(scaleX: 1.6, y: 1.6))
-                        .cropped(to: photoExtF)
-                        .applyingFilter("CIColorMatrix", parameters: [
-                            "inputRVector": CIVector(x: 0.04, y: 0, z: 0, w: 0),
-                            "inputGVector": CIVector(x: 0, y: 0.04, z: 0, w: 0),
-                            "inputBVector": CIVector(x: 0, y: 0, z: 0.04, w: 0),
-                            "inputBiasVector": CIVector(x: 0.48, y: 0.48, z: 0.48, w: 0)
-                        ])
-                        .applyingFilter("CIColorMonochrome", parameters: [
-                            "inputColor": CIColor(red: 0.5, green: 0.5, blue: 0.5),
-                            "inputIntensity": 1.0
-                        ])
-                    let presetApplied = CameraCaptureService.shared.applyColorFilter(to: vignetted, presetId: presetId)
-                    let grained = noiseFlat.applyingFilter("CISoftLightBlendMode", parameters: [kCIInputBackgroundImageKey: presetApplied])
+                    let finalPhoto = CameraCaptureService.shared.applyColorFilter(to: vignetted, presetId: presetId)
                     
-                    guard let cgF = self.ciContext.createCGImage(grained, from: photoExtF),
+                    guard let cgF = self.ciContext.createCGImage(finalPhoto, from: photoExtF),
                           let jpegF = UIImage(cgImage: cgF).jpegData(compressionQuality: 0.92) else { return nil }
                     HaispaceLogger.info("[SmartGrading] No-Bokeh mode: grading+grain applied (Preset: \(presetId))", category: "camera")
                     return jpegF
@@ -286,18 +267,12 @@ actor PhotoTransferService {
                     ])
                     
                     // ── LAYER 2: Subject Skin Enhancement ──
-                    // Warm lift pada subject: skin lebih flatter, shadow diangkat
-                    let warmSubject = composite.applyingFilter("CIColorMatrix", parameters: [
+                    // Warm lift pada subject: skin lebih flatter
+                    let enhancedSubject = composite.applyingFilter("CIColorMatrix", parameters: [
                         "inputRVector": CIVector(x: 1.04, y: 0, z: 0, w: 0),   // sedikit tambah Red (warm)
                         "inputGVector": CIVector(x: 0, y: 1.01, z: 0, w: 0),
                         "inputBVector": CIVector(x: 0, y: 0, z: 0.97, w: 0),   // sedikit kurangi Blue
                         "inputBiasVector": CIVector(x: 0, y: 0, z: 0, w: 0)
-                    ])
-                    
-                    // Shadow lift + highlight protection pada subject
-                    let enhancedSubject = warmSubject.applyingFilter("CIHighlightShadowAdjust", parameters: [
-                        "inputHighlightAmount": 0.85,  // proteksi highlight agar tidak overexposed
-                        "inputShadowAmount":    0.6    // angkat shadow → detail di area gelap lebih terlihat
                     ])
                     
                     // Blend graded background dengan enhanced subject menggunakan softMatte
@@ -422,42 +397,9 @@ actor PhotoTransferService {
                     
                     // ── GLOBAL PRESET TONE (Haispace Signature) ──
                     // Terapkan tone preset pilihan user sebagai finishing layer
-                    let presetGraded = CameraCaptureService.shared.applyColorFilter(to: skinCalibrated, presetId: presetId)
+                    finalPhoto = CameraCaptureService.shared.applyColorFilter(to: skinCalibrated, presetId: presetId)
                     
-                    // ── LAYER 4B: Luminance-Aware Film Grain ──
-                    // Simulasi butiran film analog: grayscale noise, di-blend dengan CISoftLightBlendMode.
-                    // Soft light centered di 0.5 → nilai di atas/bawah 0.5 mencerahkan/menggelapkan sedikit.
-                    // Hasilnya: grain lebih terasa di shadow, nyaris menghilang di highlight — persis film analog.
-                    let noiseGen = CIFilter(name: "CIRandomGenerator")?.outputImage ?? CIImage.empty()
-                    let rawNoise = noiseGen.cropped(to: photoExtent)
-                    
-                    // Scale noise sedikit lebih besar dari per-pixel → clump 2-3px = karakter butiran film
-                    let scaledNoise = rawNoise
-                        .transformed(by: CGAffineTransform(scaleX: 1.6, y: 1.6))
-                        .cropped(to: photoExtent)
-                    
-                    // Konversi ke grayscale (luminance-only grain, tanpa chroma noise yang jelek)
-                    // Scale ke rentang sangat sempit di sekitar 0.5 → intensity grain 4%
-                    let filmGrain = scaledNoise.applyingFilter("CIColorMatrix", parameters: [
-                        "inputRVector":    CIVector(x: 0.04, y: 0,    z: 0,    w: 0),
-                        "inputGVector":    CIVector(x: 0,    y: 0.04, z: 0,    w: 0),
-                        "inputBVector":    CIVector(x: 0,    y: 0,    z: 0.04, w: 0),
-                        "inputBiasVector": CIVector(x: 0.48, y: 0.48, z: 0.48, w: 0)  // center di 0.5
-                    ])
-                    
-                    // Grayscale: semua channel sama → pure luminance grain
-                    let monoGrain = filmGrain.applyingFilter("CIColorMonochrome", parameters: [
-                        "inputColor":     CIColor(red: 0.5, green: 0.5, blue: 0.5),
-                        "inputIntensity": 1.0
-                    ])
-                    
-                    // CISoftLightBlendMode: noise 0.5 = no effect, 0.52 = slight brighten, 0.48 = slight darken
-                    // Shadow areas otomatis mendapat lebih banyak grain (soft light non-linearity)
-                    finalPhoto = monoGrain.applyingFilter("CISoftLightBlendMode", parameters: [
-                        kCIInputBackgroundImageKey: presetGraded
-                    ])
-                    
-                    HaispaceLogger.info("[SmartGrading] Haispace Cinematic 4-Layer AKTIF (Preset: \(presetId)) — Adaptive Skin ✓ Film Grain ✓", category: "camera")
+                    HaispaceLogger.info("[SmartGrading] Haispace Cinematic 4-Layer AKTIF (Preset: \(presetId)) — Adaptive Skin ✓", category: "camera")
                 }
                 
                 guard let cgImage = self.ciContext.createCGImage(finalPhoto, from: photoExtent) else {
