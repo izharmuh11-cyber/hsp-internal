@@ -694,59 +694,82 @@ struct OperatorDashboardView: View {
     }
     
     private var embeddedQRPairingView: some View {
-        VStack(spacing: 12) {
-            if let payload = appState.p2p.currentQRPayload,
-               let qrImage = generateQRCodeImage(from: payload) {
+        HStack(spacing: 16) {
+            // Left: QR Code Thumbnail Button (Tap to Enlarge Modal)
+            Button(action: {
+                playHaptic(style: .light)
+                isShowingPairingModal = true
+            }) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .fill(Color(hex: "#F8FAFC"))
-                        .frame(height: 180)
-                        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Color(hex: "#E2E8F0"), lineWidth: 1))
-                    
-                    Image(uiImage: qrImage)
-                        .interpolation(.none)
-                        .resizable()
-                        .scaledToFit()
-                        .padding(14)
-                        .background(Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        .shadow(color: Color.black.opacity(0.06), radius: 8, y: 4)
+                    if let payload = appState.p2p.currentQRPayload,
+                       let qrImage = generateQRCodeImage(from: payload) {
+                        Image(uiImage: qrImage)
+                            .interpolation(.none)
+                            .resizable()
+                            .scaledToFit()
+                            .padding(8)
+                            .background(Color.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .shadow(color: Color.black.opacity(0.06), radius: 6, y: 2)
+                    } else {
+                        VStack(spacing: 6) {
+                            ProgressView()
+                            Text("QR...")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundStyle(Color(hex: "#94A3B8"))
+                        }
+                    }
                 }
-            } else {
-                VStack(spacing: 10) {
-                    ProgressView()
-                    Text("Menyiapkan QR P2P...")
-                        .font(.caption)
-                        .foregroundStyle(Color(hex: "#94A3B8"))
-                }
-                .frame(height: 180)
-                .frame(maxWidth: .infinity)
+                .frame(width: 84, height: 84)
                 .background(Color(hex: "#F8FAFC"))
-                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color(hex: "#E2E8F0"), lineWidth: 1))
             }
+            .buttonStyle(BentoButtonStyle())
             
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Pindai via App HaiCamera")
-                        .font(.system(size: 13, weight: .bold, design: .rounded))
-                        .foregroundStyle(Color(hex: "#0F172A"))
-                    
-                    Text("Scan untuk pairing instan P2P")
-                        .font(.caption)
-                        .foregroundStyle(Color(hex: "#64748B"))
-                }
+            // Right: Instructions & Quick Actions
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Pindai via App HaiCamera")
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .foregroundStyle(Color(hex: "#0F172A"))
                 
-                Spacer()
+                Text("Scan QR di samping atau perbesar untuk pairing P2P")
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .foregroundStyle(Color(hex: "#64748B"))
+                    .lineLimit(2)
                 
-                Button(action: setupQRPairingIfNeeded) {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(Color(hex: "#4F46E5"))
-                        .padding(10)
+                HStack(spacing: 8) {
+                    // Perbesar Button
+                    Button(action: {
+                        playHaptic(style: .medium)
+                        isShowingPairingModal = true
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "qrcode.viewfinder")
+                                .font(.system(size: 11, weight: .bold))
+                            Text("Perbesar QR")
+                                .font(.system(size: 11, weight: .bold, design: .rounded))
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
                         .background(Color(hex: "#EEF2FF"))
-                        .clipShape(Circle())
+                        .foregroundStyle(Color(hex: "#4F46E5"))
+                        .clipShape(Capsule())
+                    }
+                    .buttonStyle(BentoButtonStyle())
+                    
+                    // Refresh Button
+                    Button(action: setupQRPairingIfNeeded) {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(Color(hex: "#64748B"))
+                            .padding(7)
+                            .background(Color(hex: "#F1F5F9"))
+                            .clipShape(Circle())
+                    }
+                    .buttonStyle(BentoButtonStyle())
                 }
-                .buttonStyle(BentoButtonStyle())
+                .padding(.top, 2)
             }
         }
     }
