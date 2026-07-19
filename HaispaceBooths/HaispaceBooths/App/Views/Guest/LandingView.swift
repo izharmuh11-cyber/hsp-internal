@@ -177,7 +177,6 @@ struct LandingView: View {
                 .overlay(Capsule().stroke(Color.white.opacity(0.12), lineWidth: 1))
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .contentShape(Rectangle())
         .onTapGesture {
             handleStartSession()
