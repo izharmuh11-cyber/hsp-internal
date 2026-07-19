@@ -142,8 +142,9 @@ final class CameraCaptureService: NSObject {
         HaispaceLogger.info("[setupSession] Langkah 1: beginConfiguration", category: "camera")
         captureSession.beginConfiguration()
         
-        // Preset 720p untuk live stream yang ringan dan hemat bandwidth
-        captureSession.sessionPreset = .hd1280x720
+        // Preset .photo digunakan agar kamera selalu menangkap frame asli dengan rasio 4:3 (native sensor).
+        // Resolusi stream tetap akan di-scale otomatis oleh P2P/WebRTC jika jaringan lambat.
+        captureSession.sessionPreset = .photo
         
         // Cari kamera belakang (Utamakan virtual multi-cam agar zoom 0.5x-2x seamless)
         guard let videoDevice = AVCaptureDevice.default(.builtInTripleCamera, for: .video, position: .back)
@@ -569,9 +570,9 @@ final class CameraCaptureService: NSObject {
                 self.photoOutput.isDepthDataDeliveryEnabled = false
                 
                 self.captureSession.removeOutput(self.depthOutput)
-                self.captureSession.sessionPreset = .hd1280x720
+                self.captureSession.sessionPreset = .photo // Tetap gunakan .photo untuk 4:3 rasio
                 self.captureSession.commitConfiguration()
-                HaispaceLogger.info("[PortraitMode] dinonaktifkan, preset kembali ke hd1280x720", category: "camera")
+                HaispaceLogger.info("[PortraitMode] dinonaktifkan, depth dilepas", category: "camera")
                 
                 if videoDevice.activeFormat.isHighPhotoQualitySupported {
                     self.photoOutput.maxPhotoQualityPrioritization = .quality
@@ -581,7 +582,7 @@ final class CameraCaptureService: NSObject {
                 
                 self.videoOutput.setSampleBufferDelegate(self, queue: self.videoQueue)
                 
-                // WAJIB: Kunci kembali zoom setelah sessionPreset dikembalikan ke hd1280x720!
+                // WAJIB: Kunci kembali zoom setelah konfigurasi sesi diubah!
                 self.applyZoomInternal(factor: self.lastRequestedZoomFactor, animated: false)
                 HaispaceLogger.info("[PortraitMode OFF] Zoom dikembalikan ke \(self.lastRequestedZoomFactor)x", category: "camera")
             }
