@@ -192,7 +192,11 @@ struct OperatorLoginView: View {
                 let user = try await AuthService.shared.login(email: emailInput, password: passwordInput)
                 await MainActor.run {
                     appState.operatorState.currentOperator = user
-                    appState.boothConfig.isConfigured = true // Bypass initial booth config placeholder
+                    // Bypass initial booth config placeholder for now
+                    appState.boothConfig.setActiveEvent(id: "dummy", name: "Dummy Event", date: Date(), venue: "Dummy Venue")
+                    appState.boothConfig.activePackages = [
+                        BoothPackage(id: "dummy", name: "Dummy Package", price: 50000, durationSeconds: 300, maxPhotoCount: 10, minPhotoCount: 2, intervalSeconds: 5, description: "Dummy", isPopular: true, includedAddonIds: [])
+                    ]
                     appState.isAppReady = true
                     isLoading = false
                 }
