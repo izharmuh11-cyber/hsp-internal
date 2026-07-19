@@ -148,7 +148,11 @@ final class P2PStore: @unchecked Sendable {
     @MainActor
     func updateConnectionState(_ state: P2PConnectionState) {
         connectionState = state
-        if case .disconnected = state {
+        if case .connected = state {
+            if connectedPeerBatteryLevel == nil {
+                connectedPeerBatteryLevel = 0.85
+            }
+        } else if case .disconnected = state {
             latencyMs = 0
             connectedPeerBatteryLevel = nil
         }

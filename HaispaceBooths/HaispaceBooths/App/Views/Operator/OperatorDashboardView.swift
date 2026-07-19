@@ -17,6 +17,7 @@ struct OperatorDashboardView: View {
     
     @State private var isShowingPairingModal = false
     @State private var isShowingFloatingQRPopup = false
+    @State private var showSuccessQRBadge = false
     @State private var isShowingNewEventSheet = false
     @State private var isShowingEventManagerSheet = false
     
@@ -160,6 +161,20 @@ struct OperatorDashboardView: View {
         }
         .onAppear {
             setupQRPairingIfNeeded()
+        }
+        .onChange(of: appState.p2p.isConnected) { _, isConn in
+            if isConn && isShowingFloatingQRPopup {
+                playHaptic(style: .heavy)
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                    showSuccessQRBadge = true
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                        showSuccessQRBadge = false
+                        isShowingFloatingQRPopup = false
+                    }
+                }
+            }
         }
     }
     
@@ -843,7 +858,7 @@ struct OperatorDashboardView: View {
                             .tracking(2)
                             .foregroundStyle(Color(hex: "#4F46E5"))
                         
-                        Text("Hubungkan HaiCamera")
+                        Text(appState.p2p.isConnected ? "Kamera Terhubung!" : "Hubungkan HaiCamera")
                             .font(.system(size: 20, weight: .bold, design: .rounded))
                             .foregroundStyle(Color(hex: "#0F172A"))
                     }
@@ -863,35 +878,63 @@ struct OperatorDashboardView: View {
                     .buttonStyle(BentoButtonStyle())
                 }
                 
-                // QR Display (Enlarged)
-                if let payload = appState.p2p.currentQRPayload,
-                   let qrImage = generateQRCodeImage(from: payload) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 24, style: .continuous)
-                            .fill(Color(hex: "#F8FAFC"))
-                            .frame(width: 260, height: 260)
-                            .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(Color(hex: "#E2E8F0"), lineWidth: 1))
-                        
-                        Image(uiImage: qrImage)
-                            .interpolation(.none)
-                            .resizable()
-                            .scaledToFit()
-                            .padding(18)
-                            .background(Color.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                            .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
-                            .frame(width: 240, height: 240)
+                // QR Display (Enlarged or Success Checkmark Overlay)
+                ZStack {
+                    if let payload = appState.p2p.currentQRPayload,
+                       let qrImage = generateQRCodeImage(from: payload) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                .fill(Color(hex: "#F8FAFC"))
+                                .frame(width: 260, height: 260)
+                                .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(Color(hex: "#E2E8F0"), lineWidth: 1))
+                            
+                            Image(uiImage: qrImage)
+                                .interpolation(.none)
+                                .resizable()
+                                .scaledToFit()
+                                .padding(18)
+                                .background(Color.white)
+                                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                                .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+                                .frame(width: 240, height: 240)
+                        }
+                    } else {
+                        VStack(spacing: 12) {
+                            ProgressView()
+                            Text("Menyiapkan QR P2P...")
+                                .font(.system(size: 13, weight: .medium, design: .rounded))
+                                .foregroundStyle(Color(hex: "#94A3B8"))
+                        }
+                        .frame(width: 260, height: 260)
+                        .background(Color(hex: "#F8FAFC"))
+                        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                     }
-                } else {
-                    VStack(spacing: 12) {
-                        ProgressView()
-                        Text("Menyiapkan QR P2P...")
-                            .font(.system(size: 13, weight: .medium, design: .rounded))
-                            .foregroundStyle(Color(hex: "#94A3B8"))
+                    
+                    // Success Overlay Badge
+                    if appState.p2p.isConnected || showSuccessQRBadge {
+                        ZStack {
+                            Color(hex: "#10B981").opacity(0.95)
+                            
+                            VStack(spacing: 12) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.system(size: 72, weight: .bold))
+                                    .foregroundStyle(.white)
+                                    .scaleEffect(showSuccessQRBadge ? 1.15 : 1.0)
+                                
+                                Text("Berhasil Terhubung!")
+                                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                                    .foregroundStyle(.white)
+                                
+                                Text("Menutup otomatis...")
+                                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                    .foregroundStyle(Color.white.opacity(0.8))
+                            }
+                        }
+                        .frame(width: 260, height: 260)
+                        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                        .shadow(color: Color(hex: "#10B981").opacity(0.4), radius: 16, y: 8)
+                        .transition(.scale.combined(with: .opacity))
                     }
-                    .frame(width: 260, height: 260)
-                    .background(Color(hex: "#F8FAFC"))
-                    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                 }
                 
                 // Instruction Text
