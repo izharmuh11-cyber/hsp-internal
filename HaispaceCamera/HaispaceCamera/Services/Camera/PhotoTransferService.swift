@@ -48,10 +48,60 @@ actor PhotoTransferService {
                 
                 // Cek ketersediaan Portrait Effects Matte (Neural Engine segmentation mask).
                 // Nil jika isPortraitEffectsMatteDeliveryEnabled belum di-set atau device tidak support.
-                // Graceful fallback: foto asli dikirim, tidak crash.
+                // Jika nil: tetap terapkan Smart Grading tanpa bokeh (tidak crash, masih berguna).
                 guard let matte = capture.portraitEffectsMatte else {
-                    HaispaceLogger.info("Portrait effects matte tidak tersedia — foto asli dikirim tanpa bokeh", category: "camera")
-                    return nil
+                    HaispaceLogger.info("Portrait effects matte tidak tersedia — Smart Grading tanpa bokeh diterapkan", category: "camera")
+                    
+                    // Terapkan Smart Grading saja (tanpa segmentation mask / bokeh)
+                    let presetId = CameraCaptureService.shared.currentColorPreset
+                    guard presetId != "original" else { return nil }
+                    
+                    let ciImageOptions: [CIImageOption: Any] = [.applyOrientationProperty: true]
+                    guard var flatPhoto = CIImage(data: rawData, options: ciImageOptions) else { return nil }
+                    let rawExtF = flatPhoto.extent
+                    if rawExtF.origin != .zero {
+                        flatPhoto = flatPhoto.transformed(by: CGAffineTransform(translationX: -rawExtF.minX, y: -rawExtF.minY))
+                    }
+                    let photoExtF = flatPhoto.extent
+                    
+                    // Layer 2-like: warm lift + shadow protection langsung ke seluruh foto
+                    let warmed = flatPhoto.applyingFilter("CIColorMatrix", parameters: [
+                        "inputRVector": CIVector(x: 1.04, y: 0, z: 0, w: 0),
+                        "inputGVector": CIVector(x: 0, y: 1.01, z: 0, w: 0),
+                        "inputBVector": CIVector(x: 0, y: 0, z: 0.97, w: 0),
+                        "inputBiasVector": CIVector(x: 0, y: 0, z: 0, w: 0)
+                    ]).applyingFilter("CIHighlightShadowAdjust", parameters: [
+                        "inputHighlightAmount": 0.88,
+                        "inputShadowAmount":    0.55
+                    ])
+                    
+                    // Vignette sinematik ringan
+                    let vignetted = warmed.clampedToExtent()
+                        .applyingFilter("CIVignette", parameters: ["inputRadius": 1.6, "inputIntensity": 0.45])
+                        .cropped(to: photoExtF)
+                    
+                    // Film grain
+                    let noiseFlat = (CIFilter(name: "CIRandomGenerator")?.outputImage ?? CIImage.empty())
+                        .cropped(to: photoExtF)
+                        .transformed(by: CGAffineTransform(scaleX: 1.6, y: 1.6))
+                        .cropped(to: photoExtF)
+                        .applyingFilter("CIColorMatrix", parameters: [
+                            "inputRVector": CIVector(x: 0.04, y: 0, z: 0, w: 0),
+                            "inputGVector": CIVector(x: 0, y: 0.04, z: 0, w: 0),
+                            "inputBVector": CIVector(x: 0, y: 0, z: 0.04, w: 0),
+                            "inputBiasVector": CIVector(x: 0.48, y: 0.48, z: 0.48, w: 0)
+                        ])
+                        .applyingFilter("CIColorMonochrome", parameters: [
+                            "inputColor": CIColor(red: 0.5, green: 0.5, blue: 0.5),
+                            "inputIntensity": 1.0
+                        ])
+                    let presetApplied = CameraCaptureService.shared.applyColorFilter(to: vignetted, presetId: presetId)
+                    let grained = noiseFlat.applyingFilter("CISoftLightBlendMode", parameters: [kCIInputBackgroundImageKey: presetApplied])
+                    
+                    guard let cgF = self.ciContext.createCGImage(grained, from: photoExtF),
+                          let jpegF = UIImage(cgImage: cgF).jpegData(compressionQuality: 0.92) else { return nil }
+                    HaispaceLogger.info("[SmartGrading] No-Bokeh mode: grading+grain applied (Preset: \(presetId))", category: "camera")
+                    return jpegF
                 }
                 
                 // Load foto dengan EXIF orientation sebagai affine transform (zero-copy, memory efficient)
@@ -409,8 +459,8 @@ actor PhotoTransferService {
                     
                     HaispaceLogger.info("[SmartGrading] Haispace Cinematic 4-Layer AKTIF (Preset: \(presetId)) — Adaptive Skin ✓ Film Grain ✓", category: "camera")
                 } else {
-                    // Natural: hanya composite bokeh tanpa grading tambahan
-                    finalPhoto = composite
+                    // Smart Grading tanpa bokeh
+                    finalPhoto = CameraCaptureService.shared.applyColorFilter(to: composite, presetId: presetId)
                 }
                 
                 guard let cgImage = self.ciContext.createCGImage(finalPhoto, from: photoExtent) else {

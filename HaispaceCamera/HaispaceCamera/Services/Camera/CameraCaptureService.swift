@@ -627,18 +627,44 @@ extension CameraCaptureService {
                 let scaledDepthCI = depthCI.transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
                 
                 if let processedBuffer = applyDepthBokeh(to: pixelBuffer, depthMap: scaledDepthCI) {
-                    // Buat CMSampleBuffer baru yang membungkus processedBuffer
+                    // Terapkan color preset ke frame bokeh jika aktif
+                    let finalBuffer: CVPixelBuffer
+                    if self.currentColorPreset != "original" {
+                        let bokehCI = CIImage(cvPixelBuffer: processedBuffer)
+                        let coloredCI = self.applyColorFilter(to: bokehCI, presetId: self.currentColorPreset)
+                        var coloredBuffer: CVPixelBuffer?
+                        let w = CVPixelBufferGetWidth(processedBuffer)
+                        let h = CVPixelBufferGetHeight(processedBuffer)
+                        let fmt = CVPixelBufferGetPixelFormatType(processedBuffer)
+                        let attrs2: [String: Any] = [
+                            kCVPixelBufferCGImageCompatibilityKey as String: true,
+                            kCVPixelBufferCGBitmapContextCompatibilityKey as String: true,
+                            kCVPixelBufferIOSurfacePropertiesKey as String: [:]
+                        ]
+                        if CVPixelBufferCreate(kCFAllocatorDefault, w, h, fmt, attrs2 as CFDictionary, &coloredBuffer) == kCVReturnSuccess,
+                           let cb = coloredBuffer {
+                            self.ciContext.render(coloredCI, to: cb)
+                            finalBuffer = cb
+                        } else {
+                            finalBuffer = processedBuffer
+                        }
+                    } else {
+                        finalBuffer = processedBuffer
+                    }
+                    
+                    // Buat CMSampleBuffer baru yang membungkus finalBuffer
                     var newSampleBuffer: CMSampleBuffer?
                     var timingInfo = CMSampleTimingInfo()
                     CMSampleBufferGetSampleTimingInfo(sampleBuffer, at: 0, timingInfoOut: &timingInfo)
                     var formatDesc: CMFormatDescription?
                     CMVideoFormatDescriptionCreateForImageBuffer(allocator: kCFAllocatorDefault,
-                                                                imageBuffer: processedBuffer,
+                                                                imageBuffer: finalBuffer,
                                                                 formatDescriptionOut: &formatDesc)
+
                     if let formatDesc = formatDesc {
                         CMSampleBufferCreateForImageBuffer(
                             allocator: kCFAllocatorDefault,
-                            imageBuffer: processedBuffer,
+                            imageBuffer: finalBuffer,
                             dataReady: true,
                             makeDataReadyCallback: nil,
                             refcon: nil,
