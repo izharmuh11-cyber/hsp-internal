@@ -50,15 +50,15 @@ struct RootView: View {
             LicensePlaceholderView()
 
         } else if !appState.auth.isLoggedIn {
-            // Operator belum login
-            LoginPlaceholderView()
+            // Operator belum login → Layar Login (User: 123, Pass: 123)
+            OperatorLoginView()
 
-        } else if !appState.boothConfig.isConfigured {
-            // Booth belum dikonfigurasi (pilih event)
-            BoothSetupPlaceholderView()
+        } else if !appState.isKioskModeActive {
+            // Operator sudah login → Full Page Bento Dashboard (Pilih Event & Pairing)
+            OperatorDashboardView()
 
         } else {
-            // Semua siap — tampilkan kiosk view
+            // Kiosk aktif — tampilkan layar tamu
             KioskRouterView()
         }
     }

@@ -138,21 +138,10 @@ final class MockAuthService: AuthServiceProtocol {
         try? await Task.sleep(for: simulatedDelay)
 
         // Validasi mock credentials
-        switch email {
-        case "izhar@haispace.id":
-            if password == "admin123" {
-                let token = "mock-jwt-admin-\(UUID().uuidString)"
-                KeychainHelper.saveAuthToken(token)
-                return .mockAdmin
-            }
-        case "budi@haispace.id":
-            if password == "operator123" {
-                let token = "mock-jwt-operator-\(UUID().uuidString)"
-                KeychainHelper.saveAuthToken(token)
-                return .mockOperator
-            }
-        default:
-            break
+        if (email == "123" || email == "izhar@haispace.id" || email == "budi@haispace.id") && (password == "123" || password == "admin123" || password == "operator123") {
+            let token = "mock-jwt-operator-\(UUID().uuidString)"
+            KeychainHelper.saveAuthToken(token)
+            return .mockOperator
         }
 
         // Gagal login

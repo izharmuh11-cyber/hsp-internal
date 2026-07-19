@@ -41,16 +41,46 @@ struct LandingView: View {
                 
                 // Branding Header
                 VStack(spacing: 20) {
-                    Text("H A I S P A C E")
-                        .font(.system(size: 64, weight: .heavy, design: .rounded))
-                        .tracking(10)
-                        .foregroundStyle(.white)
+                    if let event = appState.operatorState.activeEvent {
+                        HStack(spacing: 12) {
+                            Text("HAISPACE")
+                                .font(.system(size: 52, weight: .heavy, design: .rounded))
+                                .tracking(6)
+                                .foregroundStyle(.white)
+                            
+                            Text("×")
+                                .font(.system(size: 40, weight: .bold))
+                                .foregroundStyle(Color(hex: "#7C5CFC"))
+                            
+                            Text(event.name.uppercased())
+                                .font(.system(size: 44, weight: .heavy, design: .rounded))
+                                .tracking(4)
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: [Color(hex: "#7C5CFC"), Color(hex: "#00D9A0")],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                        }
                         .shadow(color: Color(hex: "#7C5CFC").opacity(0.4), radius: 30)
-                    
-                    Text("The Premium Photobooth Experience")
-                        .font(.system(size: 20, weight: .medium, design: .default))
-                        .foregroundStyle(.white.opacity(0.5))
-                        .tracking(4)
+                        
+                        Text("\(event.location) • \(event.isPayPerSession ? "Rp \(Int(event.pricePerSession).formatted()) / Sesi" : "Free Event")")
+                            .font(.system(size: 20, weight: .medium, design: .default))
+                            .foregroundStyle(.white.opacity(0.7))
+                            .tracking(2)
+                    } else {
+                        Text("H A I S P A C E")
+                            .font(.system(size: 64, weight: .heavy, design: .rounded))
+                            .tracking(10)
+                            .foregroundStyle(.white)
+                            .shadow(color: Color(hex: "#7C5CFC").opacity(0.4), radius: 30)
+                        
+                        Text("The Premium Photobooth Experience")
+                            .font(.system(size: 20, weight: .medium, design: .default))
+                            .foregroundStyle(.white.opacity(0.5))
+                            .tracking(4)
+                    }
                 }
                 
                 Spacer()

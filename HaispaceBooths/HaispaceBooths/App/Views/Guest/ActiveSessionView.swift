@@ -50,6 +50,7 @@ struct ActiveSessionView: View {
     @State private var localCountdown: Int = 0 // 3.. 2.. 1.. 0
     @State private var showFlash: Bool = false
     @State private var isBriefing: Bool = true
+    @State private var isBriefingPulsing: Bool = false
     @State private var isCapturing: Bool = false
     @State private var activeSelectedPhotoForPreview: CapturedPhoto? = nil
     @State private var gestureListenerTask: Task<Void, Never>? = nil
@@ -408,22 +409,68 @@ struct ActiveSessionView: View {
     @ViewBuilder
     private var briefingOverlayHelper: some View {
         if isBriefing {
-            VStack(spacing: 24) {
-                Image(systemName: "camera.viewfinder")
-                    .font(.system(size: 80))
-                    .foregroundStyle(.white)
-                Text("Bersiaplah!")
-                    .font(.system(size: 48, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
-                Text("Lihat ke kamera dan berikan senyum terbaikmu.")
-                    .font(.title2)
-                    .foregroundStyle(.white.opacity(0.8))
+            ZStack {
+                // Full screen Frosted Glass Blur
+                Color.black.opacity(0.3)
+                    .ignoresSafeArea()
+                
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+                    .ignoresSafeArea()
+                    .environment(\.colorScheme, .dark)
+                
+                VStack(spacing: 32) {
+                    // Animated Glowing Icon
+                    ZStack {
+                        Circle()
+                            .fill(Color.white.opacity(0.1))
+                            .frame(width: 140, height: 140)
+                            .scaleEffect(isBriefingPulsing ? 1.2 : 1.0)
+                            .opacity(isBriefingPulsing ? 0.0 : 1.0)
+                        
+                        Circle()
+                            .fill(Color.white.opacity(0.2))
+                            .frame(width: 140, height: 140)
+                            .scaleEffect(isBriefingPulsing ? 1.1 : 1.0)
+                            .opacity(isBriefingPulsing ? 0.3 : 1.0)
+                        
+                        Image(systemName: "camera.aperture")
+                            .font(.system(size: 64, weight: .thin))
+                            .foregroundStyle(.white)
+                            .rotationEffect(.degrees(isBriefingPulsing ? 90 : 0))
+                    }
+                    
+                    VStack(spacing: 12) {
+                        Text("Bersiaplah!")
+                            .font(.system(size: 56, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white)
+                            .shadow(color: .black.opacity(0.2), radius: 10, y: 5)
+                        
+                        Text("Lihat ke arah kamera & berikan pose terbaikmu.")
+                            .font(.system(size: 24, weight: .medium, design: .default))
+                            .foregroundStyle(.white.opacity(0.85))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 40)
+                    }
+                }
+                .padding(48)
+                .background(
+                    RoundedRectangle(cornerRadius: 40, style: .continuous)
+                        .fill(Color.white.opacity(0.1))
+                        .shadow(color: .black.opacity(0.2), radius: 30, y: 15)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 40, style: .continuous)
+                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                )
+                .onAppear {
+                    withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: false)) {
+                        isBriefingPulsing = true
+                    }
+                }
             }
-            .padding(40)
-            .background(.black.opacity(0.6))
-            .cornerRadius(24)
-            .transition(.opacity.combined(with: .scale(scale: 0.9)))
-            .zIndex(20)
+            .transition(.opacity.combined(with: .scale(scale: 1.05)))
+            .zIndex(50) // Pastikan di atas semuanya
         }
     }
     

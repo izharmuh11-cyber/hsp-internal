@@ -39,6 +39,7 @@ final class AppState {
     // MARK: - App-Level State
     var isAppReady: Bool = false    // True setelah setup awal selesai
     var isOnline: Bool = false      // Status internet connection
+    var isKioskModeActive: Bool = false // True jika operator sudah menekan 'Launch Kiosk'
 
     // MARK: - Computed
 
