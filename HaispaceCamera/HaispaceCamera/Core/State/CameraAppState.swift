@@ -175,11 +175,11 @@ final class CameraAppState {
     @MainActor
     func updateBatteryLevel(_ level: Float) {
         batteryLevel = level
+        sendCameraStatusToPad()
 
         // Kirim warning ke iPad jika battery kritis
         switch batteryWarningLevel {
         case .critical:
-            // TODO: Fase 1 — kirim P2PMessage.cameraStatus ke iPad
             HaispaceLogger.critical("Battery KRITIS: \(Int(level * 100))%", category: "battery")
         case .warning:
             HaispaceLogger.warning("Battery low: \(Int(level * 100))%", category: "battery")
@@ -189,13 +189,26 @@ final class CameraAppState {
     }
 
     @MainActor
+    func sendCameraStatusToPad() {
+        let currentLevel = UIDevice.current.batteryLevel
+        let activeLevel = currentLevel >= 0 ? currentLevel : batteryLevel
+        let msg = P2PMessage.cameraStatus(batteryLevel: activeLevel, thermalState: thermalState.rawValue, latencyMs: p2p.latencyMs)
+        Task {
+            if let data = try? msg.encode() {
+                await P2PClientService.shared.send(data)
+                HaispaceLogger.info("Pesan cameraStatus terkirim ke iPad (Battery: \(Int(activeLevel * 100))%)", category: "p2p")
+            }
+        }
+    }
+
+    @MainActor
     func updateThermalState(_ state: ProcessInfo.ThermalState) {
         let mapped = CameraThermalState.from(state)
         thermalState = mapped
+        sendCameraStatusToPad()
 
         if mapped == .serious || mapped == .critical {
             HaispaceLogger.warning("Thermal state: \(mapped.displayText)", category: "thermal")
-            // TODO: Fase 1 — kirim notifikasi ke iPad via P2P
         }
     }
 
@@ -221,6 +234,7 @@ final class CameraAppState {
                     HaispaceLogger.info("P2P connected — switching to paired state", category: "app")
                     self?.cameraStatus = .paired
                     self?.updateStreamingState()
+                    self?.sendCameraStatusToPad()
                     // Haptic feedback sukses
                     let generator = UINotificationFeedbackGenerator()
                     generator.notificationOccurred(.success)
