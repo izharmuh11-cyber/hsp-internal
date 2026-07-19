@@ -334,10 +334,7 @@ struct OperatorDashboardView: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .stroke(
-                    StrokeStyle(lineWidth: 2, dash: [8, 6]),
-                    fill: Color(hex: "#CBD5E1")
-                )
+                .stroke(Color(hex: "#CBD5E1"), style: StrokeStyle(lineWidth: 2, dash: [8, 6]))
         )
     }
     
