@@ -41,55 +41,65 @@ struct LandingView: View {
             .ignoresSafeArea()
             .allowsHitTesting(false)
             
-            // 5. CENTER HERO CTA (Sentuh Layar Untuk Memulai Sesi Foto)
-            standbyHeroCTA
-        }
-        // 6. HEADER LOGO RESMI HAISPACE PROJECT (Terpaku di Atas - Selalu Terlihat)
-        .overlay(alignment: .top) {
-            HaispaceOfficialLogoView()
-                .padding(.top, 36)
-                .allowsHitTesting(false)
-        }
-        // 7. FOOTER: Active Event Badge (Terpaku di Bawah - Selalu Terlihat)
-        .overlay(alignment: .bottom) {
-            if let eventName = appState.operatorState.activeEvent?.name, !eventName.isEmpty {
-                eventBadgeView(name: eventName)
-                    .padding(.bottom, 32)
-            } else {
-                eventBadgeView(name: "WISUDA UNG 2026")
-                    .padding(.bottom, 32)
+            // 5. MAIN CONTENT (Flex justify-between)
+            VStack {
+                // HEADER LOGO (Top)
+                HaispaceOfficialLogoView()
+                
+                Spacer()
+                
+                // CENTER HERO CTA (Middle)
+                standbyHeroCTA
+                
+                Spacer()
+                
+                // FOOTER EVENT BADGE (Bottom)
+                if let eventName = appState.operatorState.activeEvent?.name, !eventName.isEmpty {
+                    eventBadgeView(name: eventName)
+                } else {
+                    eventBadgeView(name: "WISUDA UNG 2026")
+                }
             }
-        }
-        // 8. TOP RIGHT SECRET TAP AREA (Khusus PIN Operator)
-        .overlay(alignment: .topTrailing) {
-            Rectangle()
-                .fill(Color.white.opacity(0.001))
-                .frame(width: 140, height: 140)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    handleSecretTap()
+            .padding(.vertical, 64)
+            .padding(.horizontal, 32)
+            
+            // 6. TOP RIGHT SECRET TAP AREA (Khusus PIN Operator)
+            VStack {
+                HStack {
+                    Spacer()
+                    Rectangle()
+                        .fill(Color.white.opacity(0.001))
+                        .frame(width: 140, height: 140)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            handleSecretTap()
+                        }
                 }
-        }
-        // 9. ADMIN TOAST NOTIFICATION OVERLAY
-        .overlay(alignment: .top) {
-            if showAdminToast {
-                HStack(spacing: 10) {
-                    Image(systemName: "lock.fill")
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundStyle(Color(hex: "#00D9A0"))
-                    
-                    Text("🔒 Mengarahkan ke Verifikasi PIN...")
-                        .font(.system(size: 15, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.white)
+                Spacer()
+            }
+            
+            // 7. ADMIN TOAST NOTIFICATION OVERLAY
+            VStack {
+                if showAdminToast {
+                    HStack(spacing: 10) {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(Color(hex: "#00D9A0"))
+                        
+                        Text("🔒 Mengarahkan ke Verifikasi PIN...")
+                            .font(.system(size: 15, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.white)
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 14)
+                    .background(.ultraThinMaterial)
+                    .clipShape(Capsule())
+                    .overlay(Capsule().stroke(Color.white.opacity(0.25), lineWidth: 1.5))
+                    .shadow(color: Color.black.opacity(0.5), radius: 25, y: 12)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .padding(.top, 90)
                 }
-                .padding(.horizontal, 24)
-                .padding(.vertical, 14)
-                .background(.ultraThinMaterial)
-                .clipShape(Capsule())
-                .overlay(Capsule().stroke(Color.white.opacity(0.25), lineWidth: 1.5))
-                .shadow(color: Color.black.opacity(0.5), radius: 25, y: 12)
-                .transition(.move(edge: .top).combined(with: .opacity))
-                .padding(.top, 90)
+                Spacer()
             }
         }
         .onAppear {
@@ -301,32 +311,21 @@ struct LandingView: View {
     }
 }
 
-// MARK: - Logo Resmi Haispace Project (Comfortaa Style Header Badge)
+// MARK: - Logo Resmi Haispace Project (Minimalist Typography)
 struct HaispaceOfficialLogoView: View {
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 6) {
             Text("Haispace")
-                .font(.system(size: 34, weight: .bold, design: .rounded))
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [.white, Color(hex: "#E0E7FF")],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .shadow(color: Color(hex: "#7C5CFC").opacity(0.6), radius: 15)
+                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+                .shadow(color: Color.black.opacity(0.5), radius: 4)
             
             Text("Project")
-                .font(.system(size: 15, weight: .bold, design: .rounded))
-                .tracking(2)
-                .foregroundStyle(Color(hex: "#00D9A0"))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 4)
-                .background(Color(hex: "#00D9A0").opacity(0.14))
-                .clipShape(Capsule())
-                .overlay(Capsule().stroke(Color(hex: "#00D9A0").opacity(0.35), lineWidth: 1))
-                .shadow(color: Color(hex: "#00D9A0").opacity(0.4), radius: 10)
+                .font(.system(size: 28, weight: .light, design: .rounded))
+                .tracking(4)
+                .foregroundStyle(.white.opacity(0.7))
         }
+        .opacity(0.85)
     }
 }
 
