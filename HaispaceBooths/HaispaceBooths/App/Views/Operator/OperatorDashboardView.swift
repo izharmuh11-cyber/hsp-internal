@@ -16,6 +16,7 @@ struct OperatorDashboardView: View {
     @Environment(AppState.self) private var appState
     
     @State private var isShowingPairingModal = false
+    @State private var isShowingFloatingQRPopup = false
     @State private var isShowingNewEventSheet = false
     @State private var isShowingEventManagerSheet = false
     
@@ -122,6 +123,11 @@ struct OperatorDashboardView: View {
                 .padding(.bottom, 28)
             }
             
+            // MARK: - Floating Dashboard QR Pop-up Overlay
+            if isShowingFloatingQRPopup {
+                floatingQRPopupOverlay
+            }
+            
             // MARK: - Kiosk Countdown Overlay
             if let countdown = kioskCountdown {
                 Color.black.opacity(0.85)
@@ -192,7 +198,12 @@ struct OperatorDashboardView: View {
             Spacer()
             
             // Hardware Quick Status Pill
-            Button(action: { isShowingPairingModal = true }) {
+            Button(action: {
+                playHaptic(style: .light)
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                    isShowingFloatingQRPopup = true
+                }
+            }) {
                 HStack(spacing: 12) {
                     HStack(spacing: 8) {
                         Circle()
@@ -207,12 +218,22 @@ struct OperatorDashboardView: View {
                     Divider()
                         .frame(height: 16)
                     
-                    HStack(spacing: 4) {
-                        Image(systemName: "battery.100")
-                            .foregroundStyle(Color(hex: "#10B981"))
-                        Text("\(Int((appState.p2p.connectedPeerBatteryLevel ?? 0.85) * 100))%")
-                            .font(.system(size: 14, weight: .bold, design: .rounded))
-                            .foregroundStyle(Color(hex: "#334155"))
+                    if appState.p2p.isConnected, let batLevel = appState.p2p.connectedPeerBatteryLevel {
+                        HStack(spacing: 4) {
+                            Image(systemName: batLevel > 0.2 ? "battery.100" : "battery.25")
+                                .foregroundStyle(batLevel > 0.2 ? Color(hex: "#10B981") : Color.red)
+                            Text("\(Int(batLevel * 100))%")
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                                .foregroundStyle(Color(hex: "#334155"))
+                        }
+                    } else {
+                        HStack(spacing: 4) {
+                            Image(systemName: "battery.0")
+                                .foregroundStyle(Color(hex: "#94A3B8"))
+                            Text("0%")
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                                .foregroundStyle(Color(hex: "#94A3B8"))
+                        }
                     }
                 }
                 .padding(.horizontal, 18)
@@ -772,6 +793,103 @@ struct OperatorDashboardView: View {
                 .padding(.top, 2)
             }
         }
+    }
+    
+    // MARK: - Floating Dashboard QR Pop-Up Overlay
+    private var floatingQRPopupOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.45)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    playHaptic(style: .light)
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                        isShowingFloatingQRPopup = false
+                    }
+                }
+            
+            VStack(spacing: 20) {
+                // Header Pop-up
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("PAIRING SECOND SHOOTER")
+                            .font(.system(size: 10, weight: .bold, design: .rounded))
+                            .tracking(2)
+                            .foregroundStyle(Color(hex: "#4F46E5"))
+                        
+                        Text("Hubungkan HaiCamera")
+                            .font(.system(size: 20, weight: .bold, design: .rounded))
+                            .foregroundStyle(Color(hex: "#0F172A"))
+                    }
+                    
+                    Spacer()
+                    
+                    Button(action: {
+                        playHaptic(style: .light)
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                            isShowingFloatingQRPopup = false
+                        }
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 24))
+                            .foregroundStyle(Color(hex: "#94A3B8"))
+                    }
+                    .buttonStyle(BentoButtonStyle())
+                }
+                
+                // QR Display (Enlarged)
+                if let payload = appState.p2p.currentQRPayload,
+                   let qrImage = generateQRCodeImage(from: payload) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                            .fill(Color(hex: "#F8FAFC"))
+                            .frame(width: 260, height: 260)
+                            .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(Color(hex: "#E2E8F0"), lineWidth: 1))
+                        
+                        Image(uiImage: qrImage)
+                            .interpolation(.none)
+                            .resizable()
+                            .scaledToFit()
+                            .padding(18)
+                            .background(Color.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                            .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+                            .frame(width: 240, height: 240)
+                    }
+                } else {
+                    VStack(spacing: 12) {
+                        ProgressView()
+                        Text("Menyiapkan QR P2P...")
+                            .font(.system(size: 13, weight: .medium, design: .rounded))
+                            .foregroundStyle(Color(hex: "#94A3B8"))
+                    }
+                    .frame(width: 260, height: 260)
+                    .background(Color(hex: "#F8FAFC"))
+                    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                }
+                
+                // Instruction Text
+                VStack(spacing: 6) {
+                    Text("Arahkan iPhone ke layar ini")
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color(hex: "#0F172A"))
+                    
+                    Text("Buka aplikasi HaiCamera di iPhone dan pindai QR ini untuk menghubungkan kamera secara otomatis.")
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(Color(hex: "#64748B"))
+                        .lineLimit(3)
+                }
+                .padding(.horizontal, 8)
+            }
+            .padding(24)
+            .frame(width: 360)
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+            .shadow(color: Color.black.opacity(0.2), radius: 24, y: 10)
+            .overlay(RoundedRectangle(cornerRadius: 32, style: .continuous).stroke(Color(hex: "#E2E8F0"), lineWidth: 1))
+        }
+        .zIndex(95)
+        .transition(.scale(scale: 0.95).combined(with: .opacity))
     }
     
     private func generateQRCodeImage(from payload: QRPairingPayload) -> UIImage? {
