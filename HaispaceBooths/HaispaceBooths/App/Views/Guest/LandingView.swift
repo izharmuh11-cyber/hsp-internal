@@ -285,26 +285,23 @@ struct LandingView: View {
     }
     
     private var photoStripMockup: some View {
-        VStack(spacing: 12) {
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white.opacity(0.06))
-                .frame(width: 90, height: 115)
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.1), lineWidth: 1))
-            
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white.opacity(0.06))
-                .frame(width: 90, height: 115)
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.1), lineWidth: 1))
-            
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white.opacity(0.06))
-                .frame(width: 90, height: 115)
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.1), lineWidth: 1))
+        VStack(spacing: 10) {
+            ForEach(0..<3, id: \.self) { _ in
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.white.opacity(0.08))
+                    .frame(width: 86, height: 110)
+                    .overlay(
+                        Image(systemName: "photo")
+                            .font(.system(size: 20, weight: .light))
+                            .foregroundStyle(Color.white.opacity(0.25))
+                    )
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.18), lineWidth: 1))
+            }
         }
-        .padding(12)
-        .background(Color.white.opacity(0.04))
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Color.white.opacity(0.1), lineWidth: 1))
+        .padding(10)
+        .background(Color.white.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color.white.opacity(0.16), lineWidth: 1))
     }
 }
 
