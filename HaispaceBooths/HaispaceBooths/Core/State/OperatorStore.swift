@@ -47,8 +47,30 @@ final class OperatorStore {
     }
 
     /// List event yang tersedia & event yang sedang aktif di booth
-    var availableEvents: [EventModel] = EventModel.samples
-    var activeEvent: EventModel? = EventModel.samples.first
+    var availableEvents: [EventModel] = []
+    var activeEvent: EventModel? = nil
+
+    // MARK: - Event Management
+
+    @MainActor
+    func addEvent(_ event: EventModel) {
+        availableEvents.append(event)
+        activeEvent = event
+    }
+
+    @MainActor
+    func deleteEvent(id: String) {
+        availableEvents.removeAll { $0.id == id }
+        if activeEvent?.id == id {
+            activeEvent = availableEvents.first
+        }
+    }
+
+    @MainActor
+    func loadPresetEvents() {
+        availableEvents = EventModel.samples
+        activeEvent = EventModel.samples.first
+    }
 
     // MARK: - PIN Management
 
