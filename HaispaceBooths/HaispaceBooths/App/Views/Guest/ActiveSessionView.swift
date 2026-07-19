@@ -390,13 +390,36 @@ struct ActiveSessionView: View {
     @ViewBuilder
     private var countdownOverlay: some View {
         if localCountdown > 0 {
-            Text("\(localCountdown)")
-                .font(.system(size: 180, weight: .heavy, design: .rounded))
-                .foregroundStyle(localCountdown == 1 ? Color(red: 255/255, green: 215/255, blue: 0/255) : .white)
-                .shadow(color: .black.opacity(0.5), radius: 20, y: 10)
-                .transition(.scale.combined(with: .opacity))
-                .zIndex(15)
-                .id("countdown-\(localCountdown)")
+            ZStack {
+                // Edge Flash Vignette Ring
+                Rectangle()
+                    .stroke(LinearGradient(colors: [Color.cyan.opacity(0.8), Color(hex: "#7C5CFC").opacity(0.8)], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 8)
+                    .ignoresSafeArea()
+                    .shadow(color: .cyan.opacity(0.8), radius: 20)
+                
+                ZStack {
+                    // Outer Shrinking Progress Ring
+                    Circle()
+                        .stroke(Color.white.opacity(0.25), lineWidth: 8)
+                        .frame(width: 240, height: 240)
+                    
+                    Circle()
+                        .trim(from: 0, to: CGFloat(localCountdown) / 3.0)
+                        .stroke(LinearGradient(colors: [Color.cyan, Color(hex: "#7C5CFC")], startPoint: .topLeading, endPoint: .bottomTrailing), style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                        .frame(width: 240, height: 240)
+                        .rotationEffect(.degrees(-90))
+                        .shadow(color: .cyan.opacity(0.6), radius: 12)
+                        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: localCountdown)
+                    
+                    Text("\(localCountdown)")
+                        .font(.system(size: 140, weight: .black, design: .rounded))
+                        .foregroundStyle(localCountdown == 1 ? Color(red: 255/255, green: 215/255, blue: 0/255) : .white)
+                        .shadow(color: .black.opacity(0.6), radius: 25, y: 10)
+                }
+            }
+            .transition(.scale(scale: 0.85).combined(with: .opacity))
+            .zIndex(25)
+            .id("countdown-\(localCountdown)")
         }
     }
     
@@ -428,13 +451,24 @@ struct ActiveSessionView: View {
             videoFeedView(geometry: geometry)
                 .ignoresSafeArea()
             
-            // Corner Brackets Alignment Guide (Melayang presisi membantu posisi tamu)
-            CornerBracketsShape()
-                .stroke(Color.white.opacity(0.35), lineWidth: 2)
-                .padding(EdgeInsets(top: 80, leading: 140, bottom: 80, trailing: 140))
-                .allowsHitTesting(false)
-                .opacity(isBriefing ? 0 : 1)
-                .animation(.easeInOut, value: isBriefing)
+            // Spatial Face Focus Halo (iPhone Portrait AF Style)
+            if detectedFaceCount > 0 && localCountdown == 0 && !isBriefing {
+                VStack {
+                    ZStack {
+                        CornerBracketsShape()
+                            .stroke(LinearGradient(colors: [Color(red: 255/255, green: 215/255, blue: 0/255), Color.cyan], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 2.5)
+                            .frame(width: 220, height: 280)
+                            .shadow(color: Color(red: 255/255, green: 215/255, blue: 0/255).opacity(0.7), radius: 12, y: 0)
+                        
+                        Circle()
+                            .fill(Color(red: 255/255, green: 215/255, blue: 0/255))
+                            .frame(width: 8, height: 8)
+                            .shadow(color: .yellow, radius: 4)
+                    }
+                }
+                .transition(.scale(scale: 0.9).combined(with: .opacity))
+                .animation(.spring(response: 0.35, dampingFraction: 0.75), value: detectedFaceCount)
+            }
             
             focusIndicatorOverlay
             

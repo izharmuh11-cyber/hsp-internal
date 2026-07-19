@@ -232,16 +232,20 @@ private struct PhotoGridItem: View {
                 }
             }
             .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(isSelected ? Color(hex: "#00D9A0") : Color.white.opacity(0.1), lineWidth: isSelected ? 4 : 1)
+                RoundedRectangle(cornerRadius: 18)
+                    .stroke(isSelected ? LinearGradient(colors: [Color(hex: "#00D9A0"), Color.cyan], startPoint: .topLeading, endPoint: .bottomTrailing) : LinearGradient(colors: [.white.opacity(0.2), .white.opacity(0.05)], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: isSelected ? 4 : 1)
             )
-            .scaleEffect(isSelected ? 0.95 : 1.0)
-            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isSelected)
+            .scaleEffect(isSelected ? 0.96 : 1.0)
+            .rotation3DEffect(
+                .degrees(isSelected ? -4 : 0),
+                axis: (x: 0.1, y: 1.0, z: 0.0)
+            )
+            .shadow(color: isSelected ? Color(hex: "#00D9A0").opacity(0.55) : Color.black.opacity(0.45), radius: isSelected ? 20 : 10, y: isSelected ? 12 : 5)
+            .animation(.spring(response: 0.35, dampingFraction: 0.7), value: isSelected)
         }
         .buttonStyle(.plain)
-        // Simulasi tap lama untuk perbesar
         .simultaneousGesture(
-            LongPressGesture(minimumDuration: 0.5).onEnded { _ in
+            LongPressGesture(minimumDuration: 0.4).onEnded { _ in
                 onLongPress()
             }
         )
