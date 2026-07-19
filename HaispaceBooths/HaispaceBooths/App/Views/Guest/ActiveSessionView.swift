@@ -453,22 +453,21 @@ struct ActiveSessionView: View {
     @ViewBuilder
     private func leftControlDock(ipadLandscape: Bool) -> some View {
         if localCountdown == 0 && !showFlash && !isBriefing {
-            VStack {
-                    if !isPortraitModeActive {
-                        zoomSelectorGroup
-                    }
-                    portraitBokehButton
+            VStack(spacing: 16) {
+                if !isPortraitModeActive {
+                    zoomSelectorGroup
                 }
-                .padding(12)
-                .background(.ultraThinMaterial)
-                .background(.black.opacity(0.35))
-                .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 32, style: .continuous)
-                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                )
-                .shadow(color: Color.black.opacity(0.4), radius: 20, y: 10)
+                portraitBokehButton
             }
+            .padding(12)
+            .background(.ultraThinMaterial)
+            .background(.black.opacity(0.35))
+            .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 32, style: .continuous)
+                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
+            )
+            .shadow(color: Color.black.opacity(0.4), radius: 20, y: 10)
             .transition(.move(edge: .leading).combined(with: .opacity))
         }
     }
