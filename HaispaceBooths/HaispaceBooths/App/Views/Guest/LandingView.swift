@@ -281,8 +281,17 @@ struct LandingView: View {
             
             // Custom In-App Virtual Keyboard Dropdown
             CustomInAppKeyboard(
-                text: activeField == .name ? $guestName : $instagramHandle,
-                onKeyTap: {
+                text: Binding(
+                    get: { activeField == .name ? guestName : instagramHandle },
+                    set: { newValue in
+                        if activeField == .name {
+                            guestName = newValue
+                        } else {
+                            instagramHandle = newValue
+                        }
+                    }
+                ),
+                onDone: {
                     let generator = UIImpactFeedbackGenerator(style: .light)
                     generator.impactOccurred()
                 }
