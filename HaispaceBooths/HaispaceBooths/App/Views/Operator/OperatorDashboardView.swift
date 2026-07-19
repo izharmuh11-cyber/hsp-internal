@@ -274,6 +274,28 @@ struct OperatorDashboardView: View {
                         .foregroundStyle(Color(hex: "#475569"))
                 }
             }
+            .buttonStyle(BentoButtonStyle())
+            
+            // Logout Button
+            Button(action: {
+                playHaptic(style: .medium)
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                    appState.auth.logout()
+                }
+            }) {
+                ZStack {
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: 48, height: 48)
+                        .shadow(color: Color.black.opacity(0.04), radius: 8, y: 3)
+                        .overlay(Circle().stroke(Color(hex: "#FEE2E2"), lineWidth: 1))
+                    
+                    Image(systemName: "rectangle.portrait.and.arrow.right")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(Color.red)
+                }
+            }
+            .buttonStyle(BentoButtonStyle())
         }
     }
     

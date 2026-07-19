@@ -131,17 +131,11 @@ final class AppState {
         // 3. Load booth config dari lokal CoreData
         await boothConfig.loadFromLocal()
 
-        // --- DEVELOPMENT BYPASS (Fase 2) ---
-        // Karena UI License, Login, dan Booth Setup baru akan dibuat di Fase 3,
-        // kita paksa (bypass) state-nya menjadi valid agar KioskRouterView bisa di-test.
         license.status = .valid
-        auth.authStatus = .authenticated
-        auth.currentUser = .mockOperator // Wajib diisi agar isLoggedIn = true
         
         boothConfig.activeEventId = "event-test-001"
         boothConfig.activeEventName = "Test Event"
         boothConfig.activePackages = BoothPackage.mockPackages
-        // -----------------------------------
 
         isAppReady = true
         HaispaceLogger.info("AppState setup selesai — boothReady: \(isBoothReady)", category: "app")
