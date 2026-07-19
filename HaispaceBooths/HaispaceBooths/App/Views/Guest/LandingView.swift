@@ -1,9 +1,9 @@
 // LandingView.swift
 // HaispaceBooths — App/Views/Guest
 //
-// Layar Standby Kiosk Tamu (Idle Screen) & Form Registrasi Transisi Kaca Liquid.
+// Layar Standby Kiosk Tamu (Idle Screen) & Form Registrasi Infinite Canvas.
 // Bertema Ultra-Minimalist Cinematic Dark & VisionOS Ambient Glass.
-// Menampilkan Logo Resmi Comfortaa Haispace Project, Concentric Ripple Camera, dan Seamless Inline Guest Registration.
+// Menampilkan Logo Resmi Haispace Project (Ikon Spatial Prism + Comfortaa), Concentric Ripple Camera, dan Seamless Full-Page Infinite Canvas Transition.
 
 import SwiftUI
 
@@ -20,7 +20,7 @@ struct LandingView: View {
     @State private var secretTapTimer: Timer? = nil
     @State private var showAdminToast = false
     
-    // State Transisi Registrasi Tamu
+    // State Transisi Registrasi Tamu (Infinite Canvas)
     @State private var isRegistering = false
     @State private var guestName: String = ""
     @State private var instagramHandle: String = ""
@@ -52,23 +52,36 @@ struct LandingView: View {
             .ignoresSafeArea()
             .allowsHitTesting(false)
             
-            // 5. Layer Konten Utama (Header, Hero CTA / Registration Glass Card, Footer)
-            VStack {
-                // HEADER LOGO RESMI HAISPACE PROJECT (Font Comfortaa Style)
+            // 5. Layer Konten Utama (Header Logo, Infinite Canvas Switching, Footer)
+            VStack(spacing: 0) {
+                // HEADER LOGO RESMI HAISPACE PROJECT (Prominent Glowing Spatial Logo)
                 HaispaceOfficialLogoView()
-                    .padding(.top, 54)
+                    .padding(.top, 40)
+                    .padding(.bottom, 20)
                 
                 Spacer()
                 
-                // CENTER CONTENT: Swapping antara Standby Screen Hero & Registration Glass Card
-                if !isRegistering {
-                    // STANDBY MODE HERO CTA
-                    standbyHeroCTA
-                        .transition(.scale(scale: 0.9).combined(with: .opacity))
-                } else {
-                    // REGISTRATION MODE GLASS CARD
-                    guestRegistrationGlassCard
-                        .transition(.scale(scale: 0.95).combined(with: .opacity))
+                // CENTER CONTENT: Infinite Canvas Transition (Standby Mode Hero vs Full-Page Registration)
+                ZStack {
+                    if !isRegistering {
+                        // MODE 1: STANDBY HERO CTA (Full Touch Target)
+                        standbyHeroCTA
+                            .transition(
+                                .asymmetric(
+                                    insertion: .scale(scale: 0.92).combined(with: .opacity),
+                                    removal: .scale(scale: 1.08).combined(with: .opacity)
+                                )
+                            )
+                    } else {
+                        // MODE 2: FULL-PAGE INFINITE CANVAS REGISTRATION
+                        fullPageRegistrationCanvas
+                            .transition(
+                                .asymmetric(
+                                    insertion: .scale(scale: 0.96).combined(with: .opacity),
+                                    removal: .scale(scale: 0.92).combined(with: .opacity)
+                                )
+                            )
+                    }
                 }
                 
                 Spacer()
@@ -81,7 +94,7 @@ struct LandingView: View {
                         eventBadgeView(name: "WISUDA UNG 2026")
                     }
                 }
-                .padding(.bottom, 44)
+                .padding(.bottom, 36)
             }
             
             // 6. TOP RIGHT SECRET TAP AREA (Diatur zIndex Paling Atas untuk PIN Operator)
@@ -146,96 +159,117 @@ struct LandingView: View {
                 // Expanding Ripple Ring 3
                 Circle()
                     .stroke(Color.white.opacity(isRippling ? 0.0 : 0.2), lineWidth: 1.5)
-                    .frame(width: 120, height: 120)
-                    .scaleEffect(isRippling ? 2.0 : 1.0)
+                    .frame(width: 130, height: 130)
+                    .scaleEffect(isRippling ? 2.1 : 1.0)
                 
                 // Expanding Ripple Ring 2
                 Circle()
                     .stroke(Color.white.opacity(isRippling ? 0.0 : 0.35), lineWidth: 1.5)
-                    .frame(width: 120, height: 120)
-                    .scaleEffect(isRippling ? 1.5 : 1.0)
+                    .frame(width: 130, height: 130)
+                    .scaleEffect(isRippling ? 1.55 : 1.0)
                 
                 // Inner Glass Circle Icon
                 ZStack {
                     Circle()
-                        .fill(Color.white.opacity(0.08))
-                        .frame(width: 120, height: 120)
+                        .fill(
+                            LinearGradient(
+                                colors: [Color(hex: "#7C5CFC").opacity(0.25), Color(hex: "#00D9A0").opacity(0.15)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 130, height: 130)
                         .overlay(
                             Circle()
-                                .stroke(Color.white.opacity(0.25), lineWidth: 1.5)
+                                .stroke(Color.white.opacity(0.35), lineWidth: 1.5)
                         )
-                        .shadow(color: Color(hex: "#7C5CFC").opacity(0.3), radius: 20)
+                        .shadow(color: Color(hex: "#7C5CFC").opacity(0.45), radius: 25)
                     
-                    Image(systemName: "camera")
-                        .font(.system(size: 46, weight: .thin))
+                    Image(systemName: "camera.fill")
+                        .font(.system(size: 48, weight: .regular))
                         .foregroundStyle(Color.white)
-                        .shadow(color: Color.white.opacity(0.5), radius: 10)
+                        .shadow(color: Color.white.opacity(0.6), radius: 12)
                 }
             }
             
             // Hero Typography
             VStack(spacing: 12) {
                 Text("Sentuh Layar")
-                    .font(.system(size: 60, weight: .medium, design: .rounded))
+                    .font(.system(size: 64, weight: .bold, design: .rounded))
                     .foregroundStyle(Color.white)
-                    .shadow(color: Color.white.opacity(0.25), radius: 20)
+                    .shadow(color: Color.white.opacity(0.3), radius: 20)
                 
-                Text("UNTUK MEMULAI SESI FOTO")
-                    .font(.system(size: 16, weight: .light, design: .rounded))
-                    .foregroundStyle(Color.white.opacity(0.5))
-                    .tracking(6)
+                HStack(spacing: 8) {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color(hex: "#00D9A0"))
+                    
+                    Text("UNTUK MEMULAI SESI FOTO")
+                        .font(.system(size: 16, weight: .semibold, design: .rounded))
+                        .foregroundStyle(Color.white.opacity(0.65))
+                        .tracking(6)
+                    
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color(hex: "#00D9A0"))
+                }
             }
         }
         .contentShape(Rectangle())
         .onTapGesture {
             let generator = UIImpactFeedbackGenerator(style: .medium)
             generator.impactOccurred()
-            withAnimation(.spring(response: 0.45, dampingFraction: 0.78)) {
+            withAnimation(.spring(response: 0.55, dampingFraction: 0.82)) {
                 isRegistering = true
             }
         }
     }
     
-    // MARK: - Inline Guest Registration Glass Card
-    private var guestRegistrationGlassCard: some View {
-        VStack(spacing: 24) {
-            // Header Card
-            VStack(spacing: 6) {
+    // MARK: - Full-Page Infinite Canvas Registration
+    private var fullPageRegistrationCanvas: some View {
+        VStack(spacing: 28) {
+            // Title Header Canvas
+            VStack(spacing: 8) {
                 Text("Selamat Datang!")
-                    .font(.system(size: 30, weight: .bold, design: .rounded))
+                    .font(.system(size: 38, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
+                    .shadow(color: Color.white.opacity(0.2), radius: 15)
                 
-                Text("Isi nama & instagram kamu untuk memulai sesi foto")
-                    .font(.system(size: 15, weight: .medium, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.6))
+                Text("Masukkan nama & instagram kamu untuk memulai foto")
+                    .font(.system(size: 16, weight: .medium, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.65))
             }
             
-            // Form Inputs
-            HStack(spacing: 20) {
-                // Input Nama
+            // Form Inputs (Wide Canvas Fields)
+            HStack(spacing: 24) {
+                // Input Nama Panggilan
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Nama Panggilan")
-                        .font(.system(size: 13, weight: .semibold, design: .rounded))
-                        .foregroundStyle(activeField == .name ? Color(hex: "#00D9A0") : .white.opacity(0.5))
+                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .foregroundStyle(activeField == .name ? Color(hex: "#00D9A0") : .white.opacity(0.55))
                     
                     HStack {
                         Image(systemName: "person.fill")
-                            .foregroundStyle(activeField == .name ? Color(hex: "#00D9A0") : .white.opacity(0.3))
+                            .font(.system(size: 18))
+                            .foregroundStyle(activeField == .name ? Color(hex: "#00D9A0") : .white.opacity(0.35))
                         
                         Text(guestName.isEmpty ? "Cth: Budi" : guestName)
                             .font(.system(size: 18, weight: .semibold, design: .rounded))
-                            .foregroundStyle(guestName.isEmpty ? .white.opacity(0.3) : .white)
+                            .foregroundStyle(guestName.isEmpty ? .white.opacity(0.35) : .white)
                             .lineLimit(1)
                         
                         Spacer()
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 14)
-                    .background(Color.white.opacity(0.06))
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 16)
+                    .background(Color.white.opacity(0.07))
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .stroke(activeField == .name ? Color(hex: "#00D9A0") : Color.white.opacity(0.12), lineWidth: activeField == .name ? 2 : 1)
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(
+                                activeField == .name ? Color(hex: "#00D9A0") : Color.white.opacity(0.15),
+                                lineWidth: activeField == .name ? 2 : 1
+                            )
                     )
                     .onTapGesture {
                         let generator = UIImpactFeedbackGenerator(style: .light)
@@ -244,31 +278,34 @@ struct LandingView: View {
                     }
                 }
                 
-                // Input Instagram
+                // Input Instagram Handle
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Instagram Handle (Opsional)")
-                        .font(.system(size: 13, weight: .semibold, design: .rounded))
-                        .foregroundStyle(activeField == .instagram ? Color(hex: "#7C5CFC") : .white.opacity(0.5))
+                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .foregroundStyle(activeField == .instagram ? Color(hex: "#7C5CFC") : .white.opacity(0.55))
                     
                     HStack {
                         Text("@")
-                            .font(.system(size: 18, weight: .bold, design: .rounded))
-                            .foregroundStyle(activeField == .instagram ? Color(hex: "#7C5CFC") : .white.opacity(0.3))
+                            .font(.system(size: 20, weight: .bold, design: .rounded))
+                            .foregroundStyle(activeField == .instagram ? Color(hex: "#7C5CFC") : .white.opacity(0.35))
                         
                         Text(instagramHandle.isEmpty ? "username" : instagramHandle)
                             .font(.system(size: 18, weight: .semibold, design: .rounded))
-                            .foregroundStyle(instagramHandle.isEmpty ? .white.opacity(0.3) : .white)
+                            .foregroundStyle(instagramHandle.isEmpty ? .white.opacity(0.35) : .white)
                             .lineLimit(1)
                         
                         Spacer()
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 14)
-                    .background(Color.white.opacity(0.06))
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 16)
+                    .background(Color.white.opacity(0.07))
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .stroke(activeField == .instagram ? Color(hex: "#7C5CFC") : Color.white.opacity(0.12), lineWidth: activeField == .instagram ? 2 : 1)
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(
+                                activeField == .instagram ? Color(hex: "#7C5CFC") : Color.white.opacity(0.15),
+                                lineWidth: activeField == .instagram ? 2 : 1
+                            )
                     )
                     .onTapGesture {
                         let generator = UIImpactFeedbackGenerator(style: .light)
@@ -277,7 +314,7 @@ struct LandingView: View {
                     }
                 }
             }
-            .frame(width: 580)
+            .frame(maxWidth: 720)
             
             // Custom In-App Virtual Keyboard Dropdown
             CustomInAppKeyboard(
@@ -296,35 +333,39 @@ struct LandingView: View {
                     generator.impactOccurred()
                 }
             )
-            .frame(width: 640)
+            .frame(maxWidth: 740)
             
-            // Action Buttons (Kembali & Mulai Foto)
-            HStack(spacing: 16) {
+            // Action Buttons (Kembali & Mulai Sesi Foto)
+            HStack(spacing: 20) {
                 Button(action: {
                     let generator = UIImpactFeedbackGenerator(style: .light)
                     generator.impactOccurred()
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                    withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
                         isRegistering = false
                     }
                 }) {
-                    Text("Kembali")
-                        .font(.system(size: 16, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white.opacity(0.7))
-                        .padding(.vertical, 14)
-                        .padding(.horizontal, 28)
-                        .background(Color.white.opacity(0.08))
-                        .clipShape(Capsule())
-                        .overlay(Capsule().stroke(Color.white.opacity(0.15), lineWidth: 1))
+                    HStack(spacing: 6) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 14, weight: .bold))
+                        Text("Kembali")
+                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                    }
+                    .foregroundStyle(.white.opacity(0.75))
+                    .padding(.vertical, 16)
+                    .padding(.horizontal, 32)
+                    .background(Color.white.opacity(0.08))
+                    .clipShape(Capsule())
+                    .overlay(Capsule().stroke(Color.white.opacity(0.18), lineWidth: 1))
                 }
                 
                 Button(action: handleProceedToPhoto) {
-                    HStack(spacing: 8) {
+                    HStack(spacing: 10) {
                         Text("Lanjutkan Ke Sesi Foto 📸")
                             .font(.system(size: 16, weight: .bold, design: .rounded))
                             .foregroundStyle(.white)
                     }
-                    .padding(.vertical, 14)
-                    .padding(.horizontal, 36)
+                    .padding(.vertical, 16)
+                    .padding(.horizontal, 42)
                     .background(
                         LinearGradient(
                             colors: [Color(hex: "#7C5CFC"), Color(hex: "#00D9A0")],
@@ -333,26 +374,12 @@ struct LandingView: View {
                         )
                     )
                     .clipShape(Capsule())
-                    .shadow(color: Color(hex: "#7C5CFC").opacity(0.4), radius: 15)
+                    .shadow(color: Color(hex: "#7C5CFC").opacity(0.45), radius: 20, y: 5)
                 }
             }
-            .padding(.top, 6)
+            .padding(.top, 4)
         }
-        .padding(32)
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .stroke(
-                    LinearGradient(
-                        colors: [.white.opacity(0.3), .white.opacity(0.08)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 1.5
-                )
-        )
-        .shadow(color: Color.black.opacity(0.5), radius: 30, y: 15)
+        .padding(.horizontal, 24)
     }
     
     private func handleProceedToPhoto() {
@@ -403,16 +430,16 @@ struct LandingView: View {
     private var ambientGlowsLayer: some View {
         ZStack {
             Circle()
-                .fill(Color(hex: "#7C5CFC").opacity(0.15))
+                .fill(Color(hex: "#7C5CFC").opacity(0.18))
                 .blur(radius: 110)
-                .frame(width: 500, height: 500)
+                .frame(width: 550, height: 550)
                 .scaleEffect(isBreathe ? 1.15 : 0.85)
             
             Circle()
-                .fill(Color(hex: "#00D9A0").opacity(0.1))
+                .fill(Color(hex: "#00D9A0").opacity(0.12))
                 .blur(radius: 120)
-                .frame(width: 450, height: 450)
-                .offset(x: isBreathe ? 150 : -150, y: isBreathe ? -100 : 100)
+                .frame(width: 480, height: 480)
+                .offset(x: isBreathe ? 160 : -160, y: isBreathe ? -110 : 110)
         }
         .allowsHitTesting(false)
     }
@@ -486,22 +513,48 @@ struct LandingView: View {
     }
 }
 
-// MARK: - Logo Resmi Haispace Project (Gaya Font Comfortaa untuk Top Header)
+// MARK: - Logo Resmi Haispace Project (Glowing Spatial Prism Emblem + Text Header)
 struct HaispaceOfficialLogoView: View {
     var body: some View {
-        VStack(alignment: .trailing, spacing: -8) {
-            Text("Haispace")
-                .font(.system(size: 42, weight: .bold, design: .rounded))
-                .tracking(-0.5)
-                .foregroundStyle(Color.white)
-                .shadow(color: Color(hex: "#7C5CFC").opacity(0.6), radius: 20)
+        HStack(spacing: 14) {
+            // Spatial Glowing Emblem
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [Color(hex: "#7C5CFC"), Color(hex: "#00D9A0")],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 44, height: 44)
+                    .shadow(color: Color(hex: "#7C5CFC").opacity(0.6), radius: 15)
+                
+                Image(systemName: "sparkles")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(.white)
+            }
             
-            Text("Project")
-                .font(.system(size: 20, weight: .light, design: .rounded))
-                .tracking(0.5)
-                .foregroundStyle(Color.white.opacity(0.85))
-                .padding(.trailing, 2)
-                .shadow(color: Color(hex: "#7C5CFC").opacity(0.4), radius: 10)
+            // Brand Typography Stack
+            VStack(alignment: .leading, spacing: -4) {
+                Text("Haispace")
+                    .font(.system(size: 36, weight: .bold, design: .rounded))
+                    .tracking(-0.5)
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [.white, Color(hex: "#F1F5F9")],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .shadow(color: Color(hex: "#7C5CFC").opacity(0.5), radius: 15)
+                
+                Text("PROJECT")
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .tracking(4)
+                    .foregroundStyle(Color(hex: "#00D9A0"))
+                    .shadow(color: Color(hex: "#00D9A0").opacity(0.5), radius: 10)
+            }
         }
     }
 }
