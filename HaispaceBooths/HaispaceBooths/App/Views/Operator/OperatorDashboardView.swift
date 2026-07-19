@@ -919,24 +919,23 @@ struct OperatorDashboardView: View {
         .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).stroke(Color(hex: "#E2E8F0"), lineWidth: 1))
     }
     
-    // MARK: - Modal: New / Edit Event Sheet (Liquid Glass Segmented Multi-Package)
+    // MARK: - Modal: New / Edit Event Sheet (Authentic Apple System Sheet)
     private var newEventModalSheet: some View {
         NavigationStack {
-            VStack(spacing: 16) {
-                // Segmented Control Header
-                Picker("Modal Tab", selection: $eventModalTab) {
-                    Text("1. Identitas & Tema").tag(0)
-                    Text("2. Paket Harga (\(selectedPackageIds.count) Aktif)").tag(1)
-                }
-                .pickerStyle(.segmented)
-                .padding(.horizontal, 24)
-                .padding(.top, 12)
-                
-                if eventModalTab == 0 {
-                    // Tab 1: Identitas & Tema Event
-                    HStack(alignment: .top, spacing: 24) {
+            ScrollView {
+                VStack(spacing: 20) {
+                    // Segmented Control Header
+                    Picker("Modal Tab", selection: $eventModalTab) {
+                        Text("1. Identitas & Tema").tag(0)
+                        Text("2. Paket Harga (\(selectedPackageIds.count) Aktif)").tag(1)
+                    }
+                    .pickerStyle(.segmented)
+                    .padding(.top, 4)
+                    
+                    if eventModalTab == 0 {
+                        // Tab 1: Identitas & Tema Event
                         VStack(spacing: 20) {
-                            // Header Banner Preview
+                            // Header Banner Preview (Live Wallet Card Preview)
                             HStack {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(editingEventId == nil ? "BUAT EVENT BARU" : "EDIT EVENT")
@@ -945,8 +944,12 @@ struct OperatorDashboardView: View {
                                         .foregroundStyle(Color(hex: "#4F46E5"))
                                     
                                     Text(formName.isEmpty ? "Nama Event Photobooth" : formName)
-                                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                                        .font(.system(size: 24, weight: .bold, design: .rounded))
                                         .foregroundStyle(Color(hex: "#0F172A"))
+                                    
+                                    Text(formLocation.isEmpty ? "Lokasi Booth" : formLocation)
+                                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                                        .foregroundStyle(Color(hex: "#64748B"))
                                 }
                                 
                                 Spacer()
@@ -954,136 +957,142 @@ struct OperatorDashboardView: View {
                                 ZStack {
                                     Circle()
                                         .fill(LinearGradient(colors: [Color(hex: colorOptions[formColorIndex].startHex), Color(hex: colorOptions[formColorIndex].endHex)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                                        .frame(width: 44, height: 44)
+                                        .frame(width: 52, height: 52)
                                     
                                     Image(systemName: iconOptions[formIconIndex].icon)
-                                        .font(.system(size: 18, weight: .bold))
+                                        .font(.system(size: 22, weight: .bold))
                                         .foregroundStyle(.white)
                                 }
                             }
-                            .padding(16)
+                            .padding(20)
                             .background(Color.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-                            .shadow(color: Color.black.opacity(0.04), radius: 8, y: 3)
-                            .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Color(hex: "#E2E8F0"), lineWidth: 1))
+                            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                            .shadow(color: Color.black.opacity(0.04), radius: 10, y: 3)
+                            .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(Color(hex: "#E2E8F0"), lineWidth: 1))
                             
-                            // Input Nama Event & Lokasi (Tap-to-Focus)
-                            VStack(alignment: .leading, spacing: 12) {
+                            // Group 1: Informasi Utama (Nama Event & Lokasi with Direct Dropdown Keyboard)
+                            VStack(alignment: .leading, spacing: 14) {
                                 Text("INFORMASI UTAMA")
                                     .font(.system(size: 11, weight: .bold, design: .rounded))
                                     .tracking(1.5)
                                     .foregroundStyle(Color(hex: "#94A3B8"))
                                 
-                                VStack(spacing: 10) {
-                                    // Field Nama
-                                    HStack {
-                                        Image(systemName: "pencil.line")
-                                            .foregroundStyle(Color(hex: "#4F46E5"))
-                                        
-                                        Text(formName.isEmpty ? "Nama Event (mis. Wisuda UNG 2026)" : formName)
-                                            .font(.system(size: 15, weight: formName.isEmpty ? .regular : .bold, design: .rounded))
-                                            .foregroundStyle(formName.isEmpty ? Color(hex: "#94A3B8") : Color(hex: "#0F172A"))
-                                        
-                                        Spacer()
-                                        
-                                        if activeKeyboardField == .name {
-                                            Circle()
-                                                .fill(Color(hex: "#4F46E5"))
-                                                .frame(width: 8, height: 8)
+                                VStack(spacing: 12) {
+                                    // Field Nama Event
+                                    VStack(spacing: 8) {
+                                        HStack(spacing: 14) {
+                                            ZStack {
+                                                Circle()
+                                                    .fill(Color(hex: "#EEF2FF"))
+                                                    .frame(width: 38, height: 38)
+                                                Image(systemName: "pencil.line")
+                                                    .font(.system(size: 16, weight: .bold))
+                                                    .foregroundStyle(Color(hex: "#4F46E5"))
+                                            }
+                                            
+                                            Text(formName.isEmpty ? "Nama Event (mis. Wisuda UNG 2026)" : formName)
+                                                .font(.system(size: 16, weight: formName.isEmpty ? .regular : .bold, design: .rounded))
+                                                .foregroundStyle(formName.isEmpty ? Color(hex: "#94A3B8") : Color(hex: "#0F172A"))
+                                            
+                                            Spacer()
+                                            
+                                            if activeKeyboardField == .name {
+                                                Text("Sedang Mengetik")
+                                                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                                                    .foregroundStyle(Color(hex: "#4F46E5"))
+                                                    .padding(.horizontal, 10)
+                                                    .padding(.vertical, 4)
+                                                    .background(Color(hex: "#EEF2FF"))
+                                                    .clipShape(Capsule())
+                                            }
                                         }
-                                    }
-                                    .padding(16)
-                                    .background(Color.white)
-                                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                                    .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(activeKeyboardField == .name ? Color(hex: "#4F46E5") : Color(hex: "#E2E8F0"), lineWidth: 1.5))
-                                    .onTapGesture {
-                                        playHaptic(style: .light)
-                                        withAnimation(.spring) { activeKeyboardField = .name }
+                                        .padding(14)
+                                        .background(Color.white)
+                                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                                        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(activeKeyboardField == .name ? Color(hex: "#4F46E5") : Color(hex: "#E2E8F0"), lineWidth: activeKeyboardField == .name ? 2 : 1))
+                                        .shadow(color: activeKeyboardField == .name ? Color(hex: "#4F46E5").opacity(0.12) : Color.black.opacity(0.02), radius: 8, y: 2)
+                                        .onTapGesture {
+                                            playHaptic(style: .light)
+                                            withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                                                activeKeyboardField = activeKeyboardField == .name ? nil : .name
+                                            }
+                                        }
+                                        
+                                        // Inline Keyboard DIRECTLY UNDERNEATH Nama Event
+                                        if activeKeyboardField == .name {
+                                            CustomInAppKeyboard(text: $formName, onDone: {
+                                                withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                                                    activeKeyboardField = .location
+                                                }
+                                            })
+                                            .transition(.move(edge: .top).combined(with: .opacity))
+                                        }
                                     }
                                     
-                                    // Field Lokasi
-                                    HStack {
-                                        Image(systemName: "mappin.circle.fill")
-                                            .foregroundStyle(Color(hex: "#F59E0B"))
-                                        
-                                        Text(formLocation.isEmpty ? "Lokasi Booth (mis. Auditorium UNG)" : formLocation)
-                                            .font(.system(size: 15, weight: formLocation.isEmpty ? .regular : .bold, design: .rounded))
-                                            .foregroundStyle(formLocation.isEmpty ? Color(hex: "#94A3B8") : Color(hex: "#0F172A"))
-                                        
-                                        Spacer()
-                                        
-                                        if activeKeyboardField == .location {
-                                            Circle()
-                                                .fill(Color(hex: "#F59E0B"))
-                                                .frame(width: 8, height: 8)
+                                    // Field Lokasi Booth
+                                    VStack(spacing: 8) {
+                                        HStack(spacing: 14) {
+                                            ZStack {
+                                                Circle()
+                                                    .fill(Color(hex: "#FEF3C7"))
+                                                    .frame(width: 38, height: 38)
+                                                Image(systemName: "mappin.circle.fill")
+                                                    .font(.system(size: 16, weight: .bold))
+                                                    .foregroundStyle(Color(hex: "#D97706"))
+                                            }
+                                            
+                                            Text(formLocation.isEmpty ? "Lokasi Booth (mis. Auditorium UNG)" : formLocation)
+                                                .font(.system(size: 16, weight: formLocation.isEmpty ? .regular : .bold, design: .rounded))
+                                                .foregroundStyle(formLocation.isEmpty ? Color(hex: "#94A3B8") : Color(hex: "#0F172A"))
+                                            
+                                            Spacer()
+                                            
+                                            if activeKeyboardField == .location {
+                                                Text("Sedang Mengetik")
+                                                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                                                    .foregroundStyle(Color(hex: "#D97706"))
+                                                    .padding(.horizontal, 10)
+                                                    .padding(.vertical, 4)
+                                                    .background(Color(hex: "#FEF3C7"))
+                                                    .clipShape(Capsule())
+                                            }
                                         }
-                                    }
-                                    .padding(16)
-                                    .background(Color.white)
-                                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                                    .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(activeKeyboardField == .location ? Color(hex: "#F59E0B") : Color(hex: "#E2E8F0"), lineWidth: 1.5))
-                                    .onTapGesture {
-                                        playHaptic(style: .light)
-                                        withAnimation(.spring) { activeKeyboardField = .location }
+                                        .padding(14)
+                                        .background(Color.white)
+                                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                                        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(activeKeyboardField == .location ? Color(hex: "#D97706") : Color(hex: "#E2E8F0"), lineWidth: activeKeyboardField == .location ? 2 : 1))
+                                        .shadow(color: activeKeyboardField == .location ? Color(hex: "#D97706").opacity(0.12) : Color.black.opacity(0.02), radius: 8, y: 2)
+                                        .onTapGesture {
+                                            playHaptic(style: .light)
+                                            withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                                                activeKeyboardField = activeKeyboardField == .location ? nil : .location
+                                            }
+                                        }
+                                        
+                                        // Inline Keyboard DIRECTLY UNDERNEATH Lokasi Booth
+                                        if activeKeyboardField == .location {
+                                            CustomInAppKeyboard(text: $formLocation, onDone: {
+                                                withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                                                    activeKeyboardField = nil
+                                                }
+                                            })
+                                            .transition(.move(edge: .top).combined(with: .opacity))
+                                        }
                                     }
                                 }
                             }
                             
-                            // Tema & Ikon
+                            // Group 2: Tema & Ikon Card
                             newEventIconAndColorPickers
                         }
-                        .frame(width: 420)
-                        
-                        // Right Side Container for Keyboard
-                        VStack {
-                            if activeKeyboardField == .name {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text("MENGETIK NAMA EVENT")
-                                        .font(.system(size: 10, weight: .bold, design: .rounded))
-                                        .tracking(1.5)
-                                        .foregroundStyle(Color(hex: "#4F46E5"))
-                                    
-                                    CustomInAppKeyboard(text: $formName, onDone: {
-                                        withAnimation { activeKeyboardField = .location }
-                                    })
-                                }
-                                .transition(.scale.combined(with: .opacity))
-                            } else if activeKeyboardField == .location {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text("MENGETIK LOKASI BOOTH")
-                                        .font(.system(size: 10, weight: .bold, design: .rounded))
-                                        .tracking(1.5)
-                                        .foregroundStyle(Color(hex: "#F59E0B"))
-                                    
-                                    CustomInAppKeyboard(text: $formLocation, onDone: {
-                                        withAnimation { activeKeyboardField = nil }
-                                    })
-                                }
-                                .transition(.scale.combined(with: .opacity))
-                            } else {
-                                VStack(spacing: 12) {
-                                    Image(systemName: "hand.tap.fill")
-                                        .font(.system(size: 36))
-                                        .foregroundStyle(Color(hex: "#CBD5E1"))
-                                    Text("Ketuk kolom nama atau lokasi untuk mengetik")
-                                        .font(.system(size: 14, weight: .medium, design: .rounded))
-                                        .foregroundStyle(Color(hex: "#94A3B8"))
-                                }
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                .background(Color.white.opacity(0.5))
-                                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                    }
-                    .padding(.horizontal, 24)
-                } else {
-                    // Tab 2: Manajemen Paket Harga (Multi-Select)
-                    ScrollView {
+                    } else {
+                        // Tab 2: Manajemen Paket Harga (Multi-Select)
                         newEventPackageSelectorCard
-                            .padding(.horizontal, 24)
                     }
                 }
+                .padding(24)
+                .frame(maxWidth: 680)
+                .frame(maxWidth: .infinity)
             }
             .background(Color(hex: "#F8FAFC"))
             .navigationTitle(editingEventId == nil ? "Event Baru" : "Edit Event")

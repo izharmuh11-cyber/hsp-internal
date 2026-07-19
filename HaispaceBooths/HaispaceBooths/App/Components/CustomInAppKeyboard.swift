@@ -75,7 +75,7 @@ struct CustomInAppKeyboard: View {
                             .font(.system(size: 16, weight: .bold))
                             .foregroundStyle(isUppercase ? .white : Color(hex: "#475569"))
                     }
-                    .frame(width: 52, height: 46)
+                    .frame(width: 58, height: 52)
                 }
                 .buttonStyle(BentoButtonStyle())
                 
@@ -87,7 +87,7 @@ struct CustomInAppKeyboard: View {
                 // Backspace Key (Right Side)
                 Button(action: backspace) {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
                             .fill(Color(hex: "#E2E8F0"))
                             .shadow(color: Color.black.opacity(0.04), radius: 3, y: 1.5)
                         
@@ -95,7 +95,7 @@ struct CustomInAppKeyboard: View {
                             .font(.system(size: 18, weight: .bold))
                             .foregroundStyle(Color(hex: "#0F172A"))
                     }
-                    .frame(width: 56, height: 46)
+                    .frame(width: 64, height: 52)
                 }
                 .buttonStyle(BentoButtonStyle())
             }
@@ -108,30 +108,30 @@ struct CustomInAppKeyboard: View {
                     mode = .numeric
                 }) {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
                             .fill(Color(hex: "#E2E8F0"))
                         
                         Text("123")
-                            .font(.system(size: 15, weight: .bold, design: .rounded))
+                            .font(.system(size: 16, weight: .bold, design: .rounded))
                             .foregroundStyle(Color(hex: "#0F172A"))
                     }
-                    .frame(width: 64, height: 46)
+                    .frame(width: 72, height: 52)
                 }
                 .buttonStyle(BentoButtonStyle())
                 
                 // Centered Space Key
                 Button(action: { appendChar(" ") }) {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
                             .fill(Color.white)
                             .shadow(color: Color.black.opacity(0.04), radius: 3, y: 1.5)
                         
                         Text("spasi")
-                            .font(.system(size: 14, weight: .semibold, design: .rounded))
+                            .font(.system(size: 15, weight: .semibold, design: .rounded))
                             .foregroundStyle(Color(hex: "#64748B"))
                     }
                     .frame(maxWidth: .infinity)
-                    .frame(height: 46)
+                    .frame(height: 52)
                 }
                 .buttonStyle(BentoButtonStyle())
                 
@@ -141,16 +141,16 @@ struct CustomInAppKeyboard: View {
                     onDone?()
                 }) {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
                             .fill(Color(hex: "#0F172A"))
                         
                         HStack(spacing: 4) {
                             Image(systemName: "keyboard.chevron.compact.down")
-                                .font(.system(size: 16, weight: .bold))
+                                .font(.system(size: 18, weight: .bold))
                         }
                         .foregroundStyle(.white)
                     }
-                    .frame(width: 64, height: 46)
+                    .frame(width: 72, height: 52)
                 }
                 .buttonStyle(BentoButtonStyle())
             }
@@ -181,14 +181,14 @@ struct CustomInAppKeyboard: View {
                     mode = .qwerty
                 }) {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
                             .fill(Color(hex: "#E2E8F0"))
                         
                         Text("ABC")
                             .font(.system(size: 15, weight: .bold, design: .rounded))
                             .foregroundStyle(Color(hex: "#0F172A"))
                     }
-                    .frame(height: 46)
+                    .frame(height: 52)
                 }
                 .buttonStyle(BentoButtonStyle())
                 
@@ -197,14 +197,14 @@ struct CustomInAppKeyboard: View {
                 // Backspace
                 Button(action: backspace) {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
                             .fill(Color(hex: "#E2E8F0"))
                         
                         Image(systemName: "delete.left.fill")
                             .font(.system(size: 18, weight: .bold))
                             .foregroundStyle(Color(hex: "#0F172A"))
                     }
-                    .frame(height: 46)
+                    .frame(height: 52)
                 }
                 .buttonStyle(BentoButtonStyle())
             }
@@ -220,10 +220,10 @@ struct CustomInAppKeyboard: View {
                         .font(.system(size: 15, weight: .bold, design: .rounded))
                 }
                 .frame(maxWidth: .infinity)
-                .frame(height: 44)
+                .frame(height: 50)
                 .background(Color(hex: "#0F172A"))
                 .foregroundStyle(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
             .buttonStyle(BentoButtonStyle())
             .padding(.top, 2)
@@ -236,16 +236,16 @@ struct CustomInAppKeyboard: View {
             action()
         }) {
             ZStack {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .fill(Color.white)
                     .shadow(color: Color.black.opacity(0.04), radius: 3, y: 1.5)
                 
                 Text(char)
-                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .font(.system(size: 19, weight: .bold, design: .rounded))
                     .foregroundStyle(Color(hex: "#0F172A"))
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 46)
+            .frame(height: 52)
         }
         .buttonStyle(BentoButtonStyle())
     }
