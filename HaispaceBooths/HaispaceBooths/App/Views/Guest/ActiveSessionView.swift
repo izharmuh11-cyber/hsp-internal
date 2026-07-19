@@ -63,7 +63,7 @@ struct ActiveSessionView: View {
     @State private var isPortraitModeActive: Bool = false
     @State private var activeFilter: String = "original"
     @State private var activeAperture: Double = 2.8
-    @State private var showFilterSelector: Bool = false
+    @State private var showCameraControls: Bool = false
     
     @State private var focusTapPoint: CGPoint? = nil
     @State private var showFocusIndicator: Bool = false
@@ -109,15 +109,15 @@ struct ActiveSessionView: View {
                     filmStripGallery(ipadLandscape: ipadLandscape)
                         .padding(.trailing, 24)
                 }
-                .padding(.vertical, 80)
                 
                 // Header Sesi Melayang di Atas (Dynamic Island Top)
                 timerAndQuotaHeader
                 
-                // Shutter Button & AI Pose Hint Melayang di Bawah
-                VStack {
+                // Shutter Button, Filters & AI Pose Hint Melayang di Bawah
+                VStack(spacing: 12) {
                     Spacer()
                     poseHintBanner
+                    colorFilterSelectorGroup
                     shutterOnlyOverlay
                 }
                 
@@ -454,22 +454,20 @@ struct ActiveSessionView: View {
     private func leftControlDock(ipadLandscape: Bool) -> some View {
         if localCountdown == 0 && !showFlash && !isBriefing {
             VStack {
-                VStack(spacing: 14) {
                     if !isPortraitModeActive {
                         zoomSelectorGroup
                     }
                     portraitBokehButton
-                    colorFilterSelectorGroup
                 }
-                .padding(8)
-                .background(.black.opacity(0.25))
+                .padding(12)
                 .background(.ultraThinMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                .background(.black.opacity(0.35))
+                .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 32, style: .continuous)
+                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
                 )
-                .shadow(color: Color.black.opacity(0.25), radius: 10, y: 5)
+                .shadow(color: Color.black.opacity(0.4), radius: 20, y: 10)
             }
             .transition(.move(edge: .leading).combined(with: .opacity))
         }
@@ -574,52 +572,35 @@ struct ActiveSessionView: View {
             ("vintage", "Retro"),
             ("bw_noir", "B&W")
         ]
-        VStack(spacing: 4) {
-            Button(action: {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                    showFilterSelector.toggle()
-                }
-                lastActivityTime = Date()
-            }) {
-                VStack(spacing: 2) {
-                    Image(systemName: activeFilter != "original" ? "wand.and.stars.inverse" : "wand.and.stars")
-                        .font(.system(size: 16, weight: .bold))
-                    Text("Filter")
-                        .font(.system(size: 9, weight: .bold, design: .rounded))
-                }
-                .foregroundStyle(activeFilter != "original" ? Color.black : Color.white)
-                .frame(width: 52, height: 46)
-                .background(activeFilter != "original" ? Color.cyan : Color.white.opacity(0.12))
-                .background(.ultraThinMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-            }
-            
-            if showFilterSelector {
-                VStack(spacing: 4) {
-                    ForEach(filters, id: \.id) { flt in
-                        Button(action: {
-                            activeFilter = flt.id
-                            Task {
-                                await P2PMessageRouter.shared.route(.setColorPreset(presetId: flt.id))
-                            }
-                            withAnimation { showFilterSelector = false }
-                            lastActivityTime = Date()
-                        }) {
-                            Text(flt.name)
-                                .font(.system(size: 10, weight: .bold, design: .rounded))
-                                .foregroundStyle(activeFilter == flt.id ? Color.black : Color.white)
-                                .frame(width: 48, height: 28)
-                                .background(activeFilter == flt.id ? Color.cyan : Color.white.opacity(0.12))
-                                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(filters, id: \.id) { flt in
+                    Button(action: {
+                        activeFilter = flt.id
+                        Task {
+                            await P2PMessageRouter.shared.route(.setColorPreset(presetId: flt.id))
                         }
+                        lastActivityTime = Date()
+                    }) {
+                        Text(flt.name)
+                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                            .foregroundStyle(activeFilter == flt.id ? Color.black : Color.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(activeFilter == flt.id ? Color.cyan : Color.white.opacity(0.15))
+                            .clipShape(Capsule())
                     }
                 }
-                .padding(3)
-                .background(.ultraThinMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .transition(.scale.combined(with: .opacity))
             }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
         }
+        .background(.ultraThinMaterial)
+        .background(.black.opacity(0.45))
+        .clipShape(Capsule())
+        .overlay(Capsule().stroke(Color.white.opacity(0.2), lineWidth: 1))
+        .frame(maxWidth: 400)
     }
     
     @ViewBuilder
@@ -631,17 +612,17 @@ struct ActiveSessionView: View {
                 ZStack {
                     Circle()
                         .fill(.white)
-                        .frame(width: 76, height: 76)
+                        .frame(width: 80, height: 80)
                     Circle()
-                        .stroke(.white, lineWidth: 3.5)
-                        .frame(width: 88, height: 88)
+                        .stroke(.white, lineWidth: 4)
+                        .frame(width: 96, height: 96)
                 }
                 .scaleEffect(isCapturing ? 0.90 : 1.0)
                 .shadow(color: Color.black.opacity(0.4), radius: 14, y: 6)
                 .animation(.spring(response: 0.2, dampingFraction: 0.5), value: isCapturing)
             }
             .disabled(isCapturing)
-            .padding(.bottom, 20)
+            .padding(.bottom, 32)
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
     }
@@ -775,7 +756,7 @@ struct ActiveSessionView: View {
         if localCountdown == 0 && !showFlash && !isBriefing {
             VStack(spacing: 12) {
                 ScrollView(.vertical, showsIndicators: false) {
-                    VStack(spacing: 14) {
+                    VStack(spacing: 16) {
                         if let s = session {
                             ForEach(Array(s.photos.capturedPhotos.enumerated()), id: \.element.id) { index, photo in
                                 Button(action: {
@@ -785,28 +766,26 @@ struct ActiveSessionView: View {
                                         Image(uiImage: uiImage)
                                             .resizable()
                                             .scaledToFill()
-                                            .frame(width: 60, height: 78)
-                                            .cornerRadius(10)
+                                            .frame(width: 80, height: 104)
+                                            .cornerRadius(12)
                                             .overlay(
-                                                RoundedRectangle(cornerRadius: 10)
-                                                    .stroke(Color.white, lineWidth: 2) // Polaroid-style white border
+                                                RoundedRectangle(cornerRadius: 12)
+                                                    .stroke(Color.white, lineWidth: 3) // Polaroid-style border
                                             )
-                                            .shadow(color: .black.opacity(0.35), radius: 6, y: 3)
-                                            .rotationEffect(.degrees(index % 2 == 0 ? 1.5 : -1.5)) // Polaroid-style alternate rotation
+                                            .shadow(color: .black.opacity(0.4), radius: 8, y: 4)
+                                            .rotationEffect(.degrees(index % 2 == 0 ? 2.5 : -2.5))
                                             .clipped()
                                     }
                                 }
                             }
                         }
                     }
-                    .padding(.vertical, 8)
-                    .padding(.horizontal, 4)
+                    .padding(.vertical, 12)
+                    .padding(.horizontal, 8)
                 }
             }
-            .frame(width: 80, height: ipadLandscape ? 420 : 320)
-            .padding(.leading, 24)
-            .padding(.bottom, ipadLandscape ? 120 : 160) // Shift safely above shutter
-            .transition(.move(edge: .leading).combined(with: .opacity))
+            .frame(width: 110, height: ipadLandscape ? 480 : 360)
+            .transition(.move(edge: .trailing).combined(with: .opacity))
             .zIndex(14)
         }
     }
