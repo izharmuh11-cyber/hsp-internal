@@ -582,49 +582,45 @@ struct ActiveSessionView: View {
             ("bw_noir", "B&W")
         ]
         
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
-                ForEach(filters, id: \.id) { flt in
-                    let isSelected = activeFilter == flt.id
-                    Button(action: {
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                            activeFilter = flt.id
-                        }
-                        Task {
-                            await P2PMessageRouter.shared.route(.setColorPreset(presetId: flt.id))
-                        }
-                        lastActivityTime = Date()
-                    }) {
-                        Text(flt.name)
-                            .font(.system(size: 13, weight: .bold, design: .rounded))
-                            .foregroundStyle(isSelected ? Color.black : Color.white.opacity(0.85))
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(
-                                ZStack {
-                                    if isSelected {
-                                        Capsule()
-                                            .fill(Color.white)
-                                            .shadow(color: Color.white.opacity(0.35), radius: 8, y: 2)
-                                    } else {
-                                        Capsule()
-                                            .fill(Color.white.opacity(0.1))
-                                    }
-                                }
-                            )
-                            .clipShape(Capsule())
+        // Fixed Equal-Width Segment Bar (Pixel-Perfect Centered)
+        HStack(spacing: 4) {
+            ForEach(filters, id: \.id) { flt in
+                let isSelected = activeFilter == flt.id
+                Button(action: {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                        activeFilter = flt.id
                     }
+                    Task {
+                        await P2PMessageRouter.shared.route(.setColorPreset(presetId: flt.id))
+                    }
+                    lastActivityTime = Date()
+                }) {
+                    Text(flt.name)
+                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                        .foregroundStyle(isSelected ? Color.black : Color.white.opacity(0.85))
+                        .frame(width: 66, height: 34)
+                        .background(
+                            ZStack {
+                                if isSelected {
+                                    Capsule()
+                                        .fill(Color.white)
+                                        .shadow(color: Color.white.opacity(0.3), radius: 6, y: 1)
+                                } else {
+                                    Capsule()
+                                        .fill(Color.white.opacity(0.1))
+                                }
+                            }
+                        )
+                        .clipShape(Capsule())
                 }
             }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 6)
         }
+        .padding(4)
         .background(.ultraThinMaterial)
-        .background(Color.black.opacity(0.4))
+        .background(Color.black.opacity(0.45))
         .clipShape(Capsule())
-        .overlay(Capsule().stroke(Color.white.opacity(0.2), lineWidth: 1))
-        .shadow(color: .black.opacity(0.35), radius: 15, y: 6)
-        .frame(maxWidth: 420)
+        .overlay(Capsule().stroke(Color.white.opacity(0.18), lineWidth: 1))
+        .shadow(color: .black.opacity(0.4), radius: 14, y: 6)
     }
     
     @ViewBuilder
@@ -957,11 +953,11 @@ struct ActiveSessionView: View {
     private var retakePremiumModal: some View {
         if let selectedPhoto = activeSelectedPhotoForPreview {
             ZStack {
-                // Deep Blur Glass Background
+                // Deep Blur Glass Backdrop
                 Rectangle()
                     .fill(.ultraThinMaterial)
                     .ignoresSafeArea()
-                Color.black.opacity(0.65)
+                Color.black.opacity(0.70)
                     .ignoresSafeArea()
                     .onTapGesture {
                         withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
@@ -969,62 +965,56 @@ struct ActiveSessionView: View {
                         }
                     }
                 
-                // Apple Vision Pro Style Floating Card
-                VStack(spacing: 24) {
-                    // Modal Header
-                    VStack(spacing: 6) {
-                        Text("TINJAU POSE \(selectedPhoto.sortOrder + 1)")
-                            .font(.system(size: 22, weight: .black, design: .rounded))
-                            .tracking(3)
-                            .foregroundStyle(
-                                LinearGradient(
-                                    colors: [Color.cyan, Color(hex: "#7C5CFC")],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                        
-                        Text("Apakah pose ini sudah pas, atau ingin mengambil foto ulang?")
-                            .font(.system(size: 13, weight: .medium, design: .rounded))
-                            .foregroundStyle(.white.opacity(0.7))
-                            .multilineTextAlignment(.center)
-                    }
+                // Apple QuickLook Style Floating Photo Preview
+                VStack(spacing: 20) {
+                    // Header Badge
+                    Text("POSE #\(selectedPhoto.sortOrder + 1)")
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.9))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 6)
+                        .background(.ultraThinMaterial)
+                        .background(Color.black.opacity(0.4))
+                        .clipShape(Capsule())
+                        .overlay(Capsule().stroke(Color.white.opacity(0.2), lineWidth: 1))
                     
-                    // Photo Frame with Glowing Border
+                    // Main Photo Display
                     if let uiImage = UIImage(data: selectedPhoto.thumbnailData) {
                         Image(uiImage: uiImage)
                             .resizable()
                             .scaledToFit()
-                            .frame(maxHeight: 440)
-                            .cornerRadius(22)
+                            .frame(maxHeight: 520)
+                            .cornerRadius(20)
                             .overlay(
-                                RoundedRectangle(cornerRadius: 22)
-                                    .stroke(LinearGradient(colors: [.white.opacity(0.4), .white.opacity(0.1)], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 2)
+                                RoundedRectangle(cornerRadius: 20)
+                                    .stroke(Color.white.opacity(0.2), lineWidth: 1.5)
                             )
-                            .shadow(color: .black.opacity(0.7), radius: 30, y: 15)
+                            .shadow(color: .black.opacity(0.75), radius: 35, y: 15)
                     }
                     
-                    // Action Buttons
-                    HStack(spacing: 18) {
-                        // Button Cancel / Close
+                    // Clean Action Bar
+                    HStack(spacing: 16) {
+                        // Button Batal (Glass Pill)
                         Button(action: {
                             withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                                 activeSelectedPhotoForPreview = nil
                             }
                         }) {
-                            Text("Batal")
-                                .font(.system(.headline, design: .rounded).bold())
-                                .foregroundStyle(.white.opacity(0.9))
-                                .frame(width: 130, height: 50)
-                                .background(.white.opacity(0.12))
-                                .clipShape(Capsule())
-                                .overlay(
-                                    Capsule()
-                                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                                )
+                            HStack(spacing: 6) {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 13, weight: .bold))
+                                Text("Tutup")
+                                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                            }
+                            .foregroundStyle(.white.opacity(0.9))
+                            .frame(width: 120, height: 46)
+                            .background(.ultraThinMaterial)
+                            .background(Color.white.opacity(0.12))
+                            .clipShape(Capsule())
+                            .overlay(Capsule().stroke(Color.white.opacity(0.2), lineWidth: 1))
                         }
                         
-                        // Button Retake
+                        // Button Foto Ulang (Solid White Pill)
                         Button(action: {
                             let targetId = selectedPhoto.id
                             let targetOrder = selectedPhoto.sortOrder
@@ -1033,37 +1023,22 @@ struct ActiveSessionView: View {
                             }
                             startManualCaptureSequence(replacePhotoId: targetId, sortOrder: targetOrder)
                         }) {
-                            HStack(spacing: 10) {
-                                Image(systemName: "arrow.triangle.2.circlepath.camera.fill")
-                                    .font(.system(size: 16, weight: .bold))
-                                Text("Foto Ulang (Retake)")
+                            HStack(spacing: 8) {
+                                Image(systemName: "arrow.clockwise")
+                                    .font(.system(size: 14, weight: .bold))
+                                Text("Foto Ulang")
+                                    .font(.system(size: 14, weight: .bold, design: .rounded))
                             }
-                            .font(.system(.headline, design: .rounded).bold())
-                            .foregroundStyle(.white)
-                            .frame(width: 230, height: 50)
-                            .background(
-                                LinearGradient(
-                                    colors: [Color(hex: "#7C5CFC"), Color.cyan],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
+                            .foregroundStyle(.black)
+                            .frame(width: 150, height: 46)
+                            .background(Color.white)
                             .clipShape(Capsule())
-                            .shadow(color: Color(hex: "#7C5CFC").opacity(0.5), radius: 16, y: 6)
+                            .shadow(color: .white.opacity(0.3), radius: 10, y: 2)
                         }
                     }
+                    .padding(.top, 4)
                 }
-                .padding(32)
-                .background(.ultraThinMaterial)
-                .background(Color.black.opacity(0.5))
-                .clipShape(RoundedRectangle(cornerRadius: 36, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 36, style: .continuous)
-                        .stroke(LinearGradient(colors: [.white.opacity(0.35), .white.opacity(0.08)], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1.5)
-                )
-                .shadow(color: .black.opacity(0.6), radius: 40, y: 20)
-                .padding(.horizontal, 40)
-                .transition(.scale(scale: 0.9).combined(with: .opacity))
+                .transition(.scale(scale: 0.92).combined(with: .opacity))
             }
             .zIndex(100)
         }
