@@ -63,7 +63,13 @@ final class PoseIntelligenceService: @unchecked Sendable {
         Task.detached(priority: .userInitiated) {
             do {
                 try handler.perform([self.faceRequest])
-                let results = self.faceRequest.results
+                var results = self.faceRequest.results
+                if (results?.isEmpty ?? true) {
+                    let handlerRight = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: .right, options: [:])
+                    try? handlerRight.perform([self.faceRequest])
+                    results = self.faceRequest.results
+                }
+                
                 let count = results?.count ?? 0
                 let firstFaceRect = results?.first?.boundingBox
                 

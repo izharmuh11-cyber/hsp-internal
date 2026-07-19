@@ -432,27 +432,26 @@ struct ActiveSessionView: View {
             videoFeedView(geometry: geometry)
                 .ignoresSafeArea()
             
-            // Authentic Dynamic iPhone Camera AF Yellow Focus Box (Mengikuti Posisi Wajah Real-Time)
+            // Authentic Dynamic iPhone Camera AF Yellow Focus Box (ALWAYS VISIBLE & Tracking Wajah Real-Time)
             if localCountdown == 0 && !isBriefing && !showFlash {
                 let boxWidth: CGFloat = detectedFaceRect != nil ? max(130, detectedFaceRect!.width * geometry.size.width * 1.3) : 160
                 let boxHeight: CGFloat = detectedFaceRect != nil ? max(150, detectedFaceRect!.height * geometry.size.height * 1.3) : 160
                 let centerX: CGFloat = detectedFaceRect != nil ? (1.0 - detectedFaceRect!.midX) * geometry.size.width : geometry.size.width / 2.0
                 let centerY: CGFloat = detectedFaceRect != nil ? (1.0 - detectedFaceRect!.midY) * geometry.size.height : geometry.size.height / 2.0
-                let isVisible: Bool = detectedFaceCount > 0 || detectedFaceRect != nil
 
                 ZStack {
                     CornerBracketsShape()
-                        .stroke(Color(red: 255/255, green: 215/255, blue: 0/255), lineWidth: 1.8)
+                        .stroke(Color(red: 255/255, green: 215/255, blue: 0/255), lineWidth: 2.0)
                         .frame(width: boxWidth, height: boxHeight)
-                        .shadow(color: Color(red: 255/255, green: 215/255, blue: 0/255).opacity(0.6), radius: 6, y: 0)
+                        .shadow(color: Color(red: 255/255, green: 215/255, blue: 0/255).opacity(0.8), radius: 8, y: 0)
                     
                     Rectangle()
                         .fill(Color(red: 255/255, green: 215/255, blue: 0/255))
-                        .frame(width: 4, height: 4)
+                        .frame(width: 5, height: 5)
                 }
                 .position(x: centerX, y: centerY)
-                .opacity(isVisible ? 1.0 : 0.0)
-                .scaleEffect(isVisible ? 1.0 : 0.85)
+                .opacity(1.0)
+                .scaleEffect(detectedFaceRect != nil ? 1.0 : 0.95)
                 .animation(.spring(response: 0.35, dampingFraction: 0.75), value: detectedFaceRect)
             }
             
