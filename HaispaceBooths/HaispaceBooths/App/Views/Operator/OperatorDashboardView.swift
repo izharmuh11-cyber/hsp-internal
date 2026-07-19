@@ -380,9 +380,23 @@ struct OperatorDashboardView: View {
     // MARK: - 4. The Wallet Card (Hero Card Kiri)
     private func walletCardHero(event: EventModel) -> some View {
         ZStack(alignment: .bottom) {
+            // Radar Proximity Background Overlay
+            ZStack {
+                Circle()
+                    .stroke(Color.white.opacity(0.08), lineWidth: 2)
+                    .frame(width: 380, height: 380)
+                Circle()
+                    .stroke(Color.white.opacity(0.12), lineWidth: 1.5)
+                    .frame(width: 260, height: 260)
+                Circle()
+                    .stroke(Color.white.opacity(0.16), lineWidth: 1)
+                    .frame(width: 140, height: 140)
+            }
+            .offset(x: 120, y: -60)
+            
             // Physical Card Body
             VStack(alignment: .leading, spacing: 0) {
-                // Top Row (Badge + Edit Icon)
+                // Top Row (Badge + Proximity Radar Pill + Edit Icon)
                 HStack {
                     HStack(spacing: 12) {
                         ZStack {
@@ -402,13 +416,29 @@ struct OperatorDashboardView: View {
                                 .tracking(2)
                                 .foregroundStyle(Color.white.opacity(0.7))
                             
-                            Text(event.isPayPerSession ? "Mode Pembayaran Sesi" : "Mode Sewa Bebas")
+                            Text(event.packageName)
                                 .font(.system(size: 13, weight: .semibold, design: .rounded))
                                 .foregroundStyle(Color.white.opacity(0.95))
                         }
                     }
                     
                     Spacer()
+                    
+                    // Live Radar Proximity Indicator
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(appState.p2p.isConnected ? Color(hex: "#10B981") : Color.orange)
+                            .frame(width: 8, height: 8)
+                        
+                        Text(appState.p2p.isConnected ? "Radar Active" : "Scanning")
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.9))
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.white.opacity(0.18))
+                    .clipShape(Capsule())
+                    .overlay(Capsule().stroke(Color.white.opacity(0.25), lineWidth: 1))
                     
                     Button(action: { openEditEventSheet(event) }) {
                         ZStack {
@@ -447,15 +477,13 @@ struct OperatorDashboardView: View {
                         .clipShape(Capsule())
                         .overlay(Capsule().stroke(Color.white.opacity(0.15), lineWidth: 1))
                         
-                        if event.isPayPerSession {
-                            Text("Rp \(Int(event.pricePerSession).formatted())")
-                                .font(.system(size: 14, weight: .bold, design: .rounded))
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                                .background(Color.white.opacity(0.25))
-                                .clipShape(Capsule())
-                                .overlay(Capsule().stroke(Color.white.opacity(0.35), lineWidth: 1))
-                        }
+                        Text("\(event.totalSessions) Sesi Berjalan")
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(Color.white.opacity(0.25))
+                            .clipShape(Capsule())
+                            .overlay(Capsule().stroke(Color.white.opacity(0.35), lineWidth: 1))
                     }
                 }
                 
@@ -521,7 +549,7 @@ struct OperatorDashboardView: View {
         VStack(spacing: 20) {
             topRowWidgets(event: event)
             cameraHardwareWidget
-            bingkaiFilterWidget(event: event)
+            liveSessionLogWidget(event: event)
         }
     }
     
@@ -533,26 +561,45 @@ struct OperatorDashboardView: View {
     }
     
     private func revenueWidget(event: EventModel) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("TOTAL OMSET")
-                .font(.system(size: 11, weight: .bold, design: .rounded))
-                .tracking(2)
-                .foregroundStyle(Color(hex: "#94A3B8"))
-            
-            Spacer()
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("TOTAL OMSET")
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .tracking(2)
+                    .foregroundStyle(Color(hex: "#94A3B8"))
+                Spacer()
+                Text("Realtime")
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(Color(hex: "#10B981").opacity(0.12))
+                    .foregroundStyle(Color(hex: "#10B981"))
+                    .clipShape(Capsule())
+            }
             
             VStack(alignment: .leading, spacing: 2) {
                 Text("Rp")
-                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
                     .foregroundStyle(Color(hex: "#94A3B8"))
                 
                 Text(formatRevenue(event.totalRevenue))
                     .font(.system(size: 32, weight: .black, design: .rounded))
                     .foregroundStyle(Color(hex: "#0F172A"))
             }
+            
+            // Mini Activity Spark Bars
+            HStack(alignment: .bottom, spacing: 4) {
+                ForEach([40, 65, 30, 85, 55, 95, 70], id: \.self) { val in
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(Color(hex: "#4F46E5").opacity(Double(val) / 100.0))
+                        .frame(height: CGFloat(val) * 0.25)
+                }
+            }
+            .frame(height: 22)
+            .padding(.top, 2)
         }
-        .padding(22)
-        .frame(maxWidth: .infinity, minHeight: 140, alignment: .leading)
+        .padding(20)
+        .frame(maxWidth: .infinity, minHeight: 155, alignment: .leading)
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
         .shadow(color: Color.black.opacity(0.04), radius: 12, y: 4)
@@ -560,13 +607,17 @@ struct OperatorDashboardView: View {
     }
     
     private func sessionsWidget(event: EventModel) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("SESI FOTO")
-                .font(.system(size: 11, weight: .bold, design: .rounded))
-                .tracking(2)
-                .foregroundStyle(Color(hex: "#94A3B8"))
-            
-            Spacer()
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("SESI FOTO")
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .tracking(2)
+                    .foregroundStyle(Color(hex: "#94A3B8"))
+                Spacer()
+                Image(systemName: "camera.fill")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.6))
+            }
             
             HStack(alignment: .bottom) {
                 Text("\(event.totalSessions)")
@@ -574,20 +625,21 @@ struct OperatorDashboardView: View {
                     .foregroundStyle(.white)
                 
                 Spacer()
-                
-                ZStack {
-                    Circle()
-                        .fill(Color.white.opacity(0.12))
-                        .frame(width: 38, height: 38)
-                    
-                    Image(systemName: "camera.fill")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(.white)
+            }
+            
+            // Mini Session Activity Bars
+            HStack(alignment: .bottom, spacing: 4) {
+                ForEach([50, 80, 45, 90, 60, 100, 75], id: \.self) { val in
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(Color.white.opacity(Double(val) / 100.0))
+                        .frame(height: CGFloat(val) * 0.25)
                 }
             }
+            .frame(height: 22)
+            .padding(.top, 2)
         }
-        .padding(22)
-        .frame(maxWidth: .infinity, minHeight: 140, alignment: .leading)
+        .padding(20)
+        .frame(maxWidth: .infinity, minHeight: 155, alignment: .leading)
         .background(Color(hex: "#0F172A"))
         .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
         .shadow(color: Color(hex: "#0F172A").opacity(0.2), radius: 14, y: 6)
@@ -813,55 +865,65 @@ struct OperatorDashboardView: View {
         }
     }
     
-    private func bingkaiFilterWidget(event: EventModel) -> some View {
-        Button(action: { openEditEventSheet(event) }) {
-            HStack(spacing: 14) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(Color(hex: "#F3E8FF"))
-                        .frame(width: 44, height: 44)
-                    
+    private func liveSessionLogWidget(event: EventModel) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                HStack(spacing: 6) {
                     Image(systemName: "photo.stack.fill")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundStyle(Color(hex: "#9333EA"))
+                        .foregroundStyle(Color(hex: "#4F46E5"))
+                    Text("AKTIVITAS & LOG SESI")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .tracking(1.5)
+                        .foregroundStyle(Color(hex: "#94A3B8"))
                 }
-                
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Bingkai & Filter Tone")
-                        .font(.system(size: 15, weight: .bold, design: .rounded))
-                        .foregroundStyle(Color(hex: "#0F172A"))
-                    
-                    Text("\(event.selectedFrameName) • \(event.selectedFilterName)")
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
-                        .foregroundStyle(Color(hex: "#64748B"))
-                        .lineLimit(1)
-                }
-                
                 Spacer()
-                
-                ZStack {
-                    Circle()
-                        .fill(Color(hex: "#F1F5F9"))
-                        .frame(width: 32, height: 32)
-                    
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(Color(hex: "#64748B"))
-                }
+                Text("Live Stream")
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .foregroundStyle(Color(hex: "#4F46E5"))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(Color(hex: "#EEF2FF"))
+                    .clipShape(Capsule())
             }
-            .padding(16)
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
-            .shadow(color: Color.black.opacity(0.04), radius: 10, y: 3)
-            .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).stroke(Color(hex: "#E2E8F0"), lineWidth: 1))
+            
+            VStack(spacing: 8) {
+                HStack(spacing: 12) {
+                    Circle()
+                        .fill(Color(hex: "#10B981"))
+                        .frame(width: 8, height: 8)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Sesi #\(max(1, event.totalSessions)) — Selesai & Dicetak")
+                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                            .foregroundStyle(Color(hex: "#0F172A"))
+                        Text("3 foto ditransfer via P2P • 2x Strip Print")
+                            .font(.system(size: 11, weight: .medium, design: .rounded))
+                            .foregroundStyle(Color(hex: "#64748B"))
+                    }
+                    Spacer()
+                    Text("Aktif")
+                        .font(.system(size: 10, weight: .semibold, design: .rounded))
+                        .foregroundStyle(Color(hex: "#94A3B8"))
+                }
+                .padding(12)
+                .background(Color(hex: "#F8FAFC"))
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color(hex: "#E2E8F0"), lineWidth: 1))
+            }
         }
+        .padding(18)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .shadow(color: Color.black.opacity(0.04), radius: 10, y: 3)
+        .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).stroke(Color(hex: "#E2E8F0"), lineWidth: 1))
     }
     
-    // MARK: - Modal: New / Edit Event Sheet (Liquid Glass)
+    // MARK: - Modal: New / Edit Event Sheet (Liquid Glass 2-Column Split)
     private var newEventModalSheet: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 24) {
+            HStack(alignment: .top, spacing: 24) {
+                // Kolom Kiri: Header & Informasi Utama
+                VStack(spacing: 20) {
                     // Header Banner Preview
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
@@ -871,7 +933,7 @@ struct OperatorDashboardView: View {
                                 .foregroundStyle(Color(hex: "#4F46E5"))
                             
                             Text(formName.isEmpty ? "Nama Event Photobooth" : formName)
-                                .font(.system(size: 24, weight: .bold, design: .rounded))
+                                .font(.system(size: 22, weight: .bold, design: .rounded))
                                 .foregroundStyle(Color(hex: "#0F172A"))
                         }
                         
@@ -880,28 +942,28 @@ struct OperatorDashboardView: View {
                         ZStack {
                             Circle()
                                 .fill(LinearGradient(colors: [Color(hex: colorOptions[formColorIndex].startHex), Color(hex: colorOptions[formColorIndex].endHex)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                                .frame(width: 48, height: 48)
+                                .frame(width: 44, height: 44)
                             
                             Image(systemName: iconOptions[formIconIndex].icon)
-                                .font(.system(size: 20, weight: .bold))
+                                .font(.system(size: 18, weight: .bold))
                                 .foregroundStyle(.white)
                         }
                     }
-                    .padding(20)
+                    .padding(16)
                     .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-                    .shadow(color: Color.black.opacity(0.04), radius: 10, y: 3)
-                    .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(Color(hex: "#E2E8F0"), lineWidth: 1))
+                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .shadow(color: Color.black.opacity(0.04), radius: 8, y: 3)
+                    .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Color(hex: "#E2E8F0"), lineWidth: 1))
                     
-                    // Input Nama Event & Lokasi
-                    VStack(alignment: .leading, spacing: 14) {
+                    // Input Nama Event & Lokasi (Tap-to-Focus)
+                    VStack(alignment: .leading, spacing: 12) {
                         Text("1. INFORMASI UTAMA")
                             .font(.system(size: 11, weight: .bold, design: .rounded))
                             .tracking(1.5)
                             .foregroundStyle(Color(hex: "#94A3B8"))
                         
-                        VStack(spacing: 12) {
-                            // Text Input Field Nama
+                        VStack(spacing: 10) {
+                            // Tap-to-Focus Field Nama
                             HStack {
                                 Image(systemName: "pencil.line")
                                     .foregroundStyle(Color(hex: "#4F46E5"))
@@ -912,33 +974,22 @@ struct OperatorDashboardView: View {
                                 
                                 Spacer()
                                 
-                                Button(action: {
-                                    playHaptic(style: .light)
-                                    withAnimation(.spring) { activeKeyboardField = activeKeyboardField == .name ? nil : .name }
-                                }) {
-                                    Text(activeKeyboardField == .name ? "Tutup Keypad" : "Ketik In-App")
-                                        .font(.system(size: 12, weight: .bold, design: .rounded))
-                                        .foregroundStyle(Color(hex: "#4F46E5"))
-                                        .padding(.horizontal, 12)
-                                        .padding(.vertical, 6)
-                                        .background(Color(hex: "#EEF2FF"))
-                                        .clipShape(Capsule())
+                                if activeKeyboardField == .name {
+                                    Circle()
+                                        .fill(Color(hex: "#4F46E5"))
+                                        .frame(width: 8, height: 8)
                                 }
                             }
                             .padding(16)
                             .background(Color.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(activeKeyboardField == .name ? Color(hex: "#4F46E5") : Color(hex: "#E2E8F0"), lineWidth: 1.5))
-                            
-                            // Keyboard Numpad jika aktif untuk Nama
-                            if activeKeyboardField == .name {
-                                CustomInAppKeyboard(text: $formName, onDone: {
-                                    activeKeyboardField = .location
-                                })
-                                .transition(.scale.combined(with: .opacity))
+                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(activeKeyboardField == .name ? Color(hex: "#4F46E5") : Color(hex: "#E2E8F0"), lineWidth: 1.5))
+                            .onTapGesture {
+                                playHaptic(style: .light)
+                                withAnimation(.spring) { activeKeyboardField = .name }
                             }
                             
-                            // Text Input Field Lokasi
+                            // Tap-to-Focus Field Lokasi
                             HStack {
                                 Image(systemName: "mappin.circle.fill")
                                     .foregroundStyle(Color(hex: "#F59E0B"))
@@ -949,41 +1000,61 @@ struct OperatorDashboardView: View {
                                 
                                 Spacer()
                                 
-                                Button(action: {
-                                    playHaptic(style: .light)
-                                    withAnimation(.spring) { activeKeyboardField = activeKeyboardField == .location ? nil : .location }
-                                }) {
-                                    Text(activeKeyboardField == .location ? "Tutup Keypad" : "Ketik In-App")
-                                        .font(.system(size: 12, weight: .bold, design: .rounded))
-                                        .foregroundStyle(Color(hex: "#4F46E5"))
-                                        .padding(.horizontal, 12)
-                                        .padding(.vertical, 6)
-                                        .background(Color(hex: "#EEF2FF"))
-                                        .clipShape(Capsule())
+                                if activeKeyboardField == .location {
+                                    Circle()
+                                        .fill(Color(hex: "#F59E0B"))
+                                        .frame(width: 8, height: 8)
                                 }
                             }
                             .padding(16)
                             .background(Color.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(activeKeyboardField == .location ? Color(hex: "#4F46E5") : Color(hex: "#E2E8F0"), lineWidth: 1.5))
-                            
-                            if activeKeyboardField == .location {
-                                CustomInAppKeyboard(text: $formLocation, onDone: {
-                                    activeKeyboardField = nil
-                                })
-                                .transition(.scale.combined(with: .opacity))
+                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(activeKeyboardField == .location ? Color(hex: "#F59E0B") : Color(hex: "#E2E8F0"), lineWidth: 1.5))
+                            .onTapGesture {
+                                playHaptic(style: .light)
+                                withAnimation(.spring) { activeKeyboardField = .location }
                             }
                         }
                     }
                     
-                    // Section 2: Preset Paket Harga Admin
-                    newEventPackageSelectorCard
-                    
-                    // Section 3: Ikon & Warna
+                    // Tema & Ikon
                     newEventIconAndColorPickers
                 }
-                .padding(20)
+                .frame(width: 420)
+                
+                // Kolom Kanan: Preset Paket Admin & Keyboard In-App Aktif
+                VStack(spacing: 20) {
+                    newEventPackageSelectorCard
+                    
+                    if activeKeyboardField == .name {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("MENGETIK NAMA EVENT")
+                                .font(.system(size: 10, weight: .bold, design: .rounded))
+                                .tracking(1.5)
+                                .foregroundStyle(Color(hex: "#4F46E5"))
+                            
+                            CustomInAppKeyboard(text: $formName, onDone: {
+                                withAnimation { activeKeyboardField = .location }
+                            })
+                        }
+                        .transition(.scale.combined(with: .opacity))
+                    } else if activeKeyboardField == .location {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("MENGETIK LOKASI BOOTH")
+                                .font(.system(size: 10, weight: .bold, design: .rounded))
+                                .tracking(1.5)
+                                .foregroundStyle(Color(hex: "#F59E0B"))
+                            
+                            CustomInAppKeyboard(text: $formLocation, onDone: {
+                                withAnimation { activeKeyboardField = nil }
+                            })
+                        }
+                        .transition(.scale.combined(with: .opacity))
+                    }
+                }
+                .frame(maxWidth: .infinity)
             }
+            .padding(24)
             .background(Color(hex: "#F8FAFC"))
             .navigationTitle(editingEventId == nil ? "Event Baru" : "Edit Event")
             .navigationBarTitleDisplayMode(.inline)
