@@ -471,188 +471,195 @@ struct OperatorDashboardView: View {
     // MARK: - 5. Right Column Widgets (Bento 2.0)
     private func rightColumnWidgets(event: EventModel) -> some View {
         VStack(spacing: 20) {
-            // Top Row Widgets (Omset & Sesi Foto)
-            HStack(spacing: 20) {
-                // WIDGET 1: Revenue (Squircle White)
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("TOTAL OMSET")
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
-                        .tracking(2)
-                        .foregroundStyle(Color(hex: "#94A3B8"))
-                    
-                    Spacer()
-                    
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Rp")
-                            .font(.system(size: 13, weight: .bold, design: .rounded))
-                            .foregroundStyle(Color(hex: "#94A3B8"))
-                        
-                        Text(formatRevenue(event.totalRevenue))
-                            .font(.system(size: 32, weight: .black, design: .rounded))
-                            .foregroundStyle(Color(hex: "#0F172A"))
-                    }
-                }
-                .padding(22)
-                .frame(maxWidth: .infinity, minHeight: 140, alignment: .leading)
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
-                .shadow(color: Color.black.opacity(0.04), radius: 12, y: 4)
-                .overlay(RoundedRectangle(cornerRadius: 32, style: .continuous).stroke(Color(hex: "#E2E8F0"), lineWidth: 1))
+            topRowWidgets(event: event)
+            cameraHardwareWidget
+            bingkaiFilterWidget(event: event)
+        }
+    }
+    
+    private func topRowWidgets(event: EventModel) -> some View {
+        HStack(spacing: 20) {
+            // WIDGET 1: Revenue (Squircle White)
+            VStack(alignment: .leading, spacing: 12) {
+                Text("TOTAL OMSET")
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .tracking(2)
+                    .foregroundStyle(Color(hex: "#94A3B8"))
                 
-                // WIDGET 2: Sessions (Dark Slate Card)
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("SESI FOTO")
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
-                        .tracking(2)
-                        .foregroundStyle(Color(hex: "#94A3B8"))
-                    
-                    Spacer()
-                    
-                    HStack(alignment: .bottom) {
-                        Text("\(event.totalSessions)")
-                            .font(.system(size: 36, weight: .black, design: .rounded))
-                            .foregroundStyle(.white)
-                        
-                        Spacer()
-                        
-                        ZStack {
-                            Circle()
-                                .fill(Color.white.opacity(0.12))
-                                .frame(width: 38, height: 38)
-                            
-                            Image(systemName: "camera.fill")
-                                .font(.system(size: 16, weight: .bold))
-                                .foregroundStyle(.white)
-                        }
-                    }
-                }
-                .padding(22)
-                .frame(maxWidth: .infinity, minHeight: 140, alignment: .leading)
-                .background(Color(hex: "#0F172A"))
-                .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
-                .shadow(color: Color(hex: "#0F172A").opacity(0.2), radius: 14, y: 6)
-            }
-            
-            // WIDGET 3: Camera Hardware Manager (List style)
-            VStack(alignment: .leading, spacing: 14) {
-                HStack {
-                    Text("PERANGKAT P2P")
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
-                        .tracking(2)
-                        .foregroundStyle(Color(hex: "#94A3B8"))
-                    
-                    Spacer()
-                    
-                    Button(action: { isShowingPairingModal = true }) {
-                        Text("Pairing QR")
-                            .font(.system(size: 12, weight: .bold, design: .rounded))
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(Color(hex: "#EEF2FF"))
-                            .foregroundStyle(Color(hex: "#4F46E5"))
-                            .clipShape(Capsule())
-                    }
-                }
+                Spacer()
                 
-                HStack(spacing: 14) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(Color(hex: "#FFEDD5"))
-                            .frame(width: 48, height: 48)
-                        
-                        Image(systemName: "bolt.fill")
-                            .font(.system(size: 22, weight: .bold))
-                            .foregroundStyle(Color(hex: "#EA580C"))
-                    }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Rp")
+                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color(hex: "#94A3B8"))
                     
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(appState.p2p.connectedPeerName ?? "iPhone 15 Pro Max")
-                            .font(.system(size: 15, weight: .bold, design: .rounded))
-                            .foregroundStyle(Color(hex: "#0F172A"))
-                        
-                        HStack(spacing: 6) {
-                            Circle()
-                                .fill(appState.p2p.isConnected ? Color(hex: "#10B981") : Color.red)
-                                .frame(width: 6, height: 6)
-                            
-                            Text(appState.p2p.isConnected ? "Online • Ping 12ms" : "Offline")
-                                .font(.system(size: 12, weight: .medium, design: .rounded))
-                                .foregroundStyle(Color(hex: "#64748B"))
-                        }
-                    }
-                    
-                    Spacer()
-                    
-                    VStack(alignment: .trailing, spacing: 4) {
-                        Text("\(Int((appState.p2p.connectedPeerBatteryLevel ?? 0.85) * 100))%")
-                            .font(.system(size: 12, weight: .bold, design: .rounded))
-                            .foregroundStyle(Color(hex: "#94A3B8"))
-                        
-                        // Custom Battery Bar
-                        ZStack(alignment: .leading) {
-                            RoundedRectangle(cornerRadius: 4)
-                                .stroke(Color(hex: "#CBD5E1"), lineWidth: 1.5)
-                                .frame(width: 32, height: 14)
-                            
-                            RoundedRectangle(cornerRadius: 2)
-                                .fill(Color(hex: "#10B981"))
-                                .frame(width: 26 * (appState.p2p.connectedPeerBatteryLevel ?? 0.85), height: 9)
-                                .padding(.leading, 2.5)
-                        }
-                    }
+                    Text(formatRevenue(event.totalRevenue))
+                        .font(.system(size: 32, weight: .black, design: .rounded))
+                        .foregroundStyle(Color(hex: "#0F172A"))
                 }
-                .padding(14)
-                .background(Color(hex: "#F8FAFC"))
-                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
             }
-            .padding(20)
+            .padding(22)
+            .frame(maxWidth: .infinity, minHeight: 140, alignment: .leading)
             .background(Color.white)
             .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
             .shadow(color: Color.black.opacity(0.04), radius: 12, y: 4)
             .overlay(RoundedRectangle(cornerRadius: 32, style: .continuous).stroke(Color(hex: "#E2E8F0"), lineWidth: 1))
             
-            // WIDGET 4: Bingkai & Filter (Clickable row)
-            Button(action: { openEditEventSheet(event) }) {
-                HStack(spacing: 14) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(Color(hex: "#F3E8FF"))
-                            .frame(width: 44, height: 44)
-                        
-                        Image(systemName: "photo.stack.fill")
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundStyle(Color(hex: "#9333EA"))
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Bingkai & Filter Tone")
-                            .font(.system(size: 15, weight: .bold, design: .rounded))
-                            .foregroundStyle(Color(hex: "#0F172A"))
-                        
-                        Text("\(event.selectedFrameName) • \(event.selectedFilterName)")
-                            .font(.system(size: 12, weight: .medium, design: .rounded))
-                            .foregroundStyle(Color(hex: "#64748B"))
-                            .lineLimit(1)
-                    }
+            // WIDGET 2: Sessions (Dark Slate Card)
+            VStack(alignment: .leading, spacing: 12) {
+                Text("SESI FOTO")
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .tracking(2)
+                    .foregroundStyle(Color(hex: "#94A3B8"))
+                
+                Spacer()
+                
+                HStack(alignment: .bottom) {
+                    Text("\(event.totalSessions)")
+                        .font(.system(size: 36, weight: .black, design: .rounded))
+                        .foregroundStyle(.white)
                     
                     Spacer()
                     
                     ZStack {
                         Circle()
-                            .fill(Color(hex: "#F1F5F9"))
-                            .frame(width: 32, height: 32)
+                            .fill(Color.white.opacity(0.12))
+                            .frame(width: 38, height: 38)
                         
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 13, weight: .bold))
+                        Image(systemName: "camera.fill")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundStyle(.white)
+                    }
+                }
+            }
+            .padding(22)
+            .frame(maxWidth: .infinity, minHeight: 140, alignment: .leading)
+            .background(Color(hex: "#0F172A"))
+            .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+            .shadow(color: Color(hex: "#0F172A").opacity(0.2), radius: 14, y: 6)
+        }
+    }
+    
+    private var cameraHardwareWidget: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("PERANGKAT P2P")
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .tracking(2)
+                    .foregroundStyle(Color(hex: "#94A3B8"))
+                
+                Spacer()
+                
+                Button(action: { isShowingPairingModal = true }) {
+                    Text("Pairing QR")
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color(hex: "#EEF2FF"))
+                        .foregroundStyle(Color(hex: "#4F46E5"))
+                        .clipShape(Capsule())
+                }
+            }
+            
+            HStack(spacing: 14) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(Color(hex: "#FFEDD5"))
+                        .frame(width: 48, height: 48)
+                    
+                    Image(systemName: "bolt.fill")
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundStyle(Color(hex: "#EA580C"))
+                }
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(appState.p2p.connectedPeerName ?? "iPhone 15 Pro Max")
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color(hex: "#0F172A"))
+                    
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(appState.p2p.isConnected ? Color(hex: "#10B981") : Color.red)
+                            .frame(width: 6, height: 6)
+                        
+                        Text(appState.p2p.isConnected ? "Online • Ping 12ms" : "Offline")
+                            .font(.system(size: 12, weight: .medium, design: .rounded))
                             .foregroundStyle(Color(hex: "#64748B"))
                     }
                 }
-                .padding(16)
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
-                .shadow(color: Color.black.opacity(0.04), radius: 10, y: 3)
-                .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).stroke(Color(hex: "#E2E8F0"), lineWidth: 1))
+                
+                Spacer()
+                
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("\(Int((appState.p2p.connectedPeerBatteryLevel ?? 0.85) * 100))%")
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color(hex: "#94A3B8"))
+                    
+                    // Custom Battery Bar
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(Color(hex: "#CBD5E1"), lineWidth: 1.5)
+                            .frame(width: 32, height: 14)
+                        
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(Color(hex: "#10B981"))
+                            .frame(width: 26 * (appState.p2p.connectedPeerBatteryLevel ?? 0.85), height: 9)
+                            .padding(.leading, 2.5)
+                    }
+                }
             }
+            .padding(14)
+            .background(Color(hex: "#F8FAFC"))
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        }
+        .padding(20)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+        .shadow(color: Color.black.opacity(0.04), radius: 12, y: 4)
+        .overlay(RoundedRectangle(cornerRadius: 32, style: .continuous).stroke(Color(hex: "#E2E8F0"), lineWidth: 1))
+    }
+    
+    private func bingkaiFilterWidget(event: EventModel) -> some View {
+        Button(action: { openEditEventSheet(event) }) {
+            HStack(spacing: 14) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(Color(hex: "#F3E8FF"))
+                        .frame(width: 44, height: 44)
+                    
+                    Image(systemName: "photo.stack.fill")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(Color(hex: "#9333EA"))
+                }
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Bingkai & Filter Tone")
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color(hex: "#0F172A"))
+                    
+                    Text("\(event.selectedFrameName) • \(event.selectedFilterName)")
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundStyle(Color(hex: "#64748B"))
+                        .lineLimit(1)
+                }
+                
+                Spacer()
+                
+                ZStack {
+                    Circle()
+                        .fill(Color(hex: "#F1F5F9"))
+                        .frame(width: 32, height: 32)
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(Color(hex: "#64748B"))
+                }
+            }
+            .padding(16)
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+            .shadow(color: Color.black.opacity(0.04), radius: 10, y: 3)
+            .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).stroke(Color(hex: "#E2E8F0"), lineWidth: 1))
         }
     }
     
