@@ -195,7 +195,7 @@ final class CameraAppState {
         let msg = P2PMessage.cameraStatus(batteryLevel: activeLevel, thermalState: thermalState.rawValue, latencyMs: p2p.latencyMs)
         Task {
             if let data = try? msg.encode() {
-                await P2PClientService.shared.send(data)
+                try? await P2PClientService.shared.sendData(data)
                 HaispaceLogger.info("Pesan cameraStatus terkirim ke iPad (Battery: \(Int(activeLevel * 100))%)", category: "p2p")
             }
         }
