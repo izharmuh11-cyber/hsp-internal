@@ -23,7 +23,8 @@ struct OperatorDashboardView: View {
     @State private var editingEventId: String? = nil
     @State private var formName: String = ""
     @State private var formLocation: String = ""
-    @State private var selectedPackageId: String = "pkg-std"
+    @State private var selectedPackageIds: Set<String> = ["pkg-std", "pkg-prem"]
+    @State private var eventModalTab: Int = 0 // 0: Identitas & Tema, 1: Paket Harga (Multi-Select)
     @State private var formIconIndex: Int = 0
     @State private var formColorIndex: Int = 0
     
@@ -918,143 +919,172 @@ struct OperatorDashboardView: View {
         .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).stroke(Color(hex: "#E2E8F0"), lineWidth: 1))
     }
     
-    // MARK: - Modal: New / Edit Event Sheet (Liquid Glass 2-Column Split)
+    // MARK: - Modal: New / Edit Event Sheet (Liquid Glass Segmented Multi-Package)
     private var newEventModalSheet: some View {
         NavigationStack {
-            HStack(alignment: .top, spacing: 24) {
-                // Kolom Kiri: Header & Informasi Utama
-                VStack(spacing: 20) {
-                    // Header Banner Preview
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(editingEventId == nil ? "BUAT EVENT BARU" : "EDIT EVENT")
-                                .font(.system(size: 11, weight: .bold, design: .rounded))
-                                .tracking(2)
-                                .foregroundStyle(Color(hex: "#4F46E5"))
-                            
-                            Text(formName.isEmpty ? "Nama Event Photobooth" : formName)
-                                .font(.system(size: 22, weight: .bold, design: .rounded))
-                                .foregroundStyle(Color(hex: "#0F172A"))
-                        }
-                        
-                        Spacer()
-                        
-                        ZStack {
-                            Circle()
-                                .fill(LinearGradient(colors: [Color(hex: colorOptions[formColorIndex].startHex), Color(hex: colorOptions[formColorIndex].endHex)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                                .frame(width: 44, height: 44)
-                            
-                            Image(systemName: iconOptions[formIconIndex].icon)
-                                .font(.system(size: 18, weight: .bold))
-                                .foregroundStyle(.white)
-                        }
-                    }
-                    .padding(16)
-                    .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-                    .shadow(color: Color.black.opacity(0.04), radius: 8, y: 3)
-                    .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Color(hex: "#E2E8F0"), lineWidth: 1))
-                    
-                    // Input Nama Event & Lokasi (Tap-to-Focus)
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("1. INFORMASI UTAMA")
-                            .font(.system(size: 11, weight: .bold, design: .rounded))
-                            .tracking(1.5)
-                            .foregroundStyle(Color(hex: "#94A3B8"))
-                        
-                        VStack(spacing: 10) {
-                            // Tap-to-Focus Field Nama
-                            HStack {
-                                Image(systemName: "pencil.line")
-                                    .foregroundStyle(Color(hex: "#4F46E5"))
-                                
-                                Text(formName.isEmpty ? "Nama Event (mis. Wisuda UNG 2026)" : formName)
-                                    .font(.system(size: 15, weight: formName.isEmpty ? .regular : .bold, design: .rounded))
-                                    .foregroundStyle(formName.isEmpty ? Color(hex: "#94A3B8") : Color(hex: "#0F172A"))
-                                
-                                Spacer()
-                                
-                                if activeKeyboardField == .name {
-                                    Circle()
-                                        .fill(Color(hex: "#4F46E5"))
-                                        .frame(width: 8, height: 8)
-                                }
-                            }
-                            .padding(16)
-                            .background(Color.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(activeKeyboardField == .name ? Color(hex: "#4F46E5") : Color(hex: "#E2E8F0"), lineWidth: 1.5))
-                            .onTapGesture {
-                                playHaptic(style: .light)
-                                withAnimation(.spring) { activeKeyboardField = .name }
-                            }
-                            
-                            // Tap-to-Focus Field Lokasi
-                            HStack {
-                                Image(systemName: "mappin.circle.fill")
-                                    .foregroundStyle(Color(hex: "#F59E0B"))
-                                
-                                Text(formLocation.isEmpty ? "Lokasi Booth (mis. Auditorium UNG)" : formLocation)
-                                    .font(.system(size: 15, weight: formLocation.isEmpty ? .regular : .bold, design: .rounded))
-                                    .foregroundStyle(formLocation.isEmpty ? Color(hex: "#94A3B8") : Color(hex: "#0F172A"))
-                                
-                                Spacer()
-                                
-                                if activeKeyboardField == .location {
-                                    Circle()
-                                        .fill(Color(hex: "#F59E0B"))
-                                        .frame(width: 8, height: 8)
-                                }
-                            }
-                            .padding(16)
-                            .background(Color.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(activeKeyboardField == .location ? Color(hex: "#F59E0B") : Color(hex: "#E2E8F0"), lineWidth: 1.5))
-                            .onTapGesture {
-                                playHaptic(style: .light)
-                                withAnimation(.spring) { activeKeyboardField = .location }
-                            }
-                        }
-                    }
-                    
-                    // Tema & Ikon
-                    newEventIconAndColorPickers
+            VStack(spacing: 16) {
+                // Segmented Control Header
+                Picker("Modal Tab", selection: $eventModalTab) {
+                    Text("1. Identitas & Tema").tag(0)
+                    Text("2. Paket Harga (\(selectedPackageIds.count) Aktif)").tag(1)
                 }
-                .frame(width: 420)
+                .pickerStyle(.segmented)
+                .padding(.horizontal, 24)
+                .padding(.top, 12)
                 
-                // Kolom Kanan: Preset Paket Admin & Keyboard In-App Aktif
-                VStack(spacing: 20) {
-                    newEventPackageSelectorCard
-                    
-                    if activeKeyboardField == .name {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("MENGETIK NAMA EVENT")
-                                .font(.system(size: 10, weight: .bold, design: .rounded))
-                                .tracking(1.5)
-                                .foregroundStyle(Color(hex: "#4F46E5"))
+                if eventModalTab == 0 {
+                    // Tab 1: Identitas & Tema Event
+                    HStack(alignment: .top, spacing: 24) {
+                        VStack(spacing: 20) {
+                            // Header Banner Preview
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(editingEventId == nil ? "BUAT EVENT BARU" : "EDIT EVENT")
+                                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                                        .tracking(2)
+                                        .foregroundStyle(Color(hex: "#4F46E5"))
+                                    
+                                    Text(formName.isEmpty ? "Nama Event Photobooth" : formName)
+                                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                                        .foregroundStyle(Color(hex: "#0F172A"))
+                                }
+                                
+                                Spacer()
+                                
+                                ZStack {
+                                    Circle()
+                                        .fill(LinearGradient(colors: [Color(hex: colorOptions[formColorIndex].startHex), Color(hex: colorOptions[formColorIndex].endHex)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                                        .frame(width: 44, height: 44)
+                                    
+                                    Image(systemName: iconOptions[formIconIndex].icon)
+                                        .font(.system(size: 18, weight: .bold))
+                                        .foregroundStyle(.white)
+                                }
+                            }
+                            .padding(16)
+                            .background(Color.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                            .shadow(color: Color.black.opacity(0.04), radius: 8, y: 3)
+                            .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Color(hex: "#E2E8F0"), lineWidth: 1))
                             
-                            CustomInAppKeyboard(text: $formName, onDone: {
-                                withAnimation { activeKeyboardField = .location }
-                            })
-                        }
-                        .transition(.scale.combined(with: .opacity))
-                    } else if activeKeyboardField == .location {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("MENGETIK LOKASI BOOTH")
-                                .font(.system(size: 10, weight: .bold, design: .rounded))
-                                .tracking(1.5)
-                                .foregroundStyle(Color(hex: "#F59E0B"))
+                            // Input Nama Event & Lokasi (Tap-to-Focus)
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("INFORMASI UTAMA")
+                                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                                    .tracking(1.5)
+                                    .foregroundStyle(Color(hex: "#94A3B8"))
+                                
+                                VStack(spacing: 10) {
+                                    // Field Nama
+                                    HStack {
+                                        Image(systemName: "pencil.line")
+                                            .foregroundStyle(Color(hex: "#4F46E5"))
+                                        
+                                        Text(formName.isEmpty ? "Nama Event (mis. Wisuda UNG 2026)" : formName)
+                                            .font(.system(size: 15, weight: formName.isEmpty ? .regular : .bold, design: .rounded))
+                                            .foregroundStyle(formName.isEmpty ? Color(hex: "#94A3B8") : Color(hex: "#0F172A"))
+                                        
+                                        Spacer()
+                                        
+                                        if activeKeyboardField == .name {
+                                            Circle()
+                                                .fill(Color(hex: "#4F46E5"))
+                                                .frame(width: 8, height: 8)
+                                        }
+                                    }
+                                    .padding(16)
+                                    .background(Color.white)
+                                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                                    .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(activeKeyboardField == .name ? Color(hex: "#4F46E5") : Color(hex: "#E2E8F0"), lineWidth: 1.5))
+                                    .onTapGesture {
+                                        playHaptic(style: .light)
+                                        withAnimation(.spring) { activeKeyboardField = .name }
+                                    }
+                                    
+                                    // Field Lokasi
+                                    HStack {
+                                        Image(systemName: "mappin.circle.fill")
+                                            .foregroundStyle(Color(hex: "#F59E0B"))
+                                        
+                                        Text(formLocation.isEmpty ? "Lokasi Booth (mis. Auditorium UNG)" : formLocation)
+                                            .font(.system(size: 15, weight: formLocation.isEmpty ? .regular : .bold, design: .rounded))
+                                            .foregroundStyle(formLocation.isEmpty ? Color(hex: "#94A3B8") : Color(hex: "#0F172A"))
+                                        
+                                        Spacer()
+                                        
+                                        if activeKeyboardField == .location {
+                                            Circle()
+                                                .fill(Color(hex: "#F59E0B"))
+                                                .frame(width: 8, height: 8)
+                                        }
+                                    }
+                                    .padding(16)
+                                    .background(Color.white)
+                                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                                    .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(activeKeyboardField == .location ? Color(hex: "#F59E0B") : Color(hex: "#E2E8F0"), lineWidth: 1.5))
+                                    .onTapGesture {
+                                        playHaptic(style: .light)
+                                        withAnimation(.spring) { activeKeyboardField = .location }
+                                    }
+                                }
+                            }
                             
-                            CustomInAppKeyboard(text: $formLocation, onDone: {
-                                withAnimation { activeKeyboardField = nil }
-                            })
+                            // Tema & Ikon
+                            newEventIconAndColorPickers
                         }
-                        .transition(.scale.combined(with: .opacity))
+                        .frame(width: 420)
+                        
+                        // Right Side Container for Keyboard
+                        VStack {
+                            if activeKeyboardField == .name {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("MENGETIK NAMA EVENT")
+                                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                                        .tracking(1.5)
+                                        .foregroundStyle(Color(hex: "#4F46E5"))
+                                    
+                                    CustomInAppKeyboard(text: $formName, onDone: {
+                                        withAnimation { activeKeyboardField = .location }
+                                    })
+                                }
+                                .transition(.scale.combined(with: .opacity))
+                            } else if activeKeyboardField == .location {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("MENGETIK LOKASI BOOTH")
+                                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                                        .tracking(1.5)
+                                        .foregroundStyle(Color(hex: "#F59E0B"))
+                                    
+                                    CustomInAppKeyboard(text: $formLocation, onDone: {
+                                        withAnimation { activeKeyboardField = nil }
+                                    })
+                                }
+                                .transition(.scale.combined(with: .opacity))
+                            } else {
+                                VStack(spacing: 12) {
+                                    Image(systemName: "hand.tap.fill")
+                                        .font(.system(size: 36))
+                                        .foregroundStyle(Color(hex: "#CBD5E1"))
+                                    Text("Ketuk kolom nama atau lokasi untuk mengetik")
+                                        .font(.system(size: 14, weight: .medium, design: .rounded))
+                                        .foregroundStyle(Color(hex: "#94A3B8"))
+                                }
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .background(Color.white.opacity(0.5))
+                                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .padding(.horizontal, 24)
+                } else {
+                    // Tab 2: Manajemen Paket Harga (Multi-Select)
+                    ScrollView {
+                        newEventPackageSelectorCard
+                            .padding(.horizontal, 24)
                     }
                 }
-                .frame(maxWidth: .infinity)
             }
-            .padding(24)
             .background(Color(hex: "#F8FAFC"))
             .navigationTitle(editingEventId == nil ? "Event Baru" : "Edit Event")
             .navigationBarTitleDisplayMode(.inline)
@@ -1067,7 +1097,7 @@ struct OperatorDashboardView: View {
                         saveEvent()
                     }
                     .bold()
-                    .disabled(formName.trimmingCharacters(in: .whitespaces).isEmpty)
+                    .disabled(formName.trimmingCharacters(in: .whitespaces).isEmpty || selectedPackageIds.isEmpty)
                 }
             }
         }
@@ -1075,18 +1105,42 @@ struct OperatorDashboardView: View {
     
     private var newEventPackageSelectorCard: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("2. PILIH PAKET HARGA ADMIN")
-                .font(.system(size: 11, weight: .bold, design: .rounded))
-                .tracking(1.5)
-                .foregroundStyle(Color(hex: "#94A3B8"))
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("PAKET HARGA AKTIF UNTUK EVENT INI")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .tracking(1.5)
+                        .foregroundStyle(Color(hex: "#94A3B8"))
+                    
+                    Text("Centang paket mana saja yang akan ditawarkan di Kiosk Pelanggan")
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundStyle(Color(hex: "#64748B"))
+                }
+                
+                Spacer()
+                
+                Text("\(selectedPackageIds.count) Paket Terpilih")
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .foregroundStyle(Color(hex: "#4F46E5"))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(Color(hex: "#EEF2FF"))
+                    .clipShape(Capsule())
+            }
             
             VStack(spacing: 12) {
                 ForEach(PricingPackage.presetPackages) { pkg in
-                    let isSelected = selectedPackageId == pkg.id
+                    let isSelected = selectedPackageIds.contains(pkg.id)
                     Button(action: {
                         playHaptic(style: .medium)
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                            selectedPackageId = pkg.id
+                            if isSelected {
+                                if selectedPackageIds.count > 1 {
+                                    selectedPackageIds.remove(pkg.id)
+                                }
+                            } else {
+                                selectedPackageIds.insert(pkg.id)
+                            }
                         }
                     }) {
                         HStack(spacing: 14) {
@@ -1095,9 +1149,9 @@ struct OperatorDashboardView: View {
                                     .fill(isSelected ? Color(hex: pkg.badgeColorHex) : Color(hex: "#F1F5F9"))
                                     .frame(width: 44, height: 44)
                                 
-                                Image(systemName: isSelected ? "checkmark" : "tag.fill")
+                                Image(systemName: isSelected ? "checkmark" : "plus")
                                     .font(.system(size: 16, weight: .bold))
-                                    .foregroundStyle(isSelected ? .white : Color(hex: "#64748B"))
+                                    .foregroundStyle(isSelected ? .white : Color(hex: "#94A3B8"))
                             }
                             
                             VStack(alignment: .leading, spacing: 2) {
@@ -1124,7 +1178,7 @@ struct OperatorDashboardView: View {
                             
                             Text(pkg.price == 0 ? "GRATIS" : "Rp \(Int(pkg.price).formatted())")
                                 .font(.system(size: 16, weight: .black, design: .rounded))
-                                .foregroundStyle(isSelected ? Color(hex: "#0F172A") : Color(hex: "#64748B"))
+                                .foregroundStyle(isSelected ? Color(hex: "#0F172A") : Color(hex: "#94A3B8"))
                         }
                         .padding(16)
                         .background(isSelected ? Color.white : Color.white.opacity(0.6))
@@ -1140,7 +1194,7 @@ struct OperatorDashboardView: View {
     
     private var newEventIconAndColorPickers: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("3. TEMA & IKON CARD")
+            Text("TEMA & IKON CARD")
                 .font(.system(size: 11, weight: .bold, design: .rounded))
                 .tracking(1.5)
                 .foregroundStyle(Color(hex: "#94A3B8"))
@@ -1246,7 +1300,8 @@ struct OperatorDashboardView: View {
         editingEventId = nil
         formName = ""
         formLocation = ""
-        selectedPackageId = "pkg-std"
+        selectedPackageIds = ["pkg-std", "pkg-prem"]
+        eventModalTab = 0
         formIconIndex = 0
         formColorIndex = 0
         activeKeyboardField = nil
@@ -1257,12 +1312,12 @@ struct OperatorDashboardView: View {
         editingEventId = event.id
         formName = event.name
         formLocation = event.location
+        eventModalTab = 0
         activeKeyboardField = nil
         
-        if let pkg = PricingPackage.presetPackages.first(where: { $0.name == event.packageName || $0.price == event.pricePerSession }) {
-            selectedPackageId = pkg.id
-        } else {
-            selectedPackageId = "pkg-std"
+        selectedPackageIds = Set(event.packageIds)
+        if selectedPackageIds.isEmpty {
+            selectedPackageIds = ["pkg-std"]
         }
         
         if let iconIdx = iconOptions.firstIndex(where: { $0.id == event.iconName }) {
@@ -1276,16 +1331,18 @@ struct OperatorDashboardView: View {
     }
     
     private func saveEvent() {
-        let pkg = PricingPackage.presetPackages.first(where: { $0.id == selectedPackageId }) ?? PricingPackage.presetPackages[0]
+        let pkgIds = Array(selectedPackageIds)
+        let primaryPkg = PricingPackage.presetPackages.first(where: { pkgIds.contains($0.id) }) ?? PricingPackage.presetPackages[0]
         let iconName = iconOptions[formIconIndex].id
         let colorHex = colorOptions[formColorIndex].hex
         
         if let editId = editingEventId, let index = events.firstIndex(where: { $0.id == editId }) {
             appState.operatorState.availableEvents[index].name = formName
             appState.operatorState.availableEvents[index].location = formLocation.isEmpty ? "Lokasi Booth" : formLocation
-            appState.operatorState.availableEvents[index].pricePerSession = pkg.price
-            appState.operatorState.availableEvents[index].isPayPerSession = pkg.isPayPerSession
-            appState.operatorState.availableEvents[index].packageName = pkg.name
+            appState.operatorState.availableEvents[index].pricePerSession = primaryPkg.price
+            appState.operatorState.availableEvents[index].isPayPerSession = primaryPkg.isPayPerSession
+            appState.operatorState.availableEvents[index].packageName = "\(pkgIds.count) Paket Aktif"
+            appState.operatorState.availableEvents[index].packageIds = pkgIds
             appState.operatorState.availableEvents[index].iconName = iconName
             appState.operatorState.availableEvents[index].themeColorHex = colorHex
             
@@ -1296,9 +1353,10 @@ struct OperatorDashboardView: View {
             let newEvt = EventModel(
                 name: formName,
                 location: formLocation.isEmpty ? "Lokasi Booth" : formLocation,
-                pricePerSession: pkg.price,
-                isPayPerSession: pkg.isPayPerSession,
-                packageName: pkg.name,
+                pricePerSession: primaryPkg.price,
+                isPayPerSession: primaryPkg.isPayPerSession,
+                packageName: "\(pkgIds.count) Paket Aktif",
+                packageIds: pkgIds,
                 totalSessions: 0,
                 totalRevenue: 0,
                 iconName: iconName,

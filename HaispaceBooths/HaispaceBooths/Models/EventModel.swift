@@ -19,6 +19,12 @@ struct EventModel: Identifiable, Codable, Hashable, Sendable {
     var selectedFrameName: String
     var selectedFilterName: String
     var packageName: String
+    var packageIds: [String]
+    
+    var activePackages: [PricingPackage] {
+        let matched = PricingPackage.presetPackages.filter { packageIds.contains($0.id) }
+        return matched.isEmpty ? [PricingPackage.presetPackages[0]] : matched
+    }
     
     init(
         id: String = UUID().uuidString,
@@ -27,6 +33,7 @@ struct EventModel: Identifiable, Codable, Hashable, Sendable {
         pricePerSession: Double = 25000,
         isPayPerSession: Bool = true,
         packageName: String = "Paket Regular",
+        packageIds: [String] = ["pkg-std", "pkg-prem"],
         totalSessions: Int = 0,
         totalRevenue: Double = 0,
         iconName: String = "mappin.circle.fill",
@@ -40,6 +47,7 @@ struct EventModel: Identifiable, Codable, Hashable, Sendable {
         self.pricePerSession = pricePerSession
         self.isPayPerSession = isPayPerSession
         self.packageName = packageName
+        self.packageIds = packageIds.isEmpty ? ["pkg-std", "pkg-prem"] : packageIds
         self.totalSessions = totalSessions
         self.totalRevenue = totalRevenue
         self.iconName = iconName
