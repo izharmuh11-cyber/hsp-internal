@@ -192,6 +192,7 @@ private struct KioskRouterView: View {
             case .delivery:
                 DeliveryView()
             }
+        }
         .transition(.asymmetric(
             insertion: .opacity.combined(with: .scale(scale: 1.03)),
             removal: .opacity.combined(with: .scale(scale: 0.97))
