@@ -287,10 +287,10 @@ struct OperatorLoginView: View {
                 await MainActor.run {
                     let mockUser = HaispaceUser(
                         id: "op-dev-001",
+                        name: cleanUser.isEmpty ? "Operator" : cleanUser.capitalized,
                         email: cleanUser.contains("@") ? cleanUser : "\(cleanUser)@haispace.id",
                         role: .operator,
-                        licenseKey: "HS-DEV-KEY",
-                        createdAt: Date()
+                        assignedEventIds: ["event-001"]
                     )
                     appState.auth.currentUser = mockUser
                     appState.auth.authStatus = .authenticated

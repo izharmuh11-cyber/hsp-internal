@@ -143,7 +143,7 @@ actor LocalTCPRouterService {
                     guard length > 0 else { continue }
                     
                     // 2. Baca exact body
-                    let bodyData = try await readExactBytes(connection: connection, count: Int(length))
+                    let bodyData = try await self?.readExactBytes(connection: connection, count: Int(length)) ?? Data()
                     guard bodyData.count == Int(length) else { break }
                     
                     // 3. Proses data
