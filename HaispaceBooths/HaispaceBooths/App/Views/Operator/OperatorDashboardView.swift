@@ -13,37 +13,62 @@ struct OperatorDashboardView: View {
     @State private var isShowingPairingModal = false
     @State private var isShowingNewEventSheet = false
     @State private var isShowingEventManagerSheet = false
-    @State private var isShowingDeleteConfirm = false
-    @State private var eventToDeleteId: String? = nil
     
-    // Form State untuk Tambah Event Baru
-    @State private var newEventName: String = ""
-    @State private var newEventLocation: String = ""
-    @State private var newEventPrice: String = "25000"
-    @State private var newEventIsPayPerSession: Bool = true
+    // State untuk Form Edit / Tambah Event
+    @State private var editingEventId: String? = nil
+    @State private var eventNameInput: String = ""
+    @State private var eventLocationInput: String = ""
+    @State private var eventPriceInput: String = "25000"
+    @State private var eventIsPayPerSessionInput: Bool = true
     @State private var selectedIconIndex = 0
     @State private var selectedColorIndex = 0
+    @State private var selectedFrameIndex = 0
+    @State private var selectedFilterIndex = 0
     
     private let iconOptions = [
         ("academiccap.fill", "Wisuda"),
-        ("sun.max.fill", "Pantai"),
+        ("sun.max.fill", "Pantai / Outdoor"),
         ("building.2.fill", "Kota / Mall"),
         ("gift.fill", "Ulang Tahun"),
-        ("music.note.house.fill", "Konser / Music"),
-        ("camera.macro", "Studio")
+        ("music.note.house.fill", "Konser / Fest"),
+        ("camera.macro", "Studio Booth")
     ]
     
     private let colorOptions = [
         ("#4F46E5", "Indigo"),
-        ("#3B82F6", "Blue"),
+        ("#3B82F6", "Ocean Blue"),
         ("#10B981", "Emerald"),
-        ("#F59E0B", "Amber"),
-        ("#EC4899", "Pink"),
-        ("#8B5CF6", "Purple")
+        ("#F59E0B", "Amber Gold"),
+        ("#EC4899", "Rose Pink"),
+        ("#8B5CF6", "Purple Glass")
+    ]
+    
+    private let frameOptions = [
+        "Strip 3-Pose Standard",
+        "Graduation Strip 3-Pose",
+        "Summer Grid 4-Pose",
+        "Modern Minimalist 4-Pose",
+        "Birthday Party Card 2-Pose"
+    ]
+    
+    private let filterOptions = [
+        "Cinematic Warm",
+        "Vibrant Summer",
+        "Moody Black & White",
+        "Soft Pastel Pink",
+        "Natural Studio Light"
     ]
     
     private var activeEvent: EventModel? {
         appState.operatorState.activeEvent
+    }
+    
+    private var totalShiftRevenue: Double {
+        appState.operatorState.availableEvents.reduce(0) { $0 + $1.totalRevenue }
+    }
+    
+    private var totalShiftSessions: Int {
+        appState.operatorState.availableEvents.reduce(0) { $0 + $1.totalSessions }
     }
     
     var body: some View {
@@ -100,7 +125,7 @@ struct OperatorDashboardView: View {
                                 revenueAnalyticsTile(event: currentEvent)
                                     .frame(maxWidth: .infinity)
                                 
-                                presetsAndFramesTile
+                                presetsAndFramesTile(event: currentEvent)
                                     .frame(maxWidth: .infinity)
                             }
                         }
@@ -152,9 +177,15 @@ struct OperatorDashboardView: View {
                         .tracking(2)
                         .foregroundStyle(Color(hex: "#0F172A"))
                     
-                    Text("Halo, \(appState.operatorState.currentOperator?.name ?? "Operator")")
-                        .font(.subheadline.weight(.medium))
-                        .foregroundStyle(Color(hex: "#64748B"))
+                    HStack(spacing: 6) {
+                        Text("Op: \(appState.operatorState.currentOperator?.name ?? "Budi")")
+                        Text("•")
+                        Text("Shift Omset: Rp \(Int(totalShiftRevenue).formatted())")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(Color(hex: "#10B981"))
+                    }
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(Color(hex: "#64748B"))
                 }
             }
             
@@ -188,7 +219,7 @@ struct OperatorDashboardView: View {
                             .clipShape(Capsule())
                             .shadow(
                                 color: activeEvent?.id == event.id
-                                ? Color(hex: event.themeColorHex).opacity(0.3)
+                                ? Color(hex: event.themeColorHex).opacity(0.35)
                                 : Color.black.opacity(0.04),
                                 radius: 8, y: 4
                             )
@@ -196,7 +227,7 @@ struct OperatorDashboardView: View {
                     }
                     
                     // Tombol Tambah Event (+)
-                    Button(action: { isShowingNewEventSheet = true }) {
+                    Button(action: openCreateEventSheet) {
                         HStack(spacing: 6) {
                             Image(systemName: "plus.circle.fill")
                                 .font(.subheadline.bold())
@@ -251,7 +282,7 @@ struct OperatorDashboardView: View {
         }
     }
     
-    // MARK: - Tile 0: Empty Event State Tile (Tampilan saat belum ada event)
+    // MARK: - Tile 0: Empty Event State Tile
     private var emptyEventStateTile: some View {
         VStack(spacing: 24) {
             ZStack {
@@ -275,7 +306,7 @@ struct OperatorDashboardView: View {
                     .font(.system(size: 26, weight: .bold, design: .rounded))
                     .foregroundStyle(Color(hex: "#0F172A"))
                 
-                Text("Buat event pertama kamu untuk menentukan lokasi photobooth, tarif per sesi, dan kustomisasi tampilan landing page.")
+                Text("Buat event pertama kamu untuk menentukan lokasi photobooth, tarif per sesi, bingkai khusus, dan tone warna filter.")
                     .font(.callout)
                     .multilineTextAlignment(.center)
                     .foregroundStyle(Color(hex: "#64748B"))
@@ -283,7 +314,7 @@ struct OperatorDashboardView: View {
             }
             
             HStack(spacing: 16) {
-                Button(action: { isShowingNewEventSheet = true }) {
+                Button(action: openCreateEventSheet) {
                     HStack(spacing: 10) {
                         Image(systemName: "plus.circle.fill")
                             .font(.title3.bold())
@@ -355,7 +386,7 @@ struct OperatorDashboardView: View {
                     }
                     
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("EVENT AKTIF SEKARANG")
+                        Text("EVENT SEKARANG (AKTIF)")
                             .font(.system(size: 11, weight: .bold, design: .rounded))
                             .tracking(1.5)
                             .foregroundStyle(Color(hex: "#64748B"))
@@ -370,10 +401,10 @@ struct OperatorDashboardView: View {
                 
                 // Action menu kelola event ini
                 Menu {
-                    Button(action: { editEvent(event) }) {
-                        Label("Edit Detail Event", systemImage: "pencil")
+                    Button(action: { openEditEventSheet(event) }) {
+                        Label("Edit Event Ini", systemImage: "pencil")
                     }
-                    Button(role: .destructive, action: { confirmDeleteEvent(event.id) }) {
+                    Button(role: .destructive, action: { deleteCurrentEvent(event.id) }) {
                         Label("Hapus Event Ini", systemImage: "trash")
                     }
                 } label: {
@@ -432,12 +463,12 @@ struct OperatorDashboardView: View {
         .padding(24)
         .background(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(Color.white.opacity(0.9))
+                .fill(Color.white.opacity(0.92))
                 .shadow(color: Color.black.opacity(0.04), radius: 18, x: 0, y: 6)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(Color.white, lineWidth: 1.5)
+                .stroke(Color(hex: event.themeColorHex).opacity(0.4), lineWidth: 2)
         )
     }
     
@@ -544,7 +575,7 @@ struct OperatorDashboardView: View {
                         .foregroundStyle(.white)
                 }
                 
-                Text("REKAP SINKRONISASI EVENT")
+                Text("REKAP PEMBAYARAN EVENT")
                     .font(.system(size: 11, weight: .bold, design: .rounded))
                     .tracking(1.2)
                     .foregroundStyle(Color(hex: "#64748B"))
@@ -605,7 +636,7 @@ struct OperatorDashboardView: View {
     }
     
     // MARK: - Tile 4: Presets & Frames Tile
-    private var presetsAndFramesTile: some View {
+    private func presetsAndFramesTile(event: EventModel) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 ZStack {
@@ -629,12 +660,13 @@ struct OperatorDashboardView: View {
             
             HStack(spacing: 14) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Layout Frame")
+                    Text("Bingkai Khusus")
                         .font(.caption)
                         .foregroundStyle(Color(hex: "#64748B"))
-                    Text("4 Ready")
-                        .font(.system(size: 17, weight: .bold, design: .rounded))
+                    Text(event.selectedFrameName)
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
                         .foregroundStyle(Color(hex: "#8B5CF6"))
+                        .lineLimit(1)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(12)
@@ -642,12 +674,13 @@ struct OperatorDashboardView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Filter Warna")
+                    Text("Tone Filter")
                         .font(.caption)
                         .foregroundStyle(Color(hex: "#64748B"))
-                    Text("Cinematic Soft")
-                        .font(.system(size: 17, weight: .bold, design: .rounded))
+                    Text(event.selectedFilterName)
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
                         .foregroundStyle(Color(hex: "#10B981"))
+                        .lineLimit(1)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(12)
@@ -709,26 +742,26 @@ struct OperatorDashboardView: View {
         }
     }
     
-    // MARK: - New Event Modal Sheet
+    // MARK: - New / Edit Event Modal Sheet
     private var newEventModalSheet: some View {
         NavigationStack {
             Form {
                 Section("INFORMASI NAMA & LOKASI") {
-                    TextField("Nama Event (contoh: Wisuda UNG 2026)", text: $newEventName)
-                    TextField("Lokasi Venue (contoh: Auditorium UNG)", text: $newEventLocation)
+                    TextField("Nama Event (contoh: Wisuda UNG 2026)", text: $eventNameInput)
+                    TextField("Lokasi Venue (contoh: Auditorium UNG)", text: $eventLocationInput)
                 }
                 
                 Section("TIPE TRANSAKSI & HARGA SESI") {
-                    Toggle("Berbayar per Sesi Foto", isOn: $newEventIsPayPerSession)
+                    Toggle("Berbayar per Sesi Foto", isOn: $eventIsPayPerSessionInput)
                         .tint(Color(hex: "#4F46E5"))
                     
-                    if newEventIsPayPerSession {
+                    if eventIsPayPerSessionInput {
                         HStack {
                             Text("Tarif per Sesi")
                             Spacer()
                             Text("Rp")
                                 .foregroundStyle(.secondary)
-                            TextField("25000", text: $newEventPrice)
+                            TextField("25000", text: $eventPriceInput)
                                 .keyboardType(.numberPad)
                                 .multilineTextAlignment(.trailing)
                                 .bold()
@@ -780,8 +813,22 @@ struct OperatorDashboardView: View {
                     }
                     .padding(.vertical, 6)
                 }
+                
+                Section("PRESET BINGKAI & TONE FILTER SESI") {
+                    Picker("Bingkai Layout Foto", selection: $selectedFrameIndex) {
+                        ForEach(0..<frameOptions.count, id: \.self) { idx in
+                            Text(frameOptions[idx]).tag(idx)
+                        }
+                    }
+                    
+                    Picker("Tone Filter Warna", selection: $selectedFilterIndex) {
+                        ForEach(0..<filterOptions.count, id: \.self) { idx in
+                            Text(filterOptions[idx]).tag(idx)
+                        }
+                    }
+                }
             }
-            .navigationTitle("Buat Event Baru")
+            .navigationTitle(editingEventId == nil ? "Buat Event Baru" : "Edit Detail Event")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -789,10 +836,10 @@ struct OperatorDashboardView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Simpan & Aktifkan") {
-                        saveNewEvent()
+                        saveEvent()
                     }
                     .bold()
-                    .disabled(newEventName.trimmingCharacters(in: .whitespaces).isEmpty)
+                    .disabled(eventNameInput.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
         }
@@ -819,7 +866,7 @@ struct OperatorDashboardView: View {
                                 .font(.system(size: 16, weight: .bold, design: .rounded))
                                 .foregroundStyle(Color(hex: "#0F172A"))
                             
-                            Text("\(event.location) • \(event.totalSessions) Sesi")
+                            Text("\(event.location) • \(event.totalSessions) Sesi • Omset: Rp \(Int(event.totalRevenue).formatted())")
                                 .font(.caption)
                                 .foregroundStyle(Color(hex: "#64748B"))
                         }
@@ -845,7 +892,7 @@ struct OperatorDashboardView: View {
                     .padding(.vertical, 4)
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                         Button(role: .destructive) {
-                            appState.operatorState.deleteEvent(id: event.id)
+                            deleteCurrentEvent(event.id)
                         } label: {
                             Label("Hapus", systemImage: "trash")
                         }
@@ -863,42 +910,87 @@ struct OperatorDashboardView: View {
     }
     
     // MARK: - Actions & Helpers
-    private func saveNewEvent() {
-        let price = Double(newEventPrice) ?? 25000
-        let iconName = iconOptions[selectedIconIndex].0
-        let colorHex = colorOptions[selectedColorIndex].0
-        
-        let newEvt = EventModel(
-            name: newEventName,
-            location: newEventLocation.isEmpty ? "Lokasi Booth" : newEventLocation,
-            pricePerSession: price,
-            isPayPerSession: newEventIsPayPerSession,
-            totalSessions: 0,
-            totalRevenue: 0,
-            iconName: iconName,
-            themeColorHex: colorHex
-        )
-        
-        withAnimation(.spring) {
-            appState.operatorState.addEvent(newEvt)
-        }
-        
-        // Reset form
-        newEventName = ""
-        newEventLocation = ""
-        newEventPrice = "25000"
-        isShowingNewEventSheet = false
-    }
-    
-    private func editEvent(_ event: EventModel) {
-        newEventName = event.name
-        newEventLocation = event.location
-        newEventPrice = String(Int(event.pricePerSession))
-        newEventIsPayPerSession = event.isPayPerSession
+    private func openCreateEventSheet() {
+        editingEventId = nil
+        eventNameInput = ""
+        eventLocationInput = ""
+        eventPriceInput = "25000"
+        eventIsPayPerSessionInput = true
+        selectedIconIndex = 0
+        selectedColorIndex = 0
+        selectedFrameIndex = 0
+        selectedFilterIndex = 0
         isShowingNewEventSheet = true
     }
     
-    private func confirmDeleteEvent(_ eventId: String) {
+    private func openEditEventSheet(_ event: EventModel) {
+        editingEventId = event.id
+        eventNameInput = event.name
+        eventLocationInput = event.location
+        eventPriceInput = String(Int(event.pricePerSession))
+        eventIsPayPerSessionInput = event.isPayPerSession
+        
+        if let iconIdx = iconOptions.firstIndex(where: { $0.0 == event.iconName }) {
+            selectedIconIndex = iconIdx
+        }
+        if let colorIdx = colorOptions.firstIndex(where: { $0.0 == event.themeColorHex }) {
+            selectedColorIndex = colorIdx
+        }
+        if let frameIdx = frameOptions.firstIndex(of: event.selectedFrameName) {
+            selectedFrameIndex = frameIdx
+        }
+        if let filterIdx = filterOptions.firstIndex(of: event.selectedFilterName) {
+            selectedFilterIndex = filterIdx
+        }
+        
+        isShowingNewEventSheet = true
+    }
+    
+    private func saveEvent() {
+        let price = Double(eventPriceInput) ?? 25000
+        let iconName = iconOptions[selectedIconIndex].0
+        let colorHex = colorOptions[selectedColorIndex].0
+        let frameName = frameOptions[selectedFrameIndex]
+        let filterName = filterOptions[selectedFilterIndex]
+        
+        if let editId = editingEventId, let index = appState.operatorState.availableEvents.firstIndex(where: { $0.id == editId }) {
+            // Edit Existing Event
+            appState.operatorState.availableEvents[index].name = eventNameInput
+            appState.operatorState.availableEvents[index].location = eventLocationInput.isEmpty ? "Lokasi Booth" : eventLocationInput
+            appState.operatorState.availableEvents[index].pricePerSession = price
+            appState.operatorState.availableEvents[index].isPayPerSession = eventIsPayPerSessionInput
+            appState.operatorState.availableEvents[index].iconName = iconName
+            appState.operatorState.availableEvents[index].themeColorHex = colorHex
+            appState.operatorState.availableEvents[index].selectedFrameName = frameName
+            appState.operatorState.availableEvents[index].selectedFilterName = filterName
+            
+            if appState.operatorState.activeEvent?.id == editId {
+                appState.operatorState.activeEvent = appState.operatorState.availableEvents[index]
+            }
+        } else {
+            // Create New Event
+            let newEvt = EventModel(
+                name: eventNameInput,
+                location: eventLocationInput.isEmpty ? "Lokasi Booth" : eventLocationInput,
+                pricePerSession: price,
+                isPayPerSession: eventIsPayPerSessionInput,
+                totalSessions: 0,
+                totalRevenue: 0,
+                iconName: iconName,
+                themeColorHex: colorHex,
+                selectedFrameName: frameName,
+                selectedFilterName: filterName
+            )
+            
+            withAnimation(.spring) {
+                appState.operatorState.addEvent(newEvt)
+            }
+        }
+        
+        isShowingNewEventSheet = false
+    }
+    
+    private func deleteCurrentEvent(_ eventId: String) {
         withAnimation(.spring) {
             appState.operatorState.deleteEvent(id: eventId)
         }

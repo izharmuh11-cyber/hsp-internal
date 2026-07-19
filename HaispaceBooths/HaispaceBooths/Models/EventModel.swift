@@ -2,7 +2,7 @@
 // HaispaceBooths — Models
 //
 // Model data untuk mengelola Event/Job lokasi photobooth.
-// Mengatur nama event, lokasi, tarif, dan tracking statistik sesi.
+// Mengatur nama event, lokasi, tarif, bingkai khusus, tone filter, dan tracking statistik.
 
 import Foundation
 
@@ -16,6 +16,8 @@ struct EventModel: Identifiable, Codable, Hashable, Sendable {
     var totalRevenue: Double
     var iconName: String
     var themeColorHex: String
+    var selectedFrameName: String
+    var selectedFilterName: String
     
     init(
         id: String = UUID().uuidString,
@@ -26,7 +28,9 @@ struct EventModel: Identifiable, Codable, Hashable, Sendable {
         totalSessions: Int = 0,
         totalRevenue: Double = 0,
         iconName: String = "mappin.circle.fill",
-        themeColorHex: String = "#7C5CFC"
+        themeColorHex: String = "#7C5CFC",
+        selectedFrameName: String = "Strip 3-Pose Standard",
+        selectedFilterName: String = "Cinematic Warm"
     ) {
         self.id = id
         self.name = name
@@ -37,6 +41,8 @@ struct EventModel: Identifiable, Codable, Hashable, Sendable {
         self.totalRevenue = totalRevenue
         self.iconName = iconName
         self.themeColorHex = themeColorHex
+        self.selectedFrameName = selectedFrameName
+        self.selectedFilterName = selectedFilterName
     }
     
     // Preset sampel event untuk dev & testing
@@ -50,7 +56,9 @@ struct EventModel: Identifiable, Codable, Hashable, Sendable {
             totalSessions: 48,
             totalRevenue: 1200000,
             iconName: "academiccap.fill",
-            themeColorHex: "#3B82F6"
+            themeColorHex: "#3B82F6",
+            selectedFrameName: "Graduation Strip 3-Pose",
+            selectedFilterName: "Cinematic Warm"
         ),
         EventModel(
             id: "evt-pantai",
@@ -61,7 +69,9 @@ struct EventModel: Identifiable, Codable, Hashable, Sendable {
             totalSessions: 85,
             totalRevenue: 2550000,
             iconName: "sun.max.fill",
-            themeColorHex: "#F59E0B"
+            themeColorHex: "#F59E0B",
+            selectedFrameName: "Summer Grid 4-Pose",
+            selectedFilterName: "Vibrant Summer"
         ),
         EventModel(
             id: "evt-city",
@@ -72,7 +82,9 @@ struct EventModel: Identifiable, Codable, Hashable, Sendable {
             totalSessions: 110,
             totalRevenue: 2200000,
             iconName: "building.2.fill",
-            themeColorHex: "#10B981"
+            themeColorHex: "#10B981",
+            selectedFrameName: "Modern Minimalist 4-Pose",
+            selectedFilterName: "Moody Black & White"
         ),
         EventModel(
             id: "evt-ultah",
@@ -83,7 +95,9 @@ struct EventModel: Identifiable, Codable, Hashable, Sendable {
             totalSessions: 32,
             totalRevenue: 0,
             iconName: "gift.fill",
-            themeColorHex: "#EC4899"
+            themeColorHex: "#EC4899",
+            selectedFrameName: "Birthday Party Card 2-Pose",
+            selectedFilterName: "Soft Pastel Pink"
         )
     ]
 }
