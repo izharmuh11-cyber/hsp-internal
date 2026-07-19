@@ -2,8 +2,8 @@
 // HaispaceBooths — App/Views/Guest
 //
 // Layar Standby Kiosk Tamu (Idle Screen).
-// Bertema Ultra-Minimalist Cinematic Dark & VisionOS Ambient Glass.
-// Menampilkan Phantom Pattern Masking, Concentric Ripple Camera, Logo Comfortaa, dan Secret Admin Toast.
+// Ultra-Minimalist Cinematic Dark & VisionOS Ambient Glass.
+// Diperbaiki: Header Logo, Footer Event Badge, Background Visibility, dan Secret 3-Tap Handler.
 
 import SwiftUI
 
@@ -19,92 +19,97 @@ struct LandingView: View {
     
     var body: some View {
         ZStack {
-            // Background Pitch Black Terdalam
+            // 1. Background Pitch Black Terdalam
             Color(hex: "#030303").ignoresSafeArea()
             
-            // Phantom Background & Center Ambient Glow
+            // 2. Ambient Light Orbs (Visual Ambient Apple VisionOS)
+            ambientGlowsLayer
+            
+            // 3. Phantom Background Grid (Photo Strips Melayang)
             phantomBackgroundGrid
             
-            // Vignette Radial Mask (Memastikan Bagian Tengah Layar Tetap Clean Pitch Black)
+            // 4. Vignette Radial Masking (Masking Halus Supaya Tengah Tetap Fokus)
             RadialGradient(
-                colors: [.clear, Color(hex: "#030303").opacity(0.85), Color(hex: "#030303")],
+                colors: [.clear, Color(hex: "#030303").opacity(0.55), Color(hex: "#030303").opacity(0.92)],
                 center: .center,
-                startRadius: 120,
-                endRadius: 600
+                startRadius: 180,
+                endRadius: 650
             )
             .ignoresSafeArea()
             .allowsHitTesting(false)
             
-            // Layer Konten Utama (Sentuh Layar di Mana Saja untuk Mulai)
+            // 5. Layer Konten Utama (Header, Hero CTA, Footer)
             VStack {
-                Spacer().frame(height: 36)
-                
-                // HEADER: Logo Minimalis (Comfortaa Style)
-                HStack(spacing: 4) {
+                // HEADER: Logo Resmi (Comfortaa Style) — Diatur Aman di Bawah Status Bar iPad
+                HStack(spacing: 6) {
                     Text("Haispace")
-                        .font(.system(size: 26, weight: .bold, design: .rounded))
-                        .foregroundStyle(Color.white.opacity(0.9))
+                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color.white)
                     
                     Text("Project")
-                        .font(.system(size: 26, weight: .light, design: .rounded))
-                        .foregroundStyle(Color.white.opacity(0.6))
-                        .tracking(3)
+                        .font(.system(size: 32, weight: .light, design: .rounded))
+                        .foregroundStyle(Color.white.opacity(0.7))
+                        .tracking(4)
                 }
-                .shadow(color: Color.white.opacity(0.15), radius: 10)
+                .padding(.top, 54)
+                .shadow(color: Color(hex: "#7C5CFC").opacity(0.4), radius: 15)
                 
                 Spacer()
                 
-                // CENTER: Call to Action Utama (Concentric Ripple & Hero Typography)
-                VStack(spacing: 36) {
-                    // Concentric Ripple Camera Icon
+                // CENTER: Hero Call to Action Utama (Ripple Rings & Camera Icon)
+                VStack(spacing: 32) {
                     ZStack {
+                        // Expanding Ripple Ring 3
+                        Circle()
+                            .stroke(Color.white.opacity(isRippling ? 0.0 : 0.2), lineWidth: 1.5)
+                            .frame(width: 120, height: 120)
+                            .scaleEffect(isRippling ? 2.0 : 1.0)
+                        
                         // Expanding Ripple Ring 2
                         Circle()
-                            .stroke(Color.white.opacity(isRippling ? 0.0 : 0.25), lineWidth: 1.5)
-                            .frame(width: 112, height: 112)
-                            .scaleEffect(isRippling ? 1.75 : 1.0)
-                        
-                        // Expanding Ripple Ring 1
-                        Circle()
                             .stroke(Color.white.opacity(isRippling ? 0.0 : 0.35), lineWidth: 1.5)
-                            .frame(width: 112, height: 112)
-                            .scaleEffect(isRippling ? 1.4 : 1.0)
+                            .frame(width: 120, height: 120)
+                            .scaleEffect(isRippling ? 1.5 : 1.0)
                         
                         // Inner Glass Circle Icon
                         ZStack {
                             Circle()
-                                .fill(.white.opacity(0.06))
-                                .frame(width: 112, height: 112)
+                                .fill(Color.white.opacity(0.08))
+                                .frame(width: 120, height: 120)
                                 .overlay(
                                     Circle()
-                                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                        .stroke(Color.white.opacity(0.25), lineWidth: 1.5)
                                 )
-                                .shadow(color: Color.white.opacity(0.1), radius: 15)
+                                .shadow(color: Color(hex: "#7C5CFC").opacity(0.3), radius: 20)
                             
                             Image(systemName: "camera")
-                                .font(.system(size: 42, weight: .thin))
-                                .foregroundStyle(Color.white.opacity(0.95))
-                                .shadow(color: Color.white.opacity(0.3), radius: 10)
+                                .font(.system(size: 46, weight: .thin))
+                                .foregroundStyle(Color.white)
+                                .shadow(color: Color.white.opacity(0.5), radius: 10)
                         }
                     }
                     
                     // Hero Typography
                     VStack(spacing: 12) {
                         Text("Sentuh Layar")
-                            .font(.system(size: 56, weight: .medium, design: .rounded))
+                            .font(.system(size: 60, weight: .medium, design: .rounded))
                             .foregroundStyle(Color.white)
-                            .shadow(color: Color.white.opacity(0.2), radius: 15)
+                            .shadow(color: Color.white.opacity(0.25), radius: 20)
                         
                         Text("UNTUK MEMULAI SESI FOTO")
                             .font(.system(size: 16, weight: .light, design: .rounded))
-                            .foregroundStyle(Color.white.opacity(0.4))
+                            .foregroundStyle(Color.white.opacity(0.5))
                             .tracking(6)
                     }
+                }
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    handleStartSession()
                 }
                 
                 Spacer()
                 
-                // FOOTER: Detail Event Active (Clean Glass Badge dengan Indicator Pulsing Green)
+                // FOOTER: Detail Event Active (Pulsing Green Indicator Badge)
                 VStack {
                     if let eventName = appState.operatorState.activeEvent?.name, !eventName.isEmpty {
                         eventBadgeView(name: eventName)
@@ -112,19 +117,20 @@ struct LandingView: View {
                         eventBadgeView(name: "WISUDA UNG 2026")
                     }
                 }
-                .padding(.bottom, 36)
+                .padding(.bottom, 50)
             }
             .contentShape(Rectangle())
             .onTapGesture {
                 handleStartSession()
             }
             
-            // Hidden Secret Area (Top Right Secret Tap for Operator Admin Area)
+            // 6. TOP RIGHT SECRET TAP AREA (Diatur zIndex Paling Atas agar Tidak Terhalang)
             VStack {
                 HStack {
                     Spacer()
-                    Color.clear
-                        .frame(width: 120, height: 120)
+                    Rectangle()
+                        .fill(Color.white.opacity(0.001)) // Transparent Hit Area
+                        .frame(width: 140, height: 140)
                         .contentShape(Rectangle())
                         .onTapGesture {
                             handleSecretTap()
@@ -132,40 +138,42 @@ struct LandingView: View {
                 }
                 Spacer()
             }
+            .zIndex(100) // Memastikan area rahasia menerima tap pertama kali!
             
-            // Admin Toast Notification Overlay
+            // 7. ADMIN TOAST NOTIFICATION OVERLAY
             if showAdminToast {
                 VStack {
-                    HStack(spacing: 8) {
+                    HStack(spacing: 10) {
                         Image(systemName: "lock.fill")
-                            .font(.system(size: 14, weight: .bold))
+                            .font(.system(size: 15, weight: .bold))
                             .foregroundStyle(Color(hex: "#00D9A0"))
                         
-                        Text("Mengarahkan ke Verifikasi PIN...")
-                            .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        Text("🔒 Mengarahkan ke Verifikasi PIN...")
+                            .font(.system(size: 15, weight: .semibold, design: .rounded))
                             .foregroundStyle(.white)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 12)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 14)
                     .background(.ultraThinMaterial)
                     .clipShape(Capsule())
-                    .overlay(Capsule().stroke(Color.white.opacity(0.2), lineWidth: 1))
-                    .shadow(color: Color.black.opacity(0.4), radius: 20, y: 10)
+                    .overlay(Capsule().stroke(Color.white.opacity(0.25), lineWidth: 1.5))
+                    .shadow(color: Color.black.opacity(0.5), radius: 25, y: 12)
                     .transition(.move(edge: .top).combined(with: .opacity))
-                    .padding(.top, 24)
+                    .padding(.top, 40)
                     
                     Spacer()
                 }
+                .zIndex(101)
             }
         }
         .onAppear {
-            withAnimation(.easeInOut(duration: 2.4).repeatForever(autoreverses: false)) {
+            withAnimation(.easeInOut(duration: 2.2).repeatForever(autoreverses: false)) {
                 isRippling = true
             }
-            withAnimation(.easeInOut(duration: 5.5).repeatForever(autoreverses: true)) {
+            withAnimation(.easeInOut(duration: 5.0).repeatForever(autoreverses: true)) {
                 isBreathe = true
             }
-            withAnimation(.easeInOut(duration: 8).repeatForever(autoreverses: true)) {
+            withAnimation(.easeInOut(duration: 7.5).repeatForever(autoreverses: true)) {
                 isPhantomActive = true
             }
         }
@@ -173,12 +181,12 @@ struct LandingView: View {
     
     // MARK: - Event Badge View
     private func eventBadgeView(name: String) -> some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 12) {
             ZStack {
                 Circle()
-                    .fill(Color.green.opacity(0.4))
-                    .frame(width: 10, height: 10)
-                    .scaleEffect(isBreathe ? 1.6 : 1.0)
+                    .fill(Color.green.opacity(0.5))
+                    .frame(width: 12, height: 12)
+                    .scaleEffect(isBreathe ? 1.8 : 1.0)
                     .opacity(isBreathe ? 0.2 : 0.8)
                 
                 Circle()
@@ -187,19 +195,37 @@ struct LandingView: View {
             }
             
             Text(name.uppercased())
-                .font(.system(size: 13, weight: .bold, design: .rounded))
-                .foregroundStyle(Color.white.opacity(0.85))
+                .font(.system(size: 14, weight: .bold, design: .rounded))
+                .foregroundStyle(Color.white.opacity(0.9))
                 .tracking(2.5)
         }
-        .padding(.horizontal, 22)
-        .padding(.vertical, 10)
-        .background(Color.white.opacity(0.04))
+        .padding(.horizontal, 24)
+        .padding(.vertical, 12)
+        .background(Color.white.opacity(0.06))
         .clipShape(Capsule())
         .overlay(
             Capsule()
-                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                .stroke(Color.white.opacity(0.15), lineWidth: 1)
         )
         .backdropBlur()
+    }
+    
+    // MARK: - Ambient Glows
+    private var ambientGlowsLayer: some View {
+        ZStack {
+            Circle()
+                .fill(Color(hex: "#7C5CFC").opacity(0.15))
+                .blur(radius: 110)
+                .frame(width: 500, height: 500)
+                .scaleEffect(isBreathe ? 1.15 : 0.85)
+            
+            Circle()
+                .fill(Color(hex: "#00D9A0").opacity(0.1))
+                .blur(radius: 120)
+                .frame(width: 450, height: 450)
+                .offset(x: isBreathe ? 150 : -150, y: isBreathe ? -100 : 100)
+        }
+        .allowsHitTesting(false)
     }
     
     // MARK: - Tap & Secret Gesture Handlers
@@ -213,14 +239,17 @@ struct LandingView: View {
     
     private func handleSecretTap() {
         secretTapCount += 1
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
+        
         secretTapTimer?.invalidate()
         secretTapTimer = Timer.scheduledTimer(withTimeInterval: 1.2, repeats: false) { _ in
             secretTapCount = 0
         }
         
         if secretTapCount >= 3 {
-            let generator = UIImpactFeedbackGenerator(style: .heavy)
-            generator.impactOccurred()
+            let heavyGenerator = UIImpactFeedbackGenerator(style: .heavy)
+            heavyGenerator.impactOccurred()
             secretTapCount = 0
             
             withAnimation(.spring) {
@@ -238,54 +267,44 @@ struct LandingView: View {
     
     // MARK: - Phantom Background Grid & Photo Strips
     private var phantomBackgroundGrid: some View {
-        ZStack {
-            // Center Soft Ambient Glow
-            Circle()
-                .fill(Color.white.opacity(0.03))
-                .blur(radius: 90)
-                .frame(width: 500, height: 500)
-                .scaleEffect(isBreathe ? 1.08 : 0.92)
-            
-            // Staggered Floating Photo Strip Columns (Phantom Pattern)
-            HStack(spacing: 28) {
-                ForEach(0..<6, id: \.self) { col in
-                    VStack(spacing: 20) {
-                        photoStripMockup
-                        photoStripMockup
-                        photoStripMockup
-                    }
-                    .offset(y: col % 2 == 0 ? (isPhantomActive ? -25 : 25) : (isPhantomActive ? 25 : -25))
-                    .opacity(isPhantomActive ? 0.35 : 0.15)
+        HStack(spacing: 24) {
+            ForEach(0..<6, id: \.self) { col in
+                VStack(spacing: 24) {
+                    photoStripMockup
+                    photoStripMockup
+                    photoStripMockup
                 }
+                .offset(y: col % 2 == 0 ? (isPhantomActive ? -30 : 30) : (isPhantomActive ? 30 : -30))
+                .opacity(isPhantomActive ? 0.45 : 0.25)
             }
-            .rotationEffect(.degrees(-6))
-            .scaleEffect(1.15)
-            .blur(radius: 1.5)
         }
+        .rotationEffect(.degrees(-6))
+        .scaleEffect(1.15)
+        .blur(radius: 1.0)
         .allowsHitTesting(false)
     }
     
     private var photoStripMockup: some View {
-        VStack(spacing: 10) {
-            RoundedRectangle(cornerRadius: 10)
-                .fill(Color.white.opacity(0.04))
-                .frame(width: 80, height: 100)
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.white.opacity(0.06), lineWidth: 1))
+        VStack(spacing: 12) {
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.white.opacity(0.06))
+                .frame(width: 90, height: 115)
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.1), lineWidth: 1))
             
-            RoundedRectangle(cornerRadius: 10)
-                .fill(Color.white.opacity(0.04))
-                .frame(width: 80, height: 100)
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.white.opacity(0.06), lineWidth: 1))
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.white.opacity(0.06))
+                .frame(width: 90, height: 115)
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.1), lineWidth: 1))
             
-            RoundedRectangle(cornerRadius: 10)
-                .fill(Color.white.opacity(0.04))
-                .frame(width: 80, height: 100)
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.white.opacity(0.06), lineWidth: 1))
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.white.opacity(0.06))
+                .frame(width: 90, height: 115)
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.1), lineWidth: 1))
         }
-        .padding(10)
-        .background(Color.white.opacity(0.03))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.white.opacity(0.06), lineWidth: 1))
+        .padding(12)
+        .background(Color.white.opacity(0.04))
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Color.white.opacity(0.1), lineWidth: 1))
     }
 }
 
