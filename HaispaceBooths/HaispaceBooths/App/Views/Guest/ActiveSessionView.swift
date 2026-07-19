@@ -117,7 +117,12 @@ struct ActiveSessionView: View {
                 VStack(spacing: 12) {
                     Spacer()
                     poseHintBanner
-                    colorFilterSelectorGroup
+                    // Filter selector hanya tampil saat portrait mode TIDAK aktif.
+                    // Saat portrait mode aktif, Cinematic Smart Grading bekerja otomatis.
+                    if !isPortraitModeActive {
+                        colorFilterSelectorGroup
+                            .transition(.opacity.combined(with: .move(edge: .bottom)))
+                    }
                     shutterOnlyOverlay
                 }
                 
@@ -499,7 +504,9 @@ struct ActiveSessionView: View {
     @ViewBuilder
     private var portraitBokehButton: some View {
         Button(action: {
-            isPortraitModeActive.toggle()
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                isPortraitModeActive.toggle()
+            }
             if isPortraitModeActive {
                 activeZoom = "1x"
                 Task {
