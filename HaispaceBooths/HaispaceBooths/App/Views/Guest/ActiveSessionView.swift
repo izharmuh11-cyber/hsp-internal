@@ -390,36 +390,13 @@ struct ActiveSessionView: View {
     @ViewBuilder
     private var countdownOverlay: some View {
         if localCountdown > 0 {
-            ZStack {
-                // Edge Flash Vignette Ring
-                Rectangle()
-                    .stroke(LinearGradient(colors: [Color.cyan.opacity(0.8), Color(hex: "#7C5CFC").opacity(0.8)], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 8)
-                    .ignoresSafeArea()
-                    .shadow(color: .cyan.opacity(0.8), radius: 20)
-                
-                ZStack {
-                    // Outer Shrinking Progress Ring
-                    Circle()
-                        .stroke(Color.white.opacity(0.25), lineWidth: 8)
-                        .frame(width: 240, height: 240)
-                    
-                    Circle()
-                        .trim(from: 0, to: CGFloat(localCountdown) / 3.0)
-                        .stroke(LinearGradient(colors: [Color.cyan, Color(hex: "#7C5CFC")], startPoint: .topLeading, endPoint: .bottomTrailing), style: StrokeStyle(lineWidth: 8, lineCap: .round))
-                        .frame(width: 240, height: 240)
-                        .rotationEffect(.degrees(-90))
-                        .shadow(color: .cyan.opacity(0.6), radius: 12)
-                        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: localCountdown)
-                    
-                    Text("\(localCountdown)")
-                        .font(.system(size: 140, weight: .black, design: .rounded))
-                        .foregroundStyle(localCountdown == 1 ? Color(red: 255/255, green: 215/255, blue: 0/255) : .white)
-                        .shadow(color: .black.opacity(0.6), radius: 25, y: 10)
-                }
-            }
-            .transition(.scale(scale: 0.85).combined(with: .opacity))
-            .zIndex(25)
-            .id("countdown-\(localCountdown)")
+            Text("\(localCountdown)")
+                .font(.system(size: 160, weight: .heavy, design: .rounded))
+                .foregroundStyle(.white)
+                .shadow(color: .black.opacity(0.4), radius: 16, y: 8)
+                .transition(.scale(scale: 0.85).combined(with: .opacity))
+                .zIndex(25)
+                .id("countdown-\(localCountdown)")
         }
     }
     
@@ -451,20 +428,19 @@ struct ActiveSessionView: View {
             videoFeedView(geometry: geometry)
                 .ignoresSafeArea()
             
-            // Spatial Face Focus Halo (iPhone Portrait AF Style)
-            if detectedFaceCount > 0 && localCountdown == 0 && !isBriefing {
-                VStack {
-                    ZStack {
-                        CornerBracketsShape()
-                            .stroke(LinearGradient(colors: [Color(red: 255/255, green: 215/255, blue: 0/255), Color.cyan], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 2.5)
-                            .frame(width: 220, height: 280)
-                            .shadow(color: Color(red: 255/255, green: 215/255, blue: 0/255).opacity(0.7), radius: 12, y: 0)
-                        
-                        Circle()
-                            .fill(Color(red: 255/255, green: 215/255, blue: 0/255))
-                            .frame(width: 8, height: 8)
-                            .shadow(color: .yellow, radius: 4)
-                    }
+            // Authentic iPhone Camera AF Yellow Focus Box (Melayang di tengah/area subjek)
+            if localCountdown == 0 && !isBriefing && !showFlash {
+                ZStack {
+                    // Siku Kotak AF Kuning khas Kamera iPhone
+                    CornerBracketsShape()
+                        .stroke(Color(red: 255/255, green: 215/255, blue: 0/255), lineWidth: 1.8)
+                        .frame(width: 160, height: 160)
+                        .shadow(color: Color(red: 255/255, green: 215/255, blue: 0/255).opacity(0.6), radius: 6, y: 0)
+                    
+                    // Titik AF Tengah
+                    Rectangle()
+                        .fill(Color(red: 255/255, green: 215/255, blue: 0/255))
+                        .frame(width: 4, height: 4)
                 }
                 .transition(.scale(scale: 0.9).combined(with: .opacity))
                 .animation(.spring(response: 0.35, dampingFraction: 0.75), value: detectedFaceCount)
@@ -607,7 +583,7 @@ struct ActiveSessionView: View {
         ]
         
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
+            HStack(spacing: 6) {
                 ForEach(filters, id: \.id) { flt in
                     let isSelected = activeFilter == flt.id
                     Button(action: {
@@ -621,18 +597,18 @@ struct ActiveSessionView: View {
                     }) {
                         Text(flt.name)
                             .font(.system(size: 13, weight: .bold, design: .rounded))
-                            .foregroundStyle(isSelected ? Color.black : Color.white.opacity(0.9))
-                            .padding(.horizontal, 18)
-                            .padding(.vertical, 9)
+                            .foregroundStyle(isSelected ? Color.black : Color.white.opacity(0.85))
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
                             .background(
                                 ZStack {
                                     if isSelected {
                                         Capsule()
-                                            .fill(LinearGradient(colors: [Color.cyan, Color(hex: "#7C5CFC")], startPoint: .leading, endPoint: .trailing))
-                                            .shadow(color: Color.cyan.opacity(0.55), radius: 8, y: 2)
+                                            .fill(Color.white)
+                                            .shadow(color: Color.white.opacity(0.35), radius: 8, y: 2)
                                     } else {
                                         Capsule()
-                                            .fill(Color.white.opacity(0.12))
+                                            .fill(Color.white.opacity(0.1))
                                     }
                                 }
                             )
@@ -640,13 +616,13 @@ struct ActiveSessionView: View {
                     }
                 }
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
         }
         .background(.ultraThinMaterial)
-        .background(.black.opacity(0.5))
+        .background(Color.black.opacity(0.4))
         .clipShape(Capsule())
-        .overlay(Capsule().stroke(Color.white.opacity(0.25), lineWidth: 1))
+        .overlay(Capsule().stroke(Color.white.opacity(0.2), lineWidth: 1))
         .shadow(color: .black.opacity(0.35), radius: 15, y: 6)
         .frame(maxWidth: 420)
     }
