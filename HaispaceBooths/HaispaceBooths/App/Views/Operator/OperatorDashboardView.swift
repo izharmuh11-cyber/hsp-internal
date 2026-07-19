@@ -117,7 +117,7 @@ struct OperatorDashboardView: View {
                 }
             }
             .padding(.horizontal, 28)
-            .padding(.top, 24)
+            .padding(.top, 40)
             .padding(.bottom, 28)
             
             // MARK: - Kiosk Countdown Overlay
@@ -297,7 +297,7 @@ struct OperatorDashboardView: View {
                         )
                         .overlay(
                             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .stroke(isActive ? Color.white : Color(hex: "#E2E8F0").opacity(0.5), lineWidth: 1.5)
+                                .stroke(isActive ? Color(hex: event.themeColorHex) : Color(hex: "#E2E8F0").opacity(0.5), lineWidth: isActive ? 2 : 1)
                         )
                     }
                 }
