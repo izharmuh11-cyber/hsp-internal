@@ -1,9 +1,9 @@
 // LandingView.swift
 // HaispaceBooths — App/Views/Guest
 //
-// Layar Standby Kiosk Tamu (Idle Screen).
-// Bertema VisionOS Liquid Glass & Cinematic Dark.
-// Menampilkan Logo Resmi Haispace Project, Concentric Ripple Camera, dan Direct Canvas Transition.
+// Layar Standby Kiosk Tamu (Ultra-Minimalist Idle Screen).
+// Bertema VisionOS Ambient Dark & Floating Photo Strip Background.
+// Menampilkan Logo Haispace Project, Subtle Camera Accent, & Full Screen Tap.
 
 import SwiftUI
 
@@ -11,7 +11,6 @@ struct LandingView: View {
     @Environment(AppState.self) private var appState
     
     // State Animasi Standby
-    @State private var isRippling = false
     @State private var isBreathe = false
     @State private var isPhantomActive = false
     
@@ -33,35 +32,74 @@ struct LandingView: View {
             
             // 4. Vignette Radial Masking (Masking Halus Supaya Tengah Tetap Fokus)
             RadialGradient(
-                colors: [.clear, Color(hex: "#030303").opacity(0.55), Color(hex: "#030303").opacity(0.92)],
+                colors: [.clear, Color(hex: "#030303").opacity(0.55), Color(hex: "#030303").opacity(0.94)],
                 center: .center,
-                startRadius: 180,
+                startRadius: 160,
                 endRadius: 650
             )
             .ignoresSafeArea()
             .allowsHitTesting(false)
             
-            // 5. MAIN CONTENT (Flex justify-between)
+            // 5. ULTRA-MINIMALIST HERO CONTENT (Logo, Camera Accent & Touch Prompt)
             VStack {
-                // HEADER LOGO (Top)
-                HaispaceOfficialLogoView()
+                Spacer()
+                
+                VStack(spacing: 32) {
+                    // Logo Minimalis Haispace Project
+                    HaispaceOfficialLogoView()
+                    
+                    // Camera Circle Accent
+                    ZStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color(hex: "#7C5CFC").opacity(0.22), Color(hex: "#00D9A0").opacity(0.12)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 100, height: 100)
+                            .overlay(Circle().stroke(Color.white.opacity(0.25), lineWidth: 1))
+                            .shadow(color: Color(hex: "#7C5CFC").opacity(0.35), radius: 20)
+                        
+                        Image(systemName: "camera")
+                            .font(.system(size: 38, weight: .ultraLight))
+                            .foregroundStyle(.white.opacity(0.9))
+                    }
+                    .scaleEffect(isBreathe ? 1.06 : 0.94)
+                    
+                    // Typography Prompt
+                    VStack(spacing: 10) {
+                        Text("Sentuh Layar")
+                            .font(.system(size: 56, weight: .medium, design: .rounded))
+                            .foregroundStyle(.white)
+                            .shadow(color: Color.white.opacity(0.2), radius: 15)
+                        
+                        HStack(spacing: 6) {
+                            Text("✨")
+                            Text("UNTUK MEMULAI SESI FOTO")
+                                .font(.system(size: 13, weight: .bold, design: .rounded))
+                                .foregroundStyle(Color(hex: "#00D9A0"))
+                                .tracking(4)
+                            Text("✨")
+                        }
+                    }
+                }
                 
                 Spacer()
                 
-                // CENTER HERO CTA (Middle)
-                standbyHeroCTA
-                
-                Spacer()
-                
-                // FOOTER EVENT BADGE (Bottom)
+                // FOOTER: Active Event Badge (Terpaku di Bawah)
                 if let eventName = appState.operatorState.activeEvent?.name, !eventName.isEmpty {
                     eventBadgeView(name: eventName)
                 } else {
                     eventBadgeView(name: "WISUDA UNG 2026")
                 }
             }
-            .padding(.vertical, 64)
-            .padding(.horizontal, 32)
+            .padding(.vertical, 48)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                handleStartSession()
+            }
             
             // 6. TOP RIGHT SECRET TAP AREA (Khusus PIN Operator)
             VStack {
@@ -103,83 +141,12 @@ struct LandingView: View {
             }
         }
         .onAppear {
-            withAnimation(.easeInOut(duration: 2.2).repeatForever(autoreverses: false)) {
-                isRippling = true
-            }
-            withAnimation(.easeInOut(duration: 5.0).repeatForever(autoreverses: true)) {
+            withAnimation(.easeInOut(duration: 4.5).repeatForever(autoreverses: true)) {
                 isBreathe = true
             }
-            withAnimation(.easeInOut(duration: 7.5).repeatForever(autoreverses: true)) {
+            withAnimation(.easeInOut(duration: 8.0).repeatForever(autoreverses: true)) {
                 isPhantomActive = true
             }
-        }
-    }
-    
-    // MARK: - Standby Mode Hero CTA
-    private var standbyHeroCTA: some View {
-        VStack(spacing: 32) {
-            ZStack {
-                // Expanding Ripple Ring 3
-                Circle()
-                    .stroke(Color.white.opacity(isRippling ? 0.0 : 0.2), lineWidth: 1.5)
-                    .frame(width: 130, height: 130)
-                    .scaleEffect(isRippling ? 2.0 : 1.0)
-                
-                // Expanding Ripple Ring 2
-                Circle()
-                    .stroke(Color.white.opacity(isRippling ? 0.0 : 0.35), lineWidth: 1.5)
-                    .frame(width: 130, height: 130)
-                    .scaleEffect(isRippling ? 1.5 : 1.0)
-                
-                // Inner Glass Circle Icon
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [Color(hex: "#7C5CFC").opacity(0.25), Color(hex: "#00D9A0").opacity(0.15)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 126, height: 126)
-                        .overlay(
-                            Circle()
-                                .stroke(Color.white.opacity(0.35), lineWidth: 1.5)
-                        )
-                        .shadow(color: Color(hex: "#7C5CFC").opacity(0.4), radius: 25)
-                    
-                    Image(systemName: "camera")
-                        .font(.system(size: 48, weight: .thin))
-                        .foregroundStyle(Color.white)
-                        .shadow(color: Color.white.opacity(0.6), radius: 12)
-                }
-            }
-            
-            // Hero Typography
-            VStack(spacing: 12) {
-                Text("Sentuh Layar")
-                    .font(.system(size: 58, weight: .bold, design: .rounded))
-                    .foregroundStyle(Color.white)
-                    .shadow(color: Color.white.opacity(0.25), radius: 20)
-                
-                HStack(spacing: 8) {
-                    Text("✨")
-                    Text("UNTUK MEMULAI SESI FOTO")
-                        .font(.system(size: 15, weight: .semibold, design: .rounded))
-                        .foregroundStyle(Color(hex: "#00D9A0"))
-                        .tracking(4)
-                    Text("✨")
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 6)
-                .background(Color.white.opacity(0.06))
-                .clipShape(Capsule())
-                .overlay(Capsule().stroke(Color.white.opacity(0.12), lineWidth: 1))
-            }
-        }
-        .contentShape(Rectangle())
-        .onTapGesture {
-            handleStartSession()
         }
     }
     
@@ -310,21 +277,20 @@ struct LandingView: View {
     }
 }
 
-// MARK: - Logo Resmi Haispace Project (Minimalist Typography)
+// MARK: - Logo Resmi Haispace Project (Ultra-Minimalist Typography)
 struct HaispaceOfficialLogoView: View {
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 8) {
             Text("Haispace")
-                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .font(.system(size: 38, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
-                .shadow(color: Color.black.opacity(0.5), radius: 4)
+                .shadow(color: Color(hex: "#7C5CFC").opacity(0.5), radius: 18)
             
             Text("Project")
-                .font(.system(size: 28, weight: .light, design: .rounded))
-                .tracking(4)
-                .foregroundStyle(.white.opacity(0.7))
+                .font(.system(size: 38, weight: .ultraLight, design: .rounded))
+                .tracking(3)
+                .foregroundStyle(.white.opacity(0.75))
         }
-        .opacity(0.85)
     }
 }
 
@@ -333,36 +299,4 @@ extension View {
     func backdropBlur() -> some View {
         self.background(.ultraThinMaterial)
     }
-}
-
-// MARK: - Color Hex Extension
-extension Color {
-    init(hex: String) {
-        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-        var int: UInt64 = 0
-        Scanner(string: hex).scanHexInt64(&int)
-        let a, r, g, b: UInt64
-        switch hex.count {
-        case 3: // RGB (12-bit)
-            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
-        case 6: // RGB (24-bit)
-            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
-        case 8: // ARGB (32-bit)
-            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
-        default:
-            (a, r, g, b) = (255, 0, 0, 0)
-        }
-        self.init(
-            .sRGB,
-            red: Double(r) / 255,
-            green: Double(g) / 255,
-            blue:  Double(b) / 255,
-            opacity: Double(a) / 255
-        )
-    }
-}
-
-#Preview {
-    LandingView()
-        .environment(AppState.preview)
 }
