@@ -1,0 +1,8 @@
+[2026-07-18T14:26:44Z] [INFO] HaiBooth launched — build: #188 (0.1.0 (#188-c1df53f)) — device: iPad
+[2026-07-18T14:26:44Z] [INFO] AppState setup dimulai
+[2026-07-18T14:26:45Z] [INFO] Tidak ada session tersimpan — perlu login
+[2026-07-18T14:26:45Z] [INFO] BoothConfig: load from local CoreData
+ false
+[2026-07-18T14:26:46Z] [INFO] QR Payload diregenerate (expires in 5 min)
+[2026-07-18T14:26:46Z] [INFO] TCP Listener ready pada port 55123
+[2026-07-18T14:26:46Z] [INFO] Memulai MPC advertising dengan serviceType: haibooth (eventId: TEST-EVENT-3014)

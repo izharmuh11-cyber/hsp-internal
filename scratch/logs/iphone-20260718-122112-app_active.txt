@@ -1,0 +1,69 @@
+[2026-07-18T03:49:56Z] [INFO] HaiCamera launched — model: iPhone
+[2026-07-18T03:49:57Z] [INFO] HaiCamera setup selesai
+[2026-07-18T03:49:57Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Tampaknya koneksi internet sedang offline.
+[2026-07-18T03:49:57Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Tampaknya koneksi internet sedang offline.
+[2026-07-18T03:49:58Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Tampaknya koneksi internet sedang offline.
+[2026-07-18T03:50:03Z] [INFO] HaiCamera launched — model: iPhone
+[2026-07-18T03:50:03Z] [INFO] HaiCamera setup selesai
+[2026-07-18T03:50:03Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Tampaknya koneksi internet sedang offline.
+[2026-07-18T03:50:03Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Tampaknya koneksi internet sedang offline.
+[2026-07-18T03:50:07Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-18T03:50:09Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-18T03:50:09Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-18T03:50:11Z] [INFO] Koneksi TCP Client terhubung ke iPad: 10.117.244.5:55123
+[2026-07-18T03:50:12Z] [INFO] HaiCamera launched — model: iPhone
+[2026-07-18T03:50:12Z] [INFO] HaiCamera setup selesai
+[2026-07-18T03:50:14Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-18T03:50:15Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-18T03:50:16Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-18T03:50:16Z] [INFO] Koneksi TCP Client terhubung ke iPad: 10.117.244.5:55123
+[2026-07-18T04:04:04Z] [INFO] HaiCamera launched — model: iPhone
+[2026-07-18T04:04:04Z] [INFO] [setupPipeline] Configuring capture callbacks
+[2026-07-18T04:04:04Z] [INFO] [setup] Langkah 3: register connection callback
+[2026-07-18T04:04:04Z] [INFO] [setup] Langkah 4: register data callback
+[2026-07-18T04:04:04Z] [INFO] HaiCamera setup selesai
+[2026-07-18T04:04:06Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-18T04:04:07Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-18T04:04:07Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-18T04:04:07Z] [INFO] Koneksi TCP Client terhubung ke iPad: 10.117.244.5:55123
+[2026-07-18T04:04:07Z] [INFO] P2P connected — switching to paired state
+[2026-07-18T04:04:15Z] [INFO] HaiCamera launched — model: iPhone
+[2026-07-18T04:04:15Z] [INFO] [setup] Langkah 1: battery monitoring
+[2026-07-18T04:04:15Z] [INFO] [setup] Langkah 2: setupCameraPipeline
+[2026-07-18T04:04:15Z] [INFO] [setupPipeline] Configuring capture callbacks
+[2026-07-18T04:04:15Z] [INFO] [setup] Langkah 3: register connection callback
+[2026-07-18T04:04:15Z] [INFO] [setup] Langkah 4: register data callback
+[2026-07-18T04:04:15Z] [INFO] HaiCamera setup selesai
+[2026-07-18T04:04:17Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-18T04:04:17Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-18T04:04:17Z] [INFO] P2P connected — switching to paired state
+.244.5:55123
+[2026-07-18T04:04:21Z] [INFO] HaiCamera launched — model: iPhone
+[2026-07-18T04:04:21Z] [INFO] [setup] Langkah 1: battery monitoring
+[2026-07-18T04:04:21Z] [INFO] [setupPipeline] Configuring capture callbacks
+[2026-07-18T04:04:21Z] [INFO] [setup] Langkah 2: setupCameraPipeline
+[2026-07-18T04:04:21Z] [INFO] [setup] Langkah 3: register connection callback
+[2026-07-18T04:04:21Z] [INFO] [setup] Langkah 4: register data callback
+[2026-07-18T04:04:21Z] [INFO] HaiCamera setup selesai
+[2026-07-18T04:04:22Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-18T04:04:22Z] [INFO] P2P connected — switching to paired state
+.244.5:55123
+[2026-07-18T04:04:23Z] [INFO] HaiCamera launched — model: iPhone
+[2026-07-18T04:04:23Z] [INFO] [setupPipeline] Configuring capture callbacks
+[2026-07-18T04:04:23Z] [INFO] [setup] Langkah 1: battery monitoring
+[2026-07-18T04:04:23Z] [INFO] [setup] Langkah 2: setupCameraPipeline
+[2026-07-18T04:04:23Z] [INFO] [setup] Langkah 3: register connection callback
+[2026-07-18T04:04:23Z] [INFO] [setup] Langkah 4: register data callback
+[2026-07-18T04:04:23Z] [INFO] HaiCamera setup selesai
+[2026-07-18T04:04:25Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-18T04:04:26Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-18T04:04:28Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-18T04:04:28Z] [INFO] P2P connected — switching to paired state
+[2026-07-18T04:04:28Z] [INFO] Koneksi TCP Client terhubung ke iPad: 10.117.244.5:55123
+[2026-07-18T04:21:11Z] [INFO] HaiCamera launched — build: #147 (0.1.0 (#147-cbd573d)) — model: iPhone
+[2026-07-18T04:21:11Z] [INFO] [setup] Langkah 2: setupCameraPipeline
+[2026-07-18T04:21:11Z] [INFO] [setup] Langkah 1: battery monitoring
+[2026-07-18T04:21:11Z] [INFO] [setupPipeline] Configuring capture callbacks
+[2026-07-18T04:21:11Z] [INFO] [setup] Langkah 3: register connection callback
+[2026-07-18T04:21:11Z] [INFO] [setup] Langkah 4: register data callback
+[2026-07-18T04:21:11Z] [INFO] HaiCamera setup selesai

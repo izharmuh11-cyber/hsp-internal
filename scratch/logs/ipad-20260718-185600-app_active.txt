@@ -1,0 +1,1 @@
+[2026-07-18T10:56:00Z] [INFO] HaiBooth launched — build: #166 (0.1.0 (#166-3a3c5cf)) — device: iPad

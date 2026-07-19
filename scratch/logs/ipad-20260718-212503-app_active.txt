@@ -1,0 +1,7 @@
+[2026-07-18T13:25:00Z] [INFO] BGTask license-check scheduled untuk 7 hari ke depan
+[2026-07-18T13:25:00Z] [INFO] Tidak ada license token — perlu aktivasi
+[2026-07-18T13:25:00Z] [INFO] Tidak ada session tersimpan — perlu login
+[2026-07-18T13:25:00Z] [INFO] AppState setup selesai — boothReady: false
+[2026-07-18T13:25:01Z] [INFO] QR Payload diregenerate (expires in 5 min)
+[2026-07-18T13:25:02Z] [INFO] TCP Listener ready pada port 55123
+[2026-07-18T13:25:02Z] [INFO] Memulai MPC advertising dengan serviceType: haibooth (eventId: TEST-EVENT-6925)

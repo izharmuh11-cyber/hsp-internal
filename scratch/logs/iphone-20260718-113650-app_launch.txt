@@ -1,0 +1,14 @@
+[2026-07-18T03:36:27Z] [INFO] HaiCamera launched — model: iPhone
+[2026-07-18T03:36:27Z] [INFO] HaiCamera setup selesai
+[2026-07-18T03:36:27Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Tampaknya koneksi internet sedang offline.
+[2026-07-18T03:36:27Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Tampaknya koneksi internet sedang offline.
+[2026-07-18T03:36:33Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-18T03:36:36Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-18T03:36:40Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-18T03:36:45Z] [INFO] HaiCamera launched — model: iPhone
+[2026-07-18T03:36:45Z] [INFO] HaiCamera setup selesai
+[2026-07-18T03:36:47Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-18T03:36:47Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-18T03:36:47Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-18T03:36:47Z] [INFO] Koneksi TCP Client terhubung ke iPad: 10.117.244.5:55123
+[2026-07-18T03:36:50Z] [INFO] HaiCamera launched — model: iPhone

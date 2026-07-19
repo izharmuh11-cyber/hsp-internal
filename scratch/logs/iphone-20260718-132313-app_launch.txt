@@ -1,0 +1,41 @@
+[2026-07-18T05:12:47Z] [INFO] HaiCamera launched — build: #153 (0.1.0 (#153-74a1976)) — model: iPhone
+[2026-07-18T05:12:47Z] [INFO] [setup] Langkah 1: battery monitoring
+[2026-07-18T05:12:47Z] [INFO] [setupPipeline] Configuring capture callbacks
+[2026-07-18T05:12:47Z] [INFO] [setup] Langkah 2: setupCameraPipeline
+[2026-07-18T05:12:47Z] [INFO] [setup] Langkah 3: register connection callback
+[2026-07-18T05:12:47Z] [INFO] [setup] Langkah 4: register data callback
+[2026-07-18T05:12:47Z] [INFO] HaiCamera setup selesai
+[2026-07-18T05:12:47Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Tampaknya koneksi internet sedang offline.
+[2026-07-18T05:12:47Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Tampaknya koneksi internet sedang offline.
+[2026-07-18T05:12:52Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-18T05:12:57Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-18T05:12:58Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-18T05:13:00Z] [INFO] [setupSession] Langkah 1: beginConfiguration
+[2026-07-18T05:13:00Z] [INFO] [setupSession] Langkah 2: video input ditambahkan
+[2026-07-18T05:13:00Z] [INFO] P2P connected — switching to paired state
+[2026-07-18T05:13:00Z] [INFO] Koneksi TCP Client terhubung ke iPad: 10.117.244.5:55123
+[2026-07-18T05:13:00Z] [INFO] Video HDR diaktifkan
+[2026-07-18T05:13:00Z] [INFO] [setupSession] Langkah 3: video output ditambahkan
+[2026-07-18T05:13:00Z] [INFO] [setupSession] Langkah 4: photo output ditambahkan
+[2026-07-18T05:13:00Z] [INFO] [setupSession] Langkah 5: commitConfiguration selesai
+[2026-07-18T05:13:00Z] [INFO] [setupSession] maxPhotoQualityPrioritization set to quality
+[2026-07-18T05:13:01Z] [INFO] Camera capture session started
+[2026-07-18T05:13:01Z] [INFO] VideoEncoderService configured: 1280x720
+[2026-07-18T05:13:01Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-18T05:13:07Z] [INFO] Sesi dimulai di HaiCamera: FAFC4CA4-D556-4C7C-9542-7D71BF204599
+[2026-07-18T05:13:20Z] [INFO] [Zoom] Berhasil beralih ke perangkat Kamera Ultra Lebar Belakang (Zoom: 0.5x)
+[2026-07-18T05:13:21Z] [INFO] [Zoom] Berhasil beralih ke perangkat Kamera Lebar Belakang Ganda (Zoom: 1.0x)
+[2026-07-18T05:13:23Z] [INFO] [Zoom] Berhasil beralih ke perangkat Kamera Belakang (Zoom: 2.0x)
+[2026-07-18T05:13:25Z] [INFO] [Zoom] Berhasil beralih ke perangkat Kamera Lebar Belakang Ganda (Zoom: 1.0x)
+[2026-07-18T05:13:27Z] [INFO] [Zoom] Berhasil beralih ke perangkat Kamera Ultra Lebar Belakang (Zoom: 0.5x)
+[2026-07-18T05:13:29Z] [INFO] [Zoom] Berhasil beralih ke perangkat Kamera Lebar Belakang Ganda (Zoom: 1.0x)
+[2026-07-18T05:13:32Z] [INFO] [PortraitMode] Status Portrait diset ke AKTIF (Depth/Bokeh)
+[2026-07-18T05:13:39Z] [INFO] [Zoom] Berhasil beralih ke perangkat Kamera Belakang (Zoom: 2.0x)
+[2026-07-18T05:13:49Z] [INFO] [PortraitMode] Status Portrait diset ke NONAKTIF
+[2026-07-18T05:13:52Z] [INFO] [Zoom] Berhasil beralih ke perangkat Kamera Lebar Belakang Ganda (Zoom: 1.0x)
+[2026-07-18T05:13:57Z] [INFO] Gesture 'Hai' terdeteksi! Mengirim sinyal pemicu ke iPad.
+[2026-07-18T05:23:13Z] [INFO] HaiCamera launched — build: #154 (0.1.0 (#154-9febaf9)) — model: iPhone
+[2026-07-18T05:23:13Z] [INFO] [setup] Langkah 2: setupCameraPipeline
+[2026-07-18T05:23:13Z] [INFO] [setup] Langkah 1: battery monitoring
+[2026-07-18T05:23:13Z] [INFO] [setupPipeline] Configuring capture callbacks
+[2026-07-18T05:23:13Z] [INFO] [setup] Langkah 3: register connection callback

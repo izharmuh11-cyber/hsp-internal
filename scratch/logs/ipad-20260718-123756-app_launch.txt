@@ -1,0 +1,1 @@
+[2026-07-18T04:37:55Z] [INFO] BGTask license-check scheduled untuk 7 hari ke depan

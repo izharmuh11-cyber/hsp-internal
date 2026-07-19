@@ -1,0 +1,15 @@
+[2026-07-18T15:12:24Z] [INFO] HaiCamera launched — build: #197 (0.1.0 (#197-6fb71eb)) — model: iPhone
+[2026-07-18T15:12:24Z] [INFO] [setup] Langkah 2: setupCameraPipeline
+[2026-07-18T15:12:24Z] [INFO] [setupPipeline] Configuring capture callbacks
+[2026-07-18T15:12:24Z] [INFO] [setup] Langkah 1: battery monitoring
+[2026-07-18T15:12:24Z] [INFO] [setup] Langkah 3: register connection callback
+[2026-07-18T15:12:24Z] [INFO] [setup] Langkah 4: register data callback
+[2026-07-18T15:12:24Z] [INFO] HaiCamera setup selesai
+[2026-07-18T15:12:24Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Tampaknya koneksi internet sedang offline.
+[2026-07-18T15:12:24Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Tampaknya koneksi internet sedang offline.
+[2026-07-18T15:12:29Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-18T15:12:30Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-18T15:12:31Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-18T15:12:33Z] [WARN] [P2PClientService.swift:145] Koneksi TCP gagal atau timeout. Fallback ke MPC.
+[2026-07-18T15:12:33Z] [INFO] Mulai browse P2P (MPC Fallback) untuk service: haibooth dengan eventId: TEST-EVENT-5504
+[2026-07-18T15:12:36Z] [INFO] Ditemukan iPad host: HaiBooth iPad, discoveryInfo: Optional(["eventId": "TEST-EVENT-5504", "booth": "94F3E8F5-66DC-429C-BC85-368829373972"])

@@ -1,0 +1,39 @@
+[2026-07-18T05:02:09Z] [INFO] HaiCamera launched — build: #151 (0.1.0 (#151-50fad75)) — model: iPhone
+[2026-07-18T05:02:09Z] [INFO] [setup] Langkah 1: battery monitoring
+[2026-07-18T05:02:09Z] [INFO] [setup] Langkah 2: setupCameraPipeline
+[2026-07-18T05:02:09Z] [INFO] [setupPipeline] Configuring capture callbacks
+[2026-07-18T05:02:09Z] [INFO] [setup] Langkah 3: register connection callback
+[2026-07-18T05:02:09Z] [INFO] [setup] Langkah 4: register data callback
+[2026-07-18T05:02:09Z] [INFO] HaiCamera setup selesai
+[2026-07-18T05:02:11Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-18T05:02:11Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-18T05:02:15Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-18T05:02:15Z] [INFO] P2P connected — switching to paired state
+[2026-07-18T05:02:15Z] [INFO] [setupSession] Langkah 1: beginConfiguration
+[2026-07-18T05:02:15Z] [INFO] Koneksi TCP Client terhubung ke iPad: 10.117.244.5:55123
+[2026-07-18T05:02:15Z] [INFO] [setupSession] Langkah 2: video input ditambahkan
+[2026-07-18T05:02:15Z] [INFO] [setupSession] Langkah 3: video output ditambahkan
+[2026-07-18T05:02:15Z] [INFO] Video HDR diaktifkan
+[2026-07-18T05:02:15Z] [INFO] [setupSession] Langkah 4: photo output ditambahkan
+[2026-07-18T05:02:15Z] [INFO] [setupSession] Langkah 5: commitConfiguration selesai
+[2026-07-18T05:02:15Z] [INFO] [setupSession] maxPhotoQualityPrioritization set to quality
+[2026-07-18T05:02:15Z] [INFO] Camera capture session started
+[2026-07-18T05:02:15Z] [INFO] VideoEncoderService configured: 1280x720
+[2026-07-18T05:02:28Z] [INFO] Sesi dimulai di HaiCamera: B611D6B8-7761-4927-89F3-2CAF2D4BC381
+[2026-07-18T05:02:40Z] [INFO] [Zoom] Zoom factor diubah menjadi 1.0x pada Kamera Lebar Belakang Ganda
+[2026-07-18T05:02:41Z] [INFO] [Zoom] Zoom factor diubah menjadi 2.0x pada Kamera Lebar Belakang Ganda
+[2026-07-18T05:02:42Z] [INFO] [Zoom] Zoom factor diubah menjadi 1.0x pada Kamera Lebar Belakang Ganda
+[2026-07-18T05:02:43Z] [INFO] [Zoom] Berhasil beralih ke kamera Kamera Ultra Lebar Belakang (Zoom target: 0.5x)
+[2026-07-18T05:02:44Z] [INFO] [Zoom] Zoom factor diubah menjadi 1.0x pada Kamera Ultra Lebar Belakang
+[2026-07-18T05:02:45Z] [INFO] [PortraitMode] Mode Portrait diset ke AKTIF (Depth/Bokeh)
+[2026-07-18T05:02:47Z] [INFO] [Zoom] Zoom factor diubah menjadi 2.0x pada Kamera Ultra Lebar Belakang
+[2026-07-18T05:02:49Z] [INFO] [PortraitMode] Mode Portrait diset ke NONAKTIF
+[2026-07-18T05:02:50Z] [INFO] [Zoom] Zoom diubah menjadi 1.0x pada Kamera Ultra Lebar Belakang
+[2026-07-18T05:03:15Z] [INFO] Gesture 'Hai' terdeteksi! Mengirim sinyal pemicu ke iPad.
+[2026-07-18T05:03:19Z] [INFO] Menerima trigger jepret dari iPad (indeks: 0, replace ID: nil)
+[2026-07-18T05:03:19Z] [INFO] Memicu jepretan foto kualitas tinggi (Smart HDR/Deep Fusion)
+[2026-07-18T05:03:19Z] [INFO] Mulai dual-channel transfer untuk 0277AA6C-5E8F-4A19-9A22-D4ACA62043CF (order: 0)
+[2026-07-18T05:03:19Z] [INFO] Full quality terkirim: 0277AA6C-5E8F-4A19-9A22-D4ACA62043CF
+[2026-07-18T05:03:19Z] [INFO] Thumbnail terkirim: 0277AA6C-5E8F-4A19-9A22-D4ACA62043CF (136244 bytes)
+[2026-07-18T05:03:20Z] [INFO] [Zoom] Zoom factor diubah menjadi 1.0x pada Kamera Ultra Lebar Belakang
+[2026-07-18T05:03:20Z] [INFO] Gesture 'Hai' terdeteksi! Mengirim sinyal pemicu ke iPad.

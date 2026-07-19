@@ -1,0 +1,61 @@
+[2026-07-18T12:34:01Z] [INFO] BGTask license-check scheduled untuk 7 hari ke depan
+[2026-07-18T12:34:02Z] [INFO] AppState setup dimulai
+[2026-07-18T12:34:02Z] [INFO] Tidak ada session tersimpan — perlu login
+[2026-07-18T12:34:02Z] [INFO] AppState setup selesai — boothReady: false
+[2026-07-18T12:34:04Z] [INFO] QR Payload diregenerate (expires in 5 min)
+[2026-07-18T12:34:04Z] [INFO] TCP Listener ready pada port 55123
+[2026-07-18T12:34:04Z] [INFO] Memulai MPC advertising dengan serviceType: haibooth (eventId: TEST-EVENT-6136)
+[2026-07-18T12:34:09Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T12:34:09Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T12:34:10Z] [INFO] Koneksi P2P beralih ke mode: TCP Router
+[2026-07-18T12:34:10Z] [INFO] Koneksi TCP klien diterima
+[2026-07-18T12:34:10Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T12:34:11Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T12:34:11Z] [INFO] [LivePreview] Aliran video aktif — Resolusi: 1280x720 (16:9 Landscape), Mode Cermin (Mirroring): AKTIF
+[2026-07-18T12:34:12Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T12:34:13Z] [INFO] Koneksi aktif terdeteksi. Menjaga hosting TCP & MPC tetap berjalan.
+[2026-07-18T12:34:13Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T12:34:14Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T12:34:14Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T12:34:15Z] [INFO] MPC service type set: hs-eventtest001
+[2026-07-18T12:34:15Z] [INFO] Pesan sessionStart terkirim via TCP
+-B205-E19ECAE8B7FE — DF — The Mini
+[2026-07-18T12:34:15Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T12:34:15Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T12:34:16Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T12:34:16Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T12:34:17Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T12:34:17Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T12:34:18Z] [INFO] Sesi dimulai: DE90EF02-7332-4649-B205-E19ECAE8B7FE — Tamu: DF
+[2026-07-18T12:34:18Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T12:34:18Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T12:34:19Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T12:34:19Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T12:34:19Z] [INFO] Pesan setZoom terkirim via TCP
+[2026-07-18T12:34:20Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T12:34:20Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T12:34:20Z] [INFO] Pesan setZoom terkirim via TCP
+[2026-07-18T12:34:21Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T12:34:21Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T12:34:21Z] [INFO] Pesan setZoom terkirim via TCP
+[2026-07-18T12:34:22Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T12:34:23Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T12:34:23Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T12:34:24Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T12:34:24Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T12:34:24Z] [INFO] Pesan setZoom terkirim via TCP
+[2026-07-18T12:34:25Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T12:34:26Z] [INFO] Pesan setPortraitMode terkirim via TCP
+[2026-07-18T12:34:28Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T12:34:28Z] [INFO] [LivePreview] Aliran video aktif — Resolusi: 1560x1170 (16:9 Landscape), Mode Cermin (Mirroring): AKTIF
+[2026-07-18T12:34:29Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T12:34:29Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T12:34:30Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T12:34:30Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T12:34:31Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T12:34:32Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T12:34:32Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T12:34:33Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T12:34:34Z] [INFO] Pesan triggerCapture terkirim via TCP
+[2026-07-18T12:34:34Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T12:34:34Z] [INFO] H.264 VideoFormatDescription berhasil dibuat

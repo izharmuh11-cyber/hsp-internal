@@ -1,0 +1,8 @@
+[2026-07-18T06:00:22Z] [INFO] HaiCamera launched — build: #157 (0.1.0 (#157-762a348)) — model: iPhone
+[2026-07-18T06:00:22Z] [INFO] [setup] Langkah 2: setupCameraPipeline
+lbacks
+[2026-07-18T06:00:22Z] [INFO] [setup] Langkah 3: register connection callback
+[2026-07-18T06:00:22Z] [INFO] [setup] Langkah 4: register data callback
+[2026-07-18T06:00:22Z] [INFO] HaiCamera setup selesai
+[2026-07-18T06:00:22Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Tampaknya koneksi internet sedang offline.
+[2026-07-18T06:00:22Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Tampaknya koneksi internet sedang offline.

@@ -1,0 +1,10 @@
+[2026-07-18T10:32:11Z] [INFO] HaiCamera launched — build: #164 (0.1.0 (#164-135f4d4)) — model: iPhone
+[2026-07-18T10:32:11Z] [INFO] [setup] Langkah 2: setupCameraPipeline
+[2026-07-18T10:32:11Z] [INFO] [setup] Langkah 1: battery monitoring
+[2026-07-18T10:32:11Z] [INFO] [setupPipeline] Configuring capture callbacks
+[2026-07-18T10:32:11Z] [INFO] [setup] Langkah 3: register connection callback
+[2026-07-18T10:32:11Z] [INFO] [setup] Langkah 4: register data callback
+[2026-07-18T10:32:11Z] [INFO] HaiCamera setup selesai
+[2026-07-18T10:32:11Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Tampaknya koneksi internet sedang offline.
+[2026-07-18T10:32:11Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Tampaknya koneksi internet sedang offline.
+[2026-07-18T10:32:16Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt

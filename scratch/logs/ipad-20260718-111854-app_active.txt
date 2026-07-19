@@ -1,0 +1,10 @@
+[2026-07-18T03:18:49Z] [INFO] HaiBooth launched — device: iPad
+[2026-07-18T03:18:50Z] [INFO] AppState setup dimulai
+[2026-07-18T03:18:50Z] [INFO] Tidak ada session tersimpan — perlu login
+[2026-07-18T03:18:50Z] [INFO] BoothConfig: load from local CoreData
+ false
+[2026-07-18T03:18:51Z] [INFO] QR Payload diregenerate (expires in 5 min)
+[2026-07-18T03:18:52Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T03:18:52Z] [INFO] TCP Listener ready pada port 55123
+[2026-07-18T03:18:52Z] [INFO] Memulai MPC advertising dengan serviceType: haibooth (eventId: TEST-EVENT-3114)
+[2026-07-18T03:18:52Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt

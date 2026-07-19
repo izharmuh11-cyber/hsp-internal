@@ -1,0 +1,9 @@
+[2026-07-18T10:56:00Z] [INFO] HaiBooth launched — build: #166 (0.1.0 (#166-3a3c5cf)) — device: iPad
+[2026-07-18T10:56:00Z] [INFO] Tidak ada license token — perlu aktivasi
+[2026-07-18T10:56:00Z] [INFO] Tidak ada session tersimpan — perlu login
+[2026-07-18T10:56:00Z] [INFO] AppState setup selesai — boothReady: false
+[2026-07-18T10:56:02Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T10:56:03Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T10:56:12Z] [INFO] QR Payload diregenerate (expires in 5 min)
+[2026-07-18T10:56:12Z] [INFO] Memulai MPC advertising dengan serviceType: haibooth (eventId: TEST-EVENT-9366)
+[2026-07-18T10:56:12Z] [INFO] TCP Listener ready pada port 55123

@@ -222,6 +222,25 @@ final class P2PStore: @unchecked Sendable {
     }
 
     @MainActor
+    func disconnect() {
+        HaispaceLogger.info("Memutuskan koneksi P2P secara manual.", category: "p2p")
+        qrRefreshTimer?.invalidate()
+        qrRefreshTimer = nil
+        currentQRPayload = nil
+        activeEventId = nil
+        
+        outgoingMessageTask?.cancel()
+        outgoingMessageTask = nil
+        
+        Task {
+            await LocalTCPRouterService.shared.stopHosting()
+            await MultipeerService.shared.stopHosting()
+        }
+        
+        updateConnectionState(.disconnected)
+    }
+
+    @MainActor
     private func generateNewQRPayload() {
         guard let eventId = activeEventId else { return }
         let ip = tcpRemoteIP ?? "0.0.0.0"

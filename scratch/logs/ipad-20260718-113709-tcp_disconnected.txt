@@ -1,0 +1,33 @@
+[2026-07-18T03:36:35Z] [INFO] BGTask license-check scheduled untuk 7 hari ke depan
+[2026-07-18T03:36:35Z] [INFO] AppState setup dimulai
+[2026-07-18T03:36:35Z] [INFO] Tidak ada session tersimpan — perlu login
+[2026-07-18T03:36:35Z] [INFO] AppState setup selesai — boothReady: false
+[2026-07-18T03:36:36Z] [INFO] QR Payload diregenerate (expires in 5 min)
+[2026-07-18T03:36:37Z] [INFO] TCP Listener ready pada port 55123
+[2026-07-18T03:36:37Z] [INFO] Memulai MPC advertising dengan serviceType: haibooth (eventId: TEST-EVENT-5529)
+[2026-07-18T03:36:37Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T03:36:38Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T03:36:39Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T03:36:41Z] [INFO] Koneksi TCP klien diterima
+[2026-07-18T03:36:41Z] [WARN] [LocalTCPRouterService.swift:160] TCP Stream terhenti atau error: POSIXErrorCode(rawValue: 54): Connection reset by peer
+[2026-07-18T03:36:41Z] [WARN] [LocalTCPRouterService.swift:117] Koneksi TCP gagal: POSIXErrorCode(rawValue: 54): Connection reset by peer
+[2026-07-18T03:36:42Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T03:36:43Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T03:36:44Z] [INFO] MPC hosting dihentikan
+[2026-07-18T03:36:45Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T03:36:46Z] [INFO] QR Payload diregenerate (expires in 5 min)
+[2026-07-18T03:36:46Z] [INFO] TCP Listener ready pada port 55123
+[2026-07-18T03:36:46Z] [INFO] Memulai MPC advertising dengan serviceType: haibooth (eventId: TEST-EVENT-1761)
+[2026-07-18T03:36:46Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T03:36:48Z] [INFO] Koneksi P2P beralih ke mode: TCP Router
+[2026-07-18T03:36:48Z] [INFO] Koneksi TCP klien diterima
+[2026-07-18T03:36:48Z] [WARN] [LocalTCPRouterService.swift:160] TCP Stream terhenti atau error: POSIXErrorCode(rawValue: 54): Connection reset by peer
+[2026-07-18T03:36:48Z] [WARN] [LocalTCPRouterService.swift:117] Koneksi TCP gagal: POSIXErrorCode(rawValue: 54): Connection reset by peer
+[2026-07-18T03:36:49Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T03:36:50Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T03:36:50Z] [INFO] MPC hosting dihentikan
+[2026-07-18T03:36:51Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T03:36:52Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T03:37:07Z] [INFO] QR Payload diregenerate (expires in 5 min)
+[2026-07-18T03:37:07Z] [INFO] TCP Listener ready pada port 55123
+[2026-07-18T03:37:07Z] [INFO] Memulai MPC advertising dengan serviceType: haibooth (eventId: TEST-EVENT-5910)

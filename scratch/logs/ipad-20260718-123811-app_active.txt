@@ -1,0 +1,10 @@
+[2026-07-18T04:37:55Z] [INFO] BGTask license-check scheduled untuk 7 hari ke depan
+[2026-07-18T04:37:56Z] [INFO] AppState setup dimulai
+[2026-07-18T04:37:56Z] [INFO] Tidak ada session tersimpan — perlu login
+[2026-07-18T04:37:56Z] [INFO] AppState setup selesai — boothReady: false
+[2026-07-18T04:37:56Z] [INFO] BoothConfig: load from local CoreData
+[2026-07-18T04:37:58Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T04:37:58Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T04:38:08Z] [INFO] QR Payload diregenerate (expires in 5 min)
+[2026-07-18T04:38:09Z] [INFO] TCP Listener ready pada port 55123
+[2026-07-18T04:38:09Z] [INFO] Memulai MPC advertising dengan serviceType: haibooth (eventId: TEST-EVENT-6404)

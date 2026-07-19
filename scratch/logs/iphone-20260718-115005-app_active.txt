@@ -1,0 +1,9 @@
+[2026-07-18T03:49:56Z] [INFO] HaiCamera launched — model: iPhone
+[2026-07-18T03:49:57Z] [INFO] HaiCamera setup selesai
+[2026-07-18T03:49:57Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Tampaknya koneksi internet sedang offline.
+[2026-07-18T03:49:57Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Tampaknya koneksi internet sedang offline.
+[2026-07-18T03:49:58Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Tampaknya koneksi internet sedang offline.
+[2026-07-18T03:50:03Z] [INFO] HaiCamera launched — model: iPhone
+[2026-07-18T03:50:03Z] [INFO] HaiCamera setup selesai
+[2026-07-18T03:50:03Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Tampaknya koneksi internet sedang offline.
+[2026-07-18T03:50:03Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Tampaknya koneksi internet sedang offline.

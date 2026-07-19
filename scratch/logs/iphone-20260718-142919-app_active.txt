@@ -1,0 +1,22 @@
+[2026-07-18T06:28:39Z] [INFO] [setupPipeline] Configuring capture callbacks
+[2026-07-18T06:28:42Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Tampaknya koneksi internet sedang offline.
+[2026-07-18T06:28:44Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Tampaknya koneksi internet sedang offline.
+[2026-07-18T06:28:46Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-18T06:28:48Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Tampaknya koneksi internet sedang offline.
+[2026-07-18T06:28:50Z] [WARN] [P2PClientService.swift:145] Koneksi TCP gagal atau timeout. Fallback ke MPC.
+[2026-07-18T06:28:50Z] [INFO] Mulai browse P2P (MPC Fallback) untuk service: haibooth dengan eventId: TEST-EVENT-3707
+[2026-07-18T06:28:50Z] [INFO] Ditemukan iPad host: HaiBooth iPad, discoveryInfo: Optional(["booth": "FC722EAE-603F-43B9-9AC4-8D3744266954", "eventId": "TEST-EVENT-3707"])
+[2026-07-18T06:28:58Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-18T06:29:01Z] [WARN] [P2PClientService.swift:145] Koneksi TCP gagal atau timeout. Fallback ke MPC.
+[2026-07-18T06:29:01Z] [INFO] Mulai browse P2P (MPC Fallback) untuk service: haibooth dengan eventId: TEST-EVENT-3707
+[2026-07-18T06:29:01Z] [INFO] Ditemukan iPad host: HaiBooth iPad, discoveryInfo: Optional(["booth": "FC722EAE-603F-43B9-9AC4-8D3744266954", "eventId": "TEST-EVENT-3707"])
+[2026-07-18T06:29:06Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-18T06:29:17Z] [INFO] HaiCamera launched — build: #161 (0.1.0 (#161-b61cb8d)) — model: iPhone
+[2026-07-18T06:29:17Z] [INFO] [setup] Langkah 2: setupCameraPipeline
+[2026-07-18T06:29:17Z] [INFO] [setup] Langkah 1: battery monitoring
+[2026-07-18T06:29:17Z] [INFO] [setupPipeline] Configuring capture callbacks
+[2026-07-18T06:29:17Z] [INFO] [setup] Langkah 3: register connection callback
+[2026-07-18T06:29:17Z] [INFO] [setup] Langkah 4: register data callback
+[2026-07-18T06:29:17Z] [INFO] HaiCamera setup selesai
+[2026-07-18T06:29:17Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Tampaknya koneksi internet sedang offline.
+[2026-07-18T06:29:17Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Tampaknya koneksi internet sedang offline.

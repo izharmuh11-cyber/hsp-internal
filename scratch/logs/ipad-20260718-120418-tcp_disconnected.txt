@@ -1,0 +1,67 @@
+[2026-07-18T03:48:57Z] [INFO] HaiBooth launched — device: iPad
+[2026-07-18T03:48:58Z] [INFO] AppState setup dimulai
+[2026-07-18T03:48:58Z] [INFO] Tidak ada license token — perlu aktivasi
+
+[2026-07-18T03:48:58Z] [INFO] BoothConfig: load from local CoreData
+[2026-07-18T03:48:58Z] [INFO] AppState setup selesai — boothReady: false
+[2026-07-18T03:48:59Z] [INFO] QR Payload diregenerate (expires in 5 min)
+[2026-07-18T03:49:00Z] [INFO] TCP Listener ready pada port 55123
+[2026-07-18T03:49:00Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T03:49:01Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T03:49:03Z] [INFO] Koneksi TCP klien diterima
+[2026-07-18T03:49:03Z] [INFO] Koneksi P2P beralih ke mode: TCP Router
+[2026-07-18T03:49:03Z] [WARN] [LocalTCPRouterService.swift:117] Koneksi TCP gagal: POSIXErrorCode(rawValue: 54): Connection reset by peer
+eset by peer
+[2026-07-18T03:49:03Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T03:49:04Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T03:49:05Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T03:49:06Z] [INFO] MPC hosting dihentikan
+[2026-07-18T03:49:07Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T03:49:08Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T03:49:58Z] [INFO] QR Payload diregenerate (expires in 5 min)
+[2026-07-18T03:49:58Z] [INFO] Memulai MPC advertising dengan serviceType: haibooth (eventId: TEST-EVENT-4718)
+[2026-07-18T03:49:58Z] [INFO] TCP Listener ready pada port 55123
+[2026-07-18T03:50:11Z] [INFO] Koneksi P2P beralih ke mode: TCP Router
+[2026-07-18T03:50:11Z] [INFO] Koneksi TCP klien diterima
+[2026-07-18T03:50:11Z] [WARN] [LocalTCPRouterService.swift:117] Koneksi TCP gagal: POSIXErrorCode(rawValue: 54): Connection reset by peer
+[2026-07-18T03:50:11Z] [WARN] [LocalTCPRouterService.swift:160] TCP Stream terhenti atau error: POSIXErrorCode(rawValue: 54): Connection reset by peer
+[2026-07-18T03:50:13Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T03:50:14Z] [INFO] MPC hosting dihentikan
+[2026-07-18T03:50:14Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T03:50:15Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T03:50:15Z] [INFO] QR Payload diregenerate (expires in 5 min)
+[2026-07-18T03:50:15Z] [INFO] Memulai MPC advertising dengan serviceType: haibooth (eventId: TEST-EVENT-1050)
+[2026-07-18T03:50:15Z] [INFO] TCP Listener ready pada port 55123
+[2026-07-18T03:50:15Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T03:50:16Z] [INFO] Koneksi P2P beralih ke mode: TCP Router
+[2026-07-18T03:50:16Z] [INFO] Koneksi TCP klien diterima
+[2026-07-18T03:50:16Z] [WARN] [LocalTCPRouterService.swift:160] TCP Stream terhenti atau error: POSIXErrorCode(rawValue: 54): Connection reset by peer
+[2026-07-18T03:50:16Z] [WARN] [LocalTCPRouterService.swift:117] Koneksi TCP gagal: POSIXErrorCode(rawValue: 54): Connection reset by peer
+[2026-07-18T03:50:17Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T03:50:18Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T03:50:19Z] [INFO] MPC hosting dihentikan
+[2026-07-18T03:50:20Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T03:50:20Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T04:03:58Z] [INFO] BGTask license-check scheduled untuk 7 hari ke depan
+[2026-07-18T04:03:58Z] [INFO] Tidak ada license token — perlu aktivasi
+[2026-07-18T04:03:58Z] [INFO] AppState setup dimulai
+mpan — perlu login
+[2026-07-18T04:03:58Z] [INFO] BoothConfig: load from local CoreData
+ false
+[2026-07-18T04:04:00Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T04:04:01Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T04:04:02Z] [INFO] QR Payload diregenerate (expires in 5 min)
+[2026-07-18T04:04:02Z] [INFO] Memulai MPC advertising dengan serviceType: haibooth (eventId: TEST-EVENT-9542)
+[2026-07-18T04:04:02Z] [INFO] TCP Listener ready pada port 55123
+[2026-07-18T04:04:08Z] [INFO] Koneksi TCP klien diterima
+[2026-07-18T04:04:08Z] [INFO] Koneksi P2P beralih ke mode: TCP Router
+[2026-07-18T04:04:08Z] [WARN] [LocalTCPRouterService.swift:117] Koneksi TCP gagal: POSIXErrorCode(rawValue: 54): Connection reset by peer
+eset by peer
+[2026-07-18T04:04:09Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T04:04:10Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T04:04:11Z] [INFO] MPC hosting dihentikan
+[2026-07-18T04:04:12Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T04:04:13Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T04:04:14Z] [INFO] QR Payload diregenerate (expires in 5 min)
+[2026-07-18T04:04:14Z] [INFO] Memulai MPC advertising dengan serviceType: haibooth (eventId: TEST-EVENT-6098)
+[2026-07-18T04:04:14Z] [INFO] TCP Listener ready pada port 55123

@@ -1,0 +1,68 @@
+[2026-07-18T11:41:32Z] [INFO] BGTask license-check scheduled untuk 7 hari ke depan
+[2026-07-18T11:41:32Z] [INFO] Tidak ada license token — perlu aktivasi
+[2026-07-18T11:41:32Z] [INFO] Tidak ada session tersimpan — perlu login
+[2026-07-18T11:41:32Z] [INFO] AppState setup selesai — boothReady: false
+[2026-07-18T11:41:33Z] [INFO] QR Payload diregenerate (expires in 5 min)
+[2026-07-18T11:41:34Z] [INFO] TCP Listener ready pada port 55123
+iceType: haibooth (eventId: TEST-EVENT-2758)
+[2026-07-18T11:41:43Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T11:43:03Z] [INFO] Koneksi P2P beralih ke mode: TCP Router
+[2026-07-18T11:43:04Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T11:43:04Z] [INFO] [LivePreview] Aliran video aktif — Resolusi: 640x480 (16:9 Landscape), Mode Cermin (Mirroring): AKTIF
+[2026-07-18T11:43:05Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T11:43:05Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T11:43:06Z] [INFO] Koneksi aktif terdeteksi. Menjaga hosting TCP & MPC tetap berjalan.
+[2026-07-18T11:43:06Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T11:43:07Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T11:43:07Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T11:43:09Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T11:43:09Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T11:43:10Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T11:43:10Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T11:43:11Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T11:43:11Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T11:43:12Z] [INFO] Sesi baru dibuat: 5E19B4C7-E895-461E-AD68-377E2031EA5E — HJJ — The Mini
+[2026-07-18T11:43:12Z] [INFO] Pesan sessionStart terkirim via TCP
+1
+[2026-07-18T11:43:12Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T11:43:14Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T11:43:14Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T11:43:15Z] [INFO] Sesi dimulai: 5E19B4C7-E895-461E-AD68-377E2031EA5E — Tamu: HJJ
+[2026-07-18T11:43:15Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T11:43:16Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T11:43:17Z] [INFO] Pesan setZoom terkirim via TCP
+[2026-07-18T11:43:17Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T11:43:17Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T11:43:18Z] [INFO] Pesan setZoom terkirim via TCP
+[2026-07-18T11:43:19Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T11:43:20Z] [INFO] Pesan setZoom terkirim via TCP
+[2026-07-18T11:43:20Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T11:43:20Z] [INFO] Pesan setZoom terkirim via TCP
+[2026-07-18T11:43:21Z] [INFO] Pesan setZoom terkirim via TCP
+[2026-07-18T11:43:21Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T11:43:21Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T11:43:22Z] [INFO] Pesan setZoom terkirim via TCP
+[2026-07-18T11:43:22Z] [INFO] Pesan setZoom terkirim via TCP
+[2026-07-18T11:43:22Z] [INFO] Pesan setZoom terkirim via TCP
+[2026-07-18T11:43:22Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T11:43:23Z] [INFO] Pesan setZoom terkirim via TCP
+[2026-07-18T11:43:24Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T11:43:24Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T11:43:24Z] [INFO] Pesan setPortraitMode terkirim via TCP
+[2026-07-18T11:43:25Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T11:43:26Z] [INFO] Pesan setPortraitMode terkirim via TCP
+[2026-07-18T11:43:26Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T11:43:27Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T11:43:27Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T11:43:28Z] [INFO] Pesan setPortraitMode terkirim via TCP
+[2026-07-18T11:43:29Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T11:43:29Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T11:43:30Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T11:43:30Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T11:43:31Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T11:43:31Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-18T11:43:32Z] [INFO] Pesan triggerCapture terkirim via TCP
+[2026-07-18T11:43:32Z] [WARN] [LocalTCPRouterService.swift:160] TCP Stream terhenti atau error: POSIXErrorCode(rawValue: 57): Socket is not connected
+[2026-07-18T11:43:36Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
+[2026-07-18T11:43:42Z] [WARN] [P2PStore.swift:322] Gagal mengirim pesan focusPoint - P2P tidak terhubung
+[2026-07-18T11:43:45Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt

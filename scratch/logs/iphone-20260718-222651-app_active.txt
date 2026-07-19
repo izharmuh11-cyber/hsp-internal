@@ -1,0 +1,21 @@
+[2026-07-18T14:26:35Z] [INFO] HaiCamera launched — build: #188 (0.1.0 (#188-c1df53f)) — model: iPhone
+[2026-07-18T14:26:35Z] [INFO] [setup] Langkah 1: battery monitoring
+
+[2026-07-18T14:26:35Z] [INFO] [setupPipeline] Configuring capture callbacks
+[2026-07-18T14:26:35Z] [INFO] [setup] Langkah 3: register connection callback
+[2026-07-18T14:26:35Z] [INFO] [setup] Langkah 4: register data callback
+[2026-07-18T14:26:35Z] [INFO] HaiCamera setup selesai
+[2026-07-18T14:26:35Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Tampaknya koneksi internet sedang offline.
+[2026-07-18T14:26:35Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Tampaknya koneksi internet sedang offline.
+[2026-07-18T14:26:39Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-18T14:26:50Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-18T14:26:50Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-18T14:26:51Z] [INFO] P2P connected — switching to paired state
+[2026-07-18T14:26:51Z] [INFO] [setupSession] Langkah 1: beginConfiguration
+[2026-07-18T14:26:51Z] [INFO] Video HDR diaktifkan
+[2026-07-18T14:26:51Z] [INFO] [setupSession] Langkah 2: video input ditambahkan
+[2026-07-18T14:26:51Z] [INFO] [setupSession] Langkah 4: photo output ditambahkan
+[2026-07-18T14:26:51Z] [INFO] [setupSession] Langkah 5: commitConfiguration selesai
+[2026-07-18T14:26:51Z] [INFO] [setupSession] maxPhotoQualityPrioritization: quality
+[2026-07-18T14:26:51Z] [INFO] Koneksi TCP Client terhubung ke iPad: 10.117.244.5:55123
+[2026-07-18T14:26:51Z] [INFO] [setupSession] Langkah 3: video output ditambahkan

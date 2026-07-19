@@ -1,0 +1,5 @@
+[2026-07-18T05:02:09Z] [INFO] HaiCamera launched — build: #151 (0.1.0 (#151-50fad75)) — model: iPhone
+[2026-07-18T05:02:09Z] [INFO] [setup] Langkah 1: battery monitoring
+[2026-07-18T05:02:09Z] [INFO] [setup] Langkah 2: setupCameraPipeline
+[2026-07-18T05:02:09Z] [INFO] [setupPipeline] Configuring capture callbacks
+[2026-07-18T05:02:09Z] [INFO] [setup] Langkah 3: register connection callback

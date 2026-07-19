@@ -1,0 +1,81 @@
+[2026-07-18T06:09:25Z] [INFO] HaiCamera launched — build: #158 (0.1.0 (#158-d7c943a)) — model: iPhone
+[2026-07-18T06:09:25Z] [INFO] [setup] Langkah 1: battery monitoring
+[2026-07-18T06:09:25Z] [INFO] [setupPipeline] Configuring capture callbacks
+[2026-07-18T06:09:25Z] [INFO] [setup] Langkah 2: setupCameraPipeline
+[2026-07-18T06:09:25Z] [INFO] [setup] Langkah 3: register connection callback
+[2026-07-18T06:09:25Z] [INFO] [setup] Langkah 4: register data callback
+[2026-07-18T06:09:25Z] [INFO] HaiCamera setup selesai
+[2026-07-18T06:09:25Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Tampaknya koneksi internet sedang offline.
+[2026-07-18T06:09:25Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Tampaknya koneksi internet sedang offline.
+[2026-07-18T06:09:32Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-18T06:09:35Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-18T06:09:35Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-18T06:09:36Z] [INFO] Koneksi TCP Client terhubung ke iPad: 10.117.244.5:55123
+[2026-07-18T06:09:36Z] [INFO] P2P connected — switching to paired state
+[2026-07-18T06:09:36Z] [INFO] Video HDR diaktifkan
+[2026-07-18T06:09:36Z] [INFO] [setupSession] Langkah 1: beginConfiguration
+[2026-07-18T06:09:36Z] [INFO] [setupSession] Langkah 2: video input ditambahkan
+[2026-07-18T06:09:36Z] [INFO] [setupSession] Langkah 3: video output ditambahkan
+[2026-07-18T06:09:36Z] [INFO] [setupSession] Langkah 4: photo output ditambahkan
+[2026-07-18T06:09:36Z] [INFO] [setupSession] Langkah 4b: depth output ditambahkan (hardware depth bokeh aktif)
+[2026-07-18T06:09:36Z] [INFO] [setupSession] Langkah 5: commitConfiguration selesai
+[2026-07-18T06:09:36Z] [INFO] [setupSession] Langkah 5b: depth+video synchronizer dikonfigurasi
+[2026-07-18T06:09:37Z] [INFO] Camera capture session started
+[2026-07-18T06:09:37Z] [INFO] VideoEncoderService configured: 1280x720
+[2026-07-18T06:09:37Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-18T06:09:43Z] [INFO] Sesi dimulai di HaiCamera: 13617715-8D32-4080-A0FF-645A30E1CFF6
+[2026-07-18T06:09:48Z] [INFO] [RemoteControl] Menerima sinyal setZoom(2.0x)
+[2026-07-18T06:09:48Z] [INFO] [Zoom] 2x → Digital zoom (internal: 2.0x)
+[2026-07-18T06:09:50Z] [INFO] [RemoteControl] Menerima sinyal setZoom(1.0x)
+[2026-07-18T06:09:51Z] [INFO] [RemoteControl] Menerima sinyal setZoom(0.5x)
+[2026-07-18T06:09:51Z] [INFO] [Zoom] 0.5x → Ultra Wide (internal: 2.0x), switchOver: 2.0x
+[2026-07-18T06:09:52Z] [INFO] [RemoteControl] Menerima sinyal setZoom(1.0x)
+[2026-07-18T06:09:52Z] [INFO] [Zoom] 1x → Wide Angle (internal: 2.0x)
+[2026-07-18T06:09:52Z] [INFO] [RemoteControl] Menerima sinyal setZoom(1.0x)
+[2026-07-18T06:09:52Z] [INFO] [Zoom] 1x → Wide Angle (internal: 2.0x)
+[2026-07-18T06:09:53Z] [INFO] [PortraitMode] Depth-Based Bokeh AKTIF
+[2026-07-18T06:09:53Z] [INFO] [RemoteControl] Menerima sinyal setPortraitMode(true)
+[2026-07-18T06:09:54Z] [INFO] [PortraitMode] Depth-Based Bokeh NONAKTIF
+[2026-07-18T06:09:54Z] [INFO] [RemoteControl] Menerima sinyal setPortraitMode(false)
+[2026-07-18T06:09:58Z] [INFO] Gesture 'Hai' terdeteksi! Mengirim sinyal pemicu ke iPad.
+[2026-07-18T06:10:01Z] [INFO] Menerima trigger jepret dari iPad (indeks: 0, replace ID: nil)
+[2026-07-18T06:10:01Z] [INFO] Memicu jepretan foto kualitas tinggi (Smart HDR/Deep Fusion)
+[2026-07-18T06:10:01Z] [INFO] Mulai dual-channel transfer untuk 8EA1A81D-A027-42FE-802C-A19FB72AB48F (order: 0)
+[2026-07-18T06:10:02Z] [INFO] Thumbnail terkirim: 8EA1A81D-A027-42FE-802C-A19FB72AB48F (58122 bytes)
+[2026-07-18T06:10:02Z] [INFO] Full quality terkirim: 8EA1A81D-A027-42FE-802C-A19FB72AB48F
+[2026-07-18T06:10:03Z] [INFO] [RemoteControl] Menerima sinyal setPortraitMode(true)
+[2026-07-18T06:10:03Z] [INFO] [PortraitMode] Depth-Based Bokeh AKTIF
+[2026-07-18T06:10:11Z] [INFO] Menerima trigger jepret dari iPad (indeks: 1, replace ID: nil)
+[2026-07-18T06:10:23Z] [INFO] HaiCamera launched — build: #158 (0.1.0 (#158-d7c943a)) — model: iPhone
+[2026-07-18T06:10:23Z] [INFO] [setup] Langkah 2: setupCameraPipeline
+[2026-07-18T06:10:23Z] [INFO] [setup] Langkah 1: battery monitoring
+[2026-07-18T06:10:23Z] [INFO] [setupPipeline] Configuring capture callbacks
+[2026-07-18T06:10:23Z] [INFO] [setup] Langkah 3: register connection callback
+[2026-07-18T06:10:23Z] [INFO] HaiCamera setup selesai
+[2026-07-18T06:10:23Z] [INFO] [setup] Langkah 4: register data callback
+[2026-07-18T06:10:25Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-18T06:10:26Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-18T06:10:50Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-18T06:10:50Z] [INFO] Koneksi TCP Client terhubung ke iPad: 10.117.244.5:55123
+[2026-07-18T06:10:50Z] [INFO] [setupSession] Langkah 1: beginConfiguration
+[2026-07-18T06:10:50Z] [INFO] Video HDR diaktifkan
+[2026-07-18T06:10:50Z] [INFO] [setupSession] Langkah 2: video input ditambahkan
+[2026-07-18T06:10:50Z] [INFO] [setupSession] Langkah 3: video output ditambahkan
+[2026-07-18T06:10:50Z] [INFO] [setupSession] Langkah 4: photo output ditambahkan
+[2026-07-18T06:10:50Z] [INFO] [setupSession] Langkah 4b: depth output ditambahkan (hardware depth bokeh aktif)
+[2026-07-18T06:10:50Z] [INFO] [setupSession] Langkah 5: commitConfiguration selesai
+[2026-07-18T06:10:50Z] [INFO] [setupSession] Langkah 5b: depth+video synchronizer dikonfigurasi
+[2026-07-18T06:10:50Z] [INFO] [setupSession] maxPhotoQualityPrioritization set to quality
+[2026-07-18T06:10:51Z] [INFO] Camera capture session started
+[2026-07-18T06:10:51Z] [INFO] VideoEncoderService configured: 1280x720
+[2026-07-18T06:10:56Z] [INFO] Sesi dimulai di HaiCamera: 3A415192-8448-4784-85B0-BAD9936A9E4A
+[2026-07-18T06:10:59Z] [INFO] [Focus] Continuous focus & exposure set at: (0.22753906, 0.5975936)
+[2026-07-18T06:11:01Z] [INFO] [RemoteControl] Menerima sinyal setPortraitMode(true)
+[2026-07-18T06:11:01Z] [INFO] [PortraitMode] Depth-Based Bokeh AKTIF
+[2026-07-18T06:22:23Z] [INFO] HaiCamera launched — build: #160 (0.1.0 (#160-ba5629e)) — model: iPhone
+[2026-07-18T06:22:23Z] [INFO] [setup] Langkah 1: battery monitoring
+[2026-07-18T06:22:23Z] [INFO] [setup] Langkah 2: setupCameraPipeline
+[2026-07-18T06:22:23Z] [INFO] [setupPipeline] Configuring capture callbacks
+[2026-07-18T06:22:23Z] [INFO] [setup] Langkah 3: register connection callback
+[2026-07-18T06:22:23Z] [INFO] HaiCamera setup selesai
+[2026-07-18T06:22:23Z] [INFO] [setup] Langkah 4: register data callback

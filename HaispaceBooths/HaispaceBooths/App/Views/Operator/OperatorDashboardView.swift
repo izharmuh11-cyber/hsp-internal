@@ -612,7 +612,7 @@ struct OperatorDashboardView: View {
                 if appState.p2p.isConnected {
                     Button(action: {
                         playHaptic(style: .medium)
-                        appState.p2p.stopListening()
+                        appState.p2p.disconnect()
                     }) {
                         Text("Putuskan")
                             .font(.system(size: 11, weight: .bold, design: .rounded))
@@ -719,7 +719,7 @@ struct OperatorDashboardView: View {
     
     private func setupQRPairingIfNeeded() {
         let eventId = activeEvent?.id ?? "evt-default"
-        let localIp = appState.p2p.getLocalIPAddress()
+        let localIp = NetworkUtility.getWiFiAddress() ?? "127.0.0.1"
         appState.p2p.startGeneratingQRPayload(eventId: eventId, ip: localIp, port: 55123)
     }
     
@@ -792,7 +792,7 @@ struct OperatorDashboardView: View {
     private var cameraHardwareBatteryDetails: some View {
         VStack(alignment: .trailing, spacing: 4) {
             let level = appState.p2p.connectedPeerBatteryLevel ?? 0.85
-            let bColor = batteryColor(for: level)
+            let bColor = batteryColor(for: Double(level))
             
             Text("\(Int(level * 100))%")
                 .font(.system(size: 12, weight: .bold, design: .rounded))
