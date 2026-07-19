@@ -18,6 +18,7 @@ struct EventModel: Identifiable, Codable, Hashable, Sendable {
     var themeColorHex: String
     var selectedFrameName: String
     var selectedFilterName: String
+    var packageName: String
     
     init(
         id: String = UUID().uuidString,
@@ -25,6 +26,7 @@ struct EventModel: Identifiable, Codable, Hashable, Sendable {
         location: String,
         pricePerSession: Double = 25000,
         isPayPerSession: Bool = true,
+        packageName: String = "Paket Regular",
         totalSessions: Int = 0,
         totalRevenue: Double = 0,
         iconName: String = "mappin.circle.fill",
@@ -37,6 +39,7 @@ struct EventModel: Identifiable, Codable, Hashable, Sendable {
         self.location = location
         self.pricePerSession = pricePerSession
         self.isPayPerSession = isPayPerSession
+        self.packageName = packageName
         self.totalSessions = totalSessions
         self.totalRevenue = totalRevenue
         self.iconName = iconName
@@ -44,7 +47,28 @@ struct EventModel: Identifiable, Codable, Hashable, Sendable {
         self.selectedFrameName = selectedFrameName
         self.selectedFilterName = selectedFilterName
     }
+}
+
+// MARK: - Admin Pricing Packages
+
+struct PricingPackage: Identifiable, Codable, Hashable, Sendable {
+    let id: String
+    let name: String
+    let price: Double
+    let description: String
+    let badgeText: String
+    let badgeColorHex: String
+    let isPayPerSession: Bool
     
+    static let presetPackages: [PricingPackage] = [
+        PricingPackage(id: "pkg-std", name: "Paket Regular", price: 25000, description: "1 Sesi + QR Softcopy", badgeText: "POPULER", badgeColorHex: "#3B82F6", isPayPerSession: true),
+        PricingPackage(id: "pkg-prem", name: "Paket Premium", price: 35000, description: "2x Cetak + Digital Softcopy", badgeText: "BEST VALUE", badgeColorHex: "#10B981", isPayPerSession: true),
+        PricingPackage(id: "pkg-vip", name: "Paket VIP Party", price: 50000, description: "Unlimited Re-print + Filter", badgeText: "VIP", badgeColorHex: "#8B5CF6", isPayPerSession: true),
+        PricingPackage(id: "pkg-free", name: "Mode Sewa Bebas", price: 0, description: "Gratis untuk Pelanggan", badgeText: "COMPLIMENTARY", badgeColorHex: "#EC4899", isPayPerSession: false)
+    ]
+}
+
+extension EventModel {
     // Preset sampel event untuk dev & testing
     static let samples: [EventModel] = [
         EventModel(

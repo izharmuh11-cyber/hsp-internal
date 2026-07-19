@@ -5,6 +5,12 @@
 // Murni diterjemahkan dari komponen React UI terbaik untuk iPadOS Native SwiftUI.
 
 import SwiftUI
+import CoreImage.CIFilterBuiltins
+
+enum KeyboardField {
+    case name
+    case location
+}
 
 struct OperatorDashboardView: View {
     @Environment(AppState.self) private var appState
@@ -17,10 +23,15 @@ struct OperatorDashboardView: View {
     @State private var editingEventId: String? = nil
     @State private var formName: String = ""
     @State private var formLocation: String = ""
-    @State private var formPrice: String = "25000"
-    @State private var formIsPaid: Bool = true
+    @State private var selectedPackageId: String = "pkg-std"
     @State private var formIconIndex: Int = 0
     @State private var formColorIndex: Int = 0
+    
+    // Keyboard & Feedback States
+    @State private var activeKeyboardField: KeyboardField? = nil
+    @State private var isBreathing = false
+    @State private var kioskCountdown: Int? = nil
+    @State private var countdownTimer: Timer? = nil
     
     private let iconOptions: [(icon: String, name: String, id: String)] = [
         ("academiccap.fill", "Wisuda", "academiccap"),
@@ -107,6 +118,27 @@ struct OperatorDashboardView: View {
             .padding(.horizontal, 28)
             .padding(.top, 24)
             .padding(.bottom, 28)
+            
+            // MARK: - Kiosk Countdown Overlay
+            if let countdown = kioskCountdown {
+                Color.black.opacity(0.85)
+                    .ignoresSafeArea()
+                    .overlay(
+                        VStack(spacing: 24) {
+                            Text("\(countdown)")
+                                .font(.system(size: 140, weight: .black, design: .rounded))
+                                .foregroundStyle(.white)
+                                .contentTransition(.numericText())
+                                .id("countdown-\(countdown)")
+                            
+                            Text("Bersiap Masuk Layar Pelanggan...")
+                                .font(.system(size: 24, weight: .semibold, design: .rounded))
+                                .foregroundStyle(Color.white.opacity(0.8))
+                        }
+                    )
+                    .zIndex(100)
+                    .transition(.opacity)
+            }
         }
         .fullScreenCover(isPresented: $isShowingPairingModal) {
             PairingSetupView()
@@ -116,6 +148,9 @@ struct OperatorDashboardView: View {
         }
         .sheet(isPresented: $isShowingEventManagerSheet) {
             eventManagerModalSheet
+        }
+        .onAppear {
+            setupQRPairingIfNeeded()
         }
     }
     
@@ -207,7 +242,10 @@ struct OperatorDashboardView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 12) {
                 // Tombol Baru (+ Baru)
-                Button(action: openCreateEventSheet) {
+                Button(action: {
+                    playHaptic(style: .light)
+                    openCreateEventSheet()
+                }) {
                     HStack(spacing: 8) {
                         Image(systemName: "plus")
                             .font(.system(size: 15, weight: .bold))
@@ -221,6 +259,7 @@ struct OperatorDashboardView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                     .shadow(color: Color(hex: "#0F172A").opacity(0.2), radius: 8, y: 4)
                 }
+                .buttonStyle(BentoButtonStyle())
                 
                 Divider()
                     .frame(height: 24)
@@ -281,11 +320,17 @@ struct OperatorDashboardView: View {
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
                     .fill(Color.white)
                     .frame(width: 88, height: 88)
-                    .shadow(color: Color.black.opacity(0.06), radius: 16, y: 8)
+                    .shadow(color: Color.black.opacity(isBreathing ? 0.15 : 0.06), radius: isBreathing ? 24 : 16, y: isBreathing ? 12 : 8)
                 
                 Image(systemName: "plus")
                     .font(.system(size: 36, weight: .semibold))
                     .foregroundStyle(Color(hex: "#6366F1"))
+            }
+            .scaleEffect(isBreathing ? 1.05 : 0.95)
+            .onAppear {
+                withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
+                    isBreathing = true
+                }
             }
             
             VStack(spacing: 8) {
@@ -301,6 +346,7 @@ struct OperatorDashboardView: View {
             }
             
             Button(action: {
+                playHaptic(style: .medium)
                 withAnimation(.spring) {
                     appState.operatorState.loadPresetEvents()
                 }
@@ -319,6 +365,7 @@ struct OperatorDashboardView: View {
                 .shadow(color: Color.black.opacity(0.04), radius: 8, y: 3)
                 .overlay(Capsule().stroke(Color(hex: "#E2E8F0"), lineWidth: 1))
             }
+            .buttonStyle(BentoButtonStyle())
         }
         .padding(.vertical, 80)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -415,7 +462,7 @@ struct OperatorDashboardView: View {
                 Spacer()
                 
                 // Embedded CTA inside Card: MULAI KIOSK
-                Button(action: launchKioskSession) {
+                Button(action: startKioskCountdown) {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("MULAI KIOSK")
@@ -449,6 +496,7 @@ struct OperatorDashboardView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                     .shadow(color: Color.black.opacity(0.12), radius: 14, y: 6)
                 }
+                .buttonStyle(HeroCardButtonStyle())
             }
             .padding(32)
             .frame(maxWidth: .infinity, minHeight: 460)
@@ -547,8 +595,41 @@ struct OperatorDashboardView: View {
     
     private var cameraHardwareWidget: some View {
         VStack(alignment: .leading, spacing: 14) {
-            cameraHardwareHeader
-            cameraHardwareDeviceRow
+            HStack {
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(appState.p2p.isConnected ? Color(hex: "#10B981") : Color.orange)
+                        .frame(width: 8, height: 8)
+                    
+                    Text(appState.p2p.isConnected ? "KAMERA TERHUBUNG" : "PAIRING SECOND SHOOTER")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .tracking(1.5)
+                        .foregroundStyle(Color(hex: "#94A3B8"))
+                }
+                
+                Spacer()
+                
+                if appState.p2p.isConnected {
+                    Button(action: {
+                        playHaptic(style: .medium)
+                        appState.p2p.stopListening()
+                    }) {
+                        Text("Putuskan")
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .foregroundStyle(Color.red)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(Color.red.opacity(0.1))
+                            .clipShape(Capsule())
+                    }
+                }
+            }
+            
+            if appState.p2p.isConnected {
+                cameraHardwareDeviceRow
+            } else {
+                embeddedQRPairingView
+            }
         }
         .padding(20)
         .background(Color.white)
@@ -557,44 +638,127 @@ struct OperatorDashboardView: View {
         .overlay(RoundedRectangle(cornerRadius: 32, style: .continuous).stroke(Color(hex: "#E2E8F0"), lineWidth: 1))
     }
     
-    private var cameraHardwareHeader: some View {
-        HStack {
-            Text("PERANGKAT P2P")
-                .font(.system(size: 11, weight: .bold, design: .rounded))
-                .tracking(2)
-                .foregroundStyle(Color(hex: "#94A3B8"))
+    private var embeddedQRPairingView: some View {
+        VStack(spacing: 12) {
+            if let payload = appState.p2p.currentQRPayload,
+               let qrImage = generateQRCodeImage(from: payload) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .fill(Color(hex: "#F8FAFC"))
+                        .frame(height: 180)
+                        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Color(hex: "#E2E8F0"), lineWidth: 1))
+                    
+                    Image(uiImage: qrImage)
+                        .interpolation(.none)
+                        .resizable()
+                        .scaledToFit()
+                        .padding(14)
+                        .background(Color.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .shadow(color: Color.black.opacity(0.06), radius: 8, y: 4)
+                }
+            } else {
+                VStack(spacing: 10) {
+                    ProgressView()
+                    Text("Menyiapkan QR P2P...")
+                        .font(.caption)
+                        .foregroundStyle(Color(hex: "#94A3B8"))
+                }
+                .frame(height: 180)
+                .frame(maxWidth: .infinity)
+                .background(Color(hex: "#F8FAFC"))
+                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            }
             
-            Spacer()
-            
-            Button(action: { isShowingPairingModal = true }) {
-                Text("Pairing QR")
-                    .font(.system(size: 12, weight: .bold, design: .rounded))
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(Color(hex: "#EEF2FF"))
-                    .foregroundStyle(Color(hex: "#4F46E5"))
-                    .clipShape(Capsule())
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Pindai via App HaiCamera")
+                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color(hex: "#0F172A"))
+                    
+                    Text("Scan untuk pairing instan P2P")
+                        .font(.caption)
+                        .foregroundStyle(Color(hex: "#64748B"))
+                }
+                
+                Spacer()
+                
+                Button(action: setupQRPairingIfNeeded) {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(Color(hex: "#4F46E5"))
+                        .padding(10)
+                        .background(Color(hex: "#EEF2FF"))
+                        .clipShape(Circle())
+                }
+                .buttonStyle(BentoButtonStyle())
             }
         }
     }
     
+    private func generateQRCodeImage(from payload: QRPairingPayload) -> UIImage? {
+        guard let jsonData = try? JSONEncoder().encode(payload),
+              let jsonString = String(data: jsonData, encoding: .utf8) else {
+            return nil
+        }
+        
+        let context = CIContext()
+        let filter = CIFilter.qrCodeGenerator()
+        filter.message = Data(jsonString.utf8)
+        filter.correctionLevel = "H"
+        
+        if let outputImage = filter.outputImage {
+            let transform = CGAffineTransform(scaleX: 8, y: 8)
+            let scaledImage = outputImage.transformed(by: transform)
+            if let cgImage = context.createCGImage(scaledImage, from: scaledImage.extent) {
+                return UIImage(cgImage: cgImage)
+            }
+        }
+        return nil
+    }
+    
+    private func setupQRPairingIfNeeded() {
+        let eventId = activeEvent?.id ?? "evt-default"
+        let localIp = appState.p2p.getLocalIPAddress()
+        appState.p2p.startGeneratingQRPayload(eventId: eventId, ip: localIp, port: 55123)
+    }
+    
     private var cameraHardwareDeviceRow: some View {
-        HStack(spacing: 14) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(Color(hex: "#FFEDD5"))
-                    .frame(width: 48, height: 48)
+        VStack(spacing: 12) {
+            HStack(spacing: 14) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(Color(hex: "#FFEDD5"))
+                        .frame(width: 48, height: 48)
+                    
+                    Image(systemName: "bolt.fill")
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundStyle(Color(hex: "#EA580C"))
+                }
                 
-                Image(systemName: "bolt.fill")
-                    .font(.system(size: 22, weight: .bold))
-                    .foregroundStyle(Color(hex: "#EA580C"))
+                cameraHardwareDeviceDetails
+                
+                Spacer()
+                
+                cameraHardwareBatteryDetails
             }
             
-            cameraHardwareDeviceDetails
-            
-            Spacer()
-            
-            cameraHardwareBatteryDetails
+            // Test Trigger Button
+            Button(action: {
+                playHaptic(style: .heavy)
+            }) {
+                HStack {
+                    Image(systemName: "sparkles.tv")
+                    Text("Tes Jepret / Flash Kamera")
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
+                .background(Color(hex: "#EEF2FF"))
+                .foregroundStyle(Color(hex: "#4F46E5"))
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+            .buttonStyle(BentoButtonStyle())
         }
         .padding(14)
         .background(Color(hex: "#F8FAFC"))
@@ -619,9 +783,18 @@ struct OperatorDashboardView: View {
         }
     }
     
+    private func batteryColor(for level: Double) -> Color {
+        if level > 0.5 { return Color(hex: "#10B981") }
+        if level > 0.2 { return Color.orange }
+        return Color.red
+    }
+    
     private var cameraHardwareBatteryDetails: some View {
         VStack(alignment: .trailing, spacing: 4) {
-            Text("\(Int((appState.p2p.connectedPeerBatteryLevel ?? 0.85) * 100))%")
+            let level = appState.p2p.connectedPeerBatteryLevel ?? 0.85
+            let bColor = batteryColor(for: level)
+            
+            Text("\(Int(level * 100))%")
                 .font(.system(size: 12, weight: .bold, design: .rounded))
                 .foregroundStyle(Color(hex: "#94A3B8"))
             
@@ -631,9 +804,9 @@ struct OperatorDashboardView: View {
                     .stroke(Color(hex: "#CBD5E1"), lineWidth: 1.5)
                     .frame(width: 32, height: 14)
                 
-                let batteryWidth = 26.0 * CGFloat(appState.p2p.connectedPeerBatteryLevel ?? 0.85)
+                let batteryWidth = 26.0 * CGFloat(level)
                 RoundedRectangle(cornerRadius: 2)
-                    .fill(Color(hex: "#10B981"))
+                    .fill(bColor)
                     .frame(width: batteryWidth, height: 9)
                     .padding(.leading, 2.5)
             }
@@ -684,80 +857,134 @@ struct OperatorDashboardView: View {
         }
     }
     
-    // MARK: - Modal: New / Edit Event Sheet
+    // MARK: - Modal: New / Edit Event Sheet (Liquid Glass)
     private var newEventModalSheet: some View {
         NavigationStack {
-            Form {
-                Section("DETAIL UTAMA") {
-                    TextField("Nama Event (mis. Wisuda UNG 2026)", text: $formName)
-                    TextField("Lokasi Booth", text: $formLocation)
-                }
-                
-                Section("PENGATURAN HARGA") {
-                    Toggle("Berbayar per Sesi (Tampilkan QRIS)", isOn: $formIsPaid)
-                        .tint(Color(hex: "#4F46E5"))
-                    
-                    if formIsPaid {
-                        HStack {
-                            Text("Tarif per Sesi")
-                            Spacer()
-                            Text("Rp")
-                                .foregroundStyle(.secondary)
-                            TextField("25000", text: $formPrice)
-                                .keyboardType(.numberPad)
-                                .multilineTextAlignment(.trailing)
-                                .bold()
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Header Banner Preview
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(editingEventId == nil ? "BUAT EVENT BARU" : "EDIT EVENT")
+                                .font(.system(size: 11, weight: .bold, design: .rounded))
+                                .tracking(2)
+                                .foregroundStyle(Color(hex: "#4F46E5"))
+                            
+                            Text(formName.isEmpty ? "Nama Event Photobooth" : formName)
+                                .font(.system(size: 24, weight: .bold, design: .rounded))
+                                .foregroundStyle(Color(hex: "#0F172A"))
                         }
-                    }
-                }
-                
-                Section("IKON EVENT") {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 10) {
-                        ForEach(0..<iconOptions.count, id: \.self) { idx in
-                            let item = iconOptions[idx]
-                            Button(action: { formIconIndex = idx }) {
-                                HStack(spacing: 8) {
-                                    Image(systemName: item.icon)
-                                    Text(item.name)
-                                        .font(.caption.bold())
-                                }
-                                .padding(.vertical, 10)
-                                .frame(maxWidth: .infinity)
-                                .background(formIconIndex == idx ? Color(hex: "#0F172A") : Color(hex: "#F1F5F9"))
-                                .foregroundStyle(formIconIndex == idx ? .white : Color(hex: "#334155"))
-                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-                
-                Section("TEMA WARNA KARTU") {
-                    HStack(spacing: 14) {
-                        ForEach(0..<colorOptions.count, id: \.self) { idx in
-                            let c = colorOptions[idx]
+                        
+                        Spacer()
+                        
+                        ZStack {
                             Circle()
-                                .fill(
-                                    LinearGradient(colors: [Color(hex: c.startHex), Color(hex: c.endHex)], startPoint: .topLeading, endPoint: .bottomTrailing)
-                                )
-                                .frame(width: 36, height: 36)
-                                .overlay(
-                                    Circle()
-                                        .stroke(Color.white, lineWidth: formColorIndex == idx ? 3 : 0)
-                                )
-                                .overlay(
-                                    Circle()
-                                        .stroke(Color(hex: c.hex), lineWidth: formColorIndex == idx ? 2 : 0)
-                                        .scaleEffect(1.2)
-                                )
-                                .onTapGesture {
-                                    formColorIndex = idx
-                                }
+                                .fill(LinearGradient(colors: [Color(hex: colorOptions[formColorIndex].startHex), Color(hex: colorOptions[formColorIndex].endHex)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                                .frame(width: 48, height: 48)
+                            
+                            Image(systemName: iconOptions[formIconIndex].icon)
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundStyle(.white)
                         }
                     }
-                    .padding(.vertical, 4)
+                    .padding(20)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                    .shadow(color: Color.black.opacity(0.04), radius: 10, y: 3)
+                    .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(Color(hex: "#E2E8F0"), lineWidth: 1))
+                    
+                    // Input Nama Event & Lokasi
+                    VStack(alignment: .leading, spacing: 14) {
+                        Text("1. INFORMASI UTAMA")
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .tracking(1.5)
+                            .foregroundStyle(Color(hex: "#94A3B8"))
+                        
+                        VStack(spacing: 12) {
+                            // Text Input Field Nama
+                            HStack {
+                                Image(systemName: "pencil.line")
+                                    .foregroundStyle(Color(hex: "#4F46E5"))
+                                
+                                Text(formName.isEmpty ? "Nama Event (mis. Wisuda UNG 2026)" : formName)
+                                    .font(.system(size: 15, weight: formName.isEmpty ? .regular : .bold, design: .rounded))
+                                    .foregroundStyle(formName.isEmpty ? Color(hex: "#94A3B8") : Color(hex: "#0F172A"))
+                                
+                                Spacer()
+                                
+                                Button(action: {
+                                    playHaptic(style: .light)
+                                    withAnimation(.spring) { activeKeyboardField = activeKeyboardField == .name ? nil : .name }
+                                }) {
+                                    Text(activeKeyboardField == .name ? "Tutup Keypad" : "Ketik In-App")
+                                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                                        .foregroundStyle(Color(hex: "#4F46E5"))
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 6)
+                                        .background(Color(hex: "#EEF2FF"))
+                                        .clipShape(Capsule())
+                                }
+                            }
+                            .padding(16)
+                            .background(Color.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(activeKeyboardField == .name ? Color(hex: "#4F46E5") : Color(hex: "#E2E8F0"), lineWidth: 1.5))
+                            
+                            // Keyboard Numpad jika aktif untuk Nama
+                            if activeKeyboardField == .name {
+                                CustomInAppKeyboard(text: $formName, onDone: {
+                                    activeKeyboardField = .location
+                                })
+                                .transition(.scale.combined(with: .opacity))
+                            }
+                            
+                            // Text Input Field Lokasi
+                            HStack {
+                                Image(systemName: "mappin.circle.fill")
+                                    .foregroundStyle(Color(hex: "#F59E0B"))
+                                
+                                Text(formLocation.isEmpty ? "Lokasi Booth (mis. Auditorium UNG)" : formLocation)
+                                    .font(.system(size: 15, weight: formLocation.isEmpty ? .regular : .bold, design: .rounded))
+                                    .foregroundStyle(formLocation.isEmpty ? Color(hex: "#94A3B8") : Color(hex: "#0F172A"))
+                                
+                                Spacer()
+                                
+                                Button(action: {
+                                    playHaptic(style: .light)
+                                    withAnimation(.spring) { activeKeyboardField = activeKeyboardField == .location ? nil : .location }
+                                }) {
+                                    Text(activeKeyboardField == .location ? "Tutup Keypad" : "Ketik In-App")
+                                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                                        .foregroundStyle(Color(hex: "#4F46E5"))
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 6)
+                                        .background(Color(hex: "#EEF2FF"))
+                                        .clipShape(Capsule())
+                                }
+                            }
+                            .padding(16)
+                            .background(Color.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(activeKeyboardField == .location ? Color(hex: "#4F46E5") : Color(hex: "#E2E8F0"), lineWidth: 1.5))
+                            
+                            if activeKeyboardField == .location {
+                                CustomInAppKeyboard(text: $formLocation, onDone: {
+                                    activeKeyboardField = nil
+                                })
+                                .transition(.scale.combined(with: .opacity))
+                            }
+                        }
+                    }
+                    
+                    // Section 2: Preset Paket Harga Admin
+                    newEventPackageSelectorCard
+                    
+                    // Section 3: Ikon & Warna
+                    newEventIconAndColorPickers
                 }
+                .padding(20)
             }
+            .background(Color(hex: "#F8FAFC"))
             .navigationTitle(editingEventId == nil ? "Event Baru" : "Edit Event")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -775,6 +1002,137 @@ struct OperatorDashboardView: View {
         }
     }
     
+    private var newEventPackageSelectorCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("2. PILIH PAKET HARGA ADMIN")
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .tracking(1.5)
+                .foregroundStyle(Color(hex: "#94A3B8"))
+            
+            VStack(spacing: 12) {
+                ForEach(PricingPackage.presetPackages) { pkg in
+                    let isSelected = selectedPackageId == pkg.id
+                    Button(action: {
+                        playHaptic(style: .medium)
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            selectedPackageId = pkg.id
+                        }
+                    }) {
+                        HStack(spacing: 14) {
+                            ZStack {
+                                Circle()
+                                    .fill(isSelected ? Color(hex: pkg.badgeColorHex) : Color(hex: "#F1F5F9"))
+                                    .frame(width: 44, height: 44)
+                                
+                                Image(systemName: isSelected ? "checkmark" : "tag.fill")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundStyle(isSelected ? .white : Color(hex: "#64748B"))
+                            }
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack(spacing: 8) {
+                                    Text(pkg.name)
+                                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                                        .foregroundStyle(Color(hex: "#0F172A"))
+                                    
+                                    Text(pkg.badgeText)
+                                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 3)
+                                        .background(Color(hex: pkg.badgeColorHex).opacity(0.15))
+                                        .foregroundStyle(Color(hex: pkg.badgeColorHex))
+                                        .clipShape(Capsule())
+                                }
+                                
+                                Text(pkg.description)
+                                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                                    .foregroundStyle(Color(hex: "#64748B"))
+                            }
+                            
+                            Spacer()
+                            
+                            Text(pkg.price == 0 ? "GRATIS" : "Rp \(Int(pkg.price).formatted())")
+                                .font(.system(size: 16, weight: .black, design: .rounded))
+                                .foregroundStyle(isSelected ? Color(hex: "#0F172A") : Color(hex: "#64748B"))
+                        }
+                        .padding(16)
+                        .background(isSelected ? Color.white : Color.white.opacity(0.6))
+                        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        .shadow(color: isSelected ? Color.black.opacity(0.06) : Color.clear, radius: 10, y: 4)
+                        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(isSelected ? Color(hex: pkg.badgeColorHex) : Color(hex: "#E2E8F0"), lineWidth: isSelected ? 2 : 1))
+                    }
+                    .buttonStyle(BentoButtonStyle())
+                }
+            }
+        }
+    }
+    
+    private var newEventIconAndColorPickers: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("3. TEMA & IKON CARD")
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .tracking(1.5)
+                .foregroundStyle(Color(hex: "#94A3B8"))
+            
+            VStack(alignment: .leading, spacing: 16) {
+                // Ikon Grid
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 10) {
+                    ForEach(0..<iconOptions.count, id: \.self) { idx in
+                        let item = iconOptions[idx]
+                        let isSel = formIconIndex == idx
+                        Button(action: {
+                            playHaptic(style: .light)
+                            formIconIndex = idx
+                        }) {
+                            HStack(spacing: 8) {
+                                Image(systemName: item.icon)
+                                Text(item.name)
+                                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                            }
+                            .padding(.vertical, 12)
+                            .frame(maxWidth: .infinity)
+                            .background(isSel ? Color(hex: "#0F172A") : Color.white)
+                            .foregroundStyle(isSel ? .white : Color(hex: "#334155"))
+                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .shadow(color: isSel ? Color(hex: "#0F172A").opacity(0.15) : Color.black.opacity(0.02), radius: 6, y: 2)
+                        }
+                        .buttonStyle(BentoButtonStyle())
+                    }
+                }
+                
+                // Color Theme Circles
+                HStack(spacing: 14) {
+                    ForEach(0..<colorOptions.count, id: \.self) { idx in
+                        let c = colorOptions[idx]
+                        Circle()
+                            .fill(
+                                LinearGradient(colors: [Color(hex: c.startHex), Color(hex: c.endHex)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                            )
+                            .frame(width: 40, height: 40)
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.white, lineWidth: formColorIndex == idx ? 3 : 0)
+                            )
+                            .overlay(
+                                Circle()
+                                    .stroke(Color(hex: c.hex), lineWidth: formColorIndex == idx ? 2 : 0)
+                                    .scaleEffect(1.2)
+                            )
+                            .onTapGesture {
+                                playHaptic(style: .light)
+                                formColorIndex = idx
+                            }
+                    }
+                }
+                .padding(.top, 6)
+            }
+            .padding(18)
+            .background(Color.white.opacity(0.7))
+            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(Color(hex: "#E2E8F0"), lineWidth: 1))
+        }
+    }
+    
     // MARK: - Modal: Event Manager Modal
     private var eventManagerModalSheet: some View {
         NavigationStack {
@@ -786,7 +1144,7 @@ struct OperatorDashboardView: View {
                                 .font(.system(size: 16, weight: .bold, design: .rounded))
                                 .foregroundStyle(Color(hex: "#0F172A"))
                             
-                            Text("\(event.location) • \(event.totalSessions) Sesi")
+                            Text("\(event.location) • \(event.totalSessions) Sesi • \(event.packageName)")
                                 .font(.caption)
                                 .foregroundStyle(Color(hex: "#64748B"))
                         }
@@ -817,10 +1175,10 @@ struct OperatorDashboardView: View {
         editingEventId = nil
         formName = ""
         formLocation = ""
-        formPrice = "25000"
-        formIsPaid = true
+        selectedPackageId = "pkg-std"
         formIconIndex = 0
         formColorIndex = 0
+        activeKeyboardField = nil
         isShowingNewEventSheet = true
     }
     
@@ -828,8 +1186,13 @@ struct OperatorDashboardView: View {
         editingEventId = event.id
         formName = event.name
         formLocation = event.location
-        formPrice = String(Int(event.pricePerSession))
-        formIsPaid = event.isPayPerSession
+        activeKeyboardField = nil
+        
+        if let pkg = PricingPackage.presetPackages.first(where: { $0.name == event.packageName || $0.price == event.pricePerSession }) {
+            selectedPackageId = pkg.id
+        } else {
+            selectedPackageId = "pkg-std"
+        }
         
         if let iconIdx = iconOptions.firstIndex(where: { $0.id == event.iconName }) {
             formIconIndex = iconIdx
@@ -842,15 +1205,16 @@ struct OperatorDashboardView: View {
     }
     
     private func saveEvent() {
-        let price = Double(formPrice) ?? 25000
+        let pkg = PricingPackage.presetPackages.first(where: { $0.id == selectedPackageId }) ?? PricingPackage.presetPackages[0]
         let iconName = iconOptions[formIconIndex].id
         let colorHex = colorOptions[formColorIndex].hex
         
         if let editId = editingEventId, let index = events.firstIndex(where: { $0.id == editId }) {
             appState.operatorState.availableEvents[index].name = formName
             appState.operatorState.availableEvents[index].location = formLocation.isEmpty ? "Lokasi Booth" : formLocation
-            appState.operatorState.availableEvents[index].pricePerSession = price
-            appState.operatorState.availableEvents[index].isPayPerSession = formIsPaid
+            appState.operatorState.availableEvents[index].pricePerSession = pkg.price
+            appState.operatorState.availableEvents[index].isPayPerSession = pkg.isPayPerSession
+            appState.operatorState.availableEvents[index].packageName = pkg.name
             appState.operatorState.availableEvents[index].iconName = iconName
             appState.operatorState.availableEvents[index].themeColorHex = colorHex
             
@@ -861,8 +1225,9 @@ struct OperatorDashboardView: View {
             let newEvt = EventModel(
                 name: formName,
                 location: formLocation.isEmpty ? "Lokasi Booth" : formLocation,
-                pricePerSession: price,
-                isPayPerSession: formIsPaid,
+                pricePerSession: pkg.price,
+                isPayPerSession: pkg.isPayPerSession,
+                packageName: pkg.name,
                 totalSessions: 0,
                 totalRevenue: 0,
                 iconName: iconName,
@@ -890,6 +1255,24 @@ struct OperatorDashboardView: View {
         }
     }
     
+    private func startKioskCountdown() {
+        playHaptic(style: .heavy)
+        withAnimation { kioskCountdown = 3 }
+        countdownTimer?.invalidate()
+        countdownTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
+            if let current = kioskCountdown {
+                if current > 1 {
+                    playHaptic(style: .medium)
+                    withAnimation { kioskCountdown = current - 1 }
+                } else {
+                    timer.invalidate()
+                    withAnimation { kioskCountdown = nil }
+                    launchKioskSession()
+                }
+            }
+        }
+    }
+    
     private func formatRevenue(_ val: Double) -> String {
         if val >= 1_000_000 {
             let jt = val / 1_000_000
@@ -898,6 +1281,35 @@ struct OperatorDashboardView: View {
             return Int(val).formatted()
         }
     }
+}
+
+// MARK: - UI Utilities
+
+struct BentoButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
+            .opacity(configuration.isPressed ? 0.9 : 1.0)
+            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: configuration.isPressed)
+    }
+}
+
+struct HeroCardButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
+            .rotation3DEffect(
+                .degrees(configuration.isPressed ? 2 : 0),
+                axis: (x: 1.0, y: 0.0, z: 0.0)
+            )
+            .animation(.spring(response: 0.4, dampingFraction: 0.6), value: configuration.isPressed)
+    }
+}
+
+func playHaptic(style: UIImpactFeedbackGenerator.FeedbackStyle = .light) {
+    let generator = UIImpactFeedbackGenerator(style: style)
+    generator.prepare()
+    generator.impactOccurred()
 }
 
 #Preview {
