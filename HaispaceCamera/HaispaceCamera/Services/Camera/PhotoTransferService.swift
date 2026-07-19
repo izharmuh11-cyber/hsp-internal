@@ -54,7 +54,7 @@ actor PhotoTransferService {
                     
                     // Terapkan Smart Grading saja (tanpa segmentation mask / bokeh)
                     let presetId = CameraCaptureService.shared.currentColorPreset
-                    guard presetId != "original" else { return nil }
+                    // Selalu jalankan grading untuk Portrait Mode
                     
                     let ciImageOptions: [CIImageOption: Any] = [.applyOrientationProperty: true]
                     guard var flatPhoto = CIImage(data: rawData, options: ciImageOptions) else { return nil }
@@ -246,13 +246,13 @@ actor PhotoTransferService {
                 ])
                 
                 // --- HAISPACE CINEMATIC SMART GRADING (Portrait Mode Only) ---
-                // Hanya aktif jika user memilih preset non-original.
                 // Menggunakan softMatte yang sudah tersedia (zero-cost reuse) untuk membedakan
                 // grading antara subject (orang) dan background secara per-pixel.
                 let presetId = CameraCaptureService.shared.currentColorPreset
                 let finalPhoto: CIImage
                 
-                if presetId != "original" {
+                // Selalu aktifkan 4-layer smart grading saat Portrait Mode (walau preset original)
+                do {
                     
                     // ── LAYER 1: Background Cinematic Grade ──
                     // Cool tone shift pada background: R--, B++ → cinematic background
@@ -458,9 +458,6 @@ actor PhotoTransferService {
                     ])
                     
                     HaispaceLogger.info("[SmartGrading] Haispace Cinematic 4-Layer AKTIF (Preset: \(presetId)) — Adaptive Skin ✓ Film Grain ✓", category: "camera")
-                } else {
-                    // Smart Grading tanpa bokeh
-                    finalPhoto = CameraCaptureService.shared.applyColorFilter(to: composite, presetId: presetId)
                 }
                 
                 guard let cgImage = self.ciContext.createCGImage(finalPhoto, from: photoExtent) else {

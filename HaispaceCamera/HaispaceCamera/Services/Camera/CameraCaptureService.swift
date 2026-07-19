@@ -627,27 +627,41 @@ extension CameraCaptureService {
                 let scaledDepthCI = depthCI.transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
                 
                 if let processedBuffer = applyDepthBokeh(to: pixelBuffer, depthMap: scaledDepthCI) {
-                    // Terapkan color preset ke frame bokeh jika aktif
+                    // Terapkan color preset ke frame bokeh jika aktif, atau default cinematic look jika original
                     let finalBuffer: CVPixelBuffer
+                    let bokehCI = CIImage(cvPixelBuffer: processedBuffer)
+                    let coloredCI: CIImage
+                    
                     if self.currentColorPreset != "original" {
-                        let bokehCI = CIImage(cvPixelBuffer: processedBuffer)
-                        let coloredCI = self.applyColorFilter(to: bokehCI, presetId: self.currentColorPreset)
-                        var coloredBuffer: CVPixelBuffer?
-                        let w = CVPixelBufferGetWidth(processedBuffer)
-                        let h = CVPixelBufferGetHeight(processedBuffer)
-                        let fmt = CVPixelBufferGetPixelFormatType(processedBuffer)
-                        let attrs2: [String: Any] = [
-                            kCVPixelBufferCGImageCompatibilityKey as String: true,
-                            kCVPixelBufferCGBitmapContextCompatibilityKey as String: true,
-                            kCVPixelBufferIOSurfacePropertiesKey as String: [:]
-                        ]
-                        if CVPixelBufferCreate(kCFAllocatorDefault, w, h, fmt, attrs2 as CFDictionary, &coloredBuffer) == kCVReturnSuccess,
-                           let cb = coloredBuffer {
-                            self.ciContext.render(coloredCI, to: cb)
-                            finalBuffer = cb
-                        } else {
-                            finalBuffer = processedBuffer
-                        }
+                        coloredCI = self.applyColorFilter(to: bokehCI, presetId: self.currentColorPreset)
+                    } else {
+                        // Lightweight "Cinematic" look untuk live preview portrait mode
+                        // (Full 4-layer smart grading terlalu berat untuk 30fps live preview, ini aproksimasi)
+                        coloredCI = bokehCI.applyingFilter("CIColorMatrix", parameters: [
+                            "inputRVector": CIVector(x: 1.02, y: 0, z: 0, w: 0),
+                            "inputGVector": CIVector(x: 0, y: 1.01, z: 0, w: 0),
+                            "inputBVector": CIVector(x: 0, y: 0, z: 0.98, w: 0),
+                            "inputBiasVector": CIVector(x: 0, y: 0, z: 0, w: 0)
+                        ]).applyingFilter("CIColorControls", parameters: [
+                            "inputSaturation": 0.95,
+                            "inputContrast": 1.02
+                        ])
+                    }
+                    
+                    var coloredBuffer: CVPixelBuffer?
+                    let w = CVPixelBufferGetWidth(processedBuffer)
+                    let h = CVPixelBufferGetHeight(processedBuffer)
+                    let fmt = CVPixelBufferGetPixelFormatType(processedBuffer)
+                    let attrs2: [String: Any] = [
+                        kCVPixelBufferCGImageCompatibilityKey as String: true,
+                        kCVPixelBufferCGBitmapContextCompatibilityKey as String: true,
+                        kCVPixelBufferIOSurfacePropertiesKey as String: [:]
+                    ]
+                    
+                    if CVPixelBufferCreate(kCFAllocatorDefault, w, h, fmt, attrs2 as CFDictionary, &coloredBuffer) == kCVReturnSuccess,
+                       let cb = coloredBuffer {
+                        self.ciContext.render(coloredCI, to: cb)
+                        finalBuffer = cb
                     } else {
                         finalBuffer = processedBuffer
                     }
