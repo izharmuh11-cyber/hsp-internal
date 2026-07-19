@@ -729,84 +729,128 @@ struct ActiveSessionView: View {
     @ViewBuilder
     private func poseOverlaySelection(ipadLandscape: Bool) -> some View {
         if showPoseOverlay && localCountdown == 0 && !showFlash && !isBriefing {
-            ZStack {
-                // Tap outside to dismiss
-                Color.black.opacity(0.15)
-                    .ignoresSafeArea()
-                    .onTapGesture {
-                        withAnimation(.easeOut(duration: 0.25)) {
-                            showPoseOverlay = false
-                            lastActivityTime = Date()
-                        }
-                    }
-                
-                let poseImages = getPoseImagesForCount(detectedFaceCount)
-                if !poseImages.isEmpty {
-                    let assetName = poseImages[currentPoseIndex % poseImages.count]
-                    
-                    VStack(spacing: 16) {
-                        ZStack(alignment: .topTrailing) {
-                            Image(assetName)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(maxWidth: ipadLandscape ? 500 : 380, maxHeight: ipadLandscape ? 400 : 520)
-                                .opacity(0.35) // Semi-transparent stencil/ghost overlay!
-                                .cornerRadius(20)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 20)
-                                        .stroke(.white.opacity(0.3), lineWidth: 2)
-                                )
-                                .gesture(
-                                    DragGesture(minimumDistance: 20)
-                                        .onEnded { gesture in
-                                            let horizontalDrag = gesture.translation.width
-                                            if horizontalDrag > 30 {
-                                                // Swipe Right -> Prev Pose
-                                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                                    currentPoseIndex = (currentPoseIndex - 1 + poseImages.count) % poseImages.count
-                                                }
-                                            } else if horizontalDrag < -30 {
-                                                // Swipe Left -> Next Pose
-                                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                                    currentPoseIndex = (currentPoseIndex + 1) % poseImages.count
-                                                }
-                                            }
-                                            lastActivityTime = Date()
-                                        }
-                                )
-                            
-                            // Close Button
-                            Button(action: {
-                                withAnimation(.easeOut(duration: 0.25)) {
-                                    showPoseOverlay = false
-                                    lastActivityTime = Date()
+            VStack {
+                Spacer()
+                HStack {
+                    // Picture-in-Picture (PiP) Floating Glass Card (Sudut Kiri Bawah)
+                    let poseImages = getPoseImagesForCount(detectedFaceCount)
+                    if !poseImages.isEmpty {
+                        let assetName = poseImages[currentPoseIndex % poseImages.count]
+                        
+                        VStack(alignment: .leading, spacing: 10) {
+                            // Header PiP Card
+                            HStack {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "sparkles")
+                                        .font(.system(size: 11, weight: .bold))
+                                        .foregroundStyle(Color(red: 255/255, green: 215/255, blue: 0/255))
+                                    Text("REFERENSI GAYA #\(currentPoseIndex % poseImages.count + 1)")
+                                        .font(.system(size: 10, weight: .black, design: .rounded))
+                                        .foregroundStyle(.white)
                                 }
-                            }) {
-                                Image(systemName: "xmark.circle.fill")
-                                    .font(.system(size: 28))
-                                    .foregroundStyle(.white.opacity(0.8), .black.opacity(0.6))
-                                    .padding(12)
+                                
+                                Spacer()
+                                
+                                Button(action: {
+                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                        showPoseOverlay = false
+                                        lastActivityTime = Date()
+                                    }
+                                }) {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .font(.system(size: 18))
+                                        .foregroundStyle(.white.opacity(0.6))
+                                }
+                            }
+                            
+                            // Image Preview
+                            ZStack(alignment: .bottomTrailing) {
+                                Image(assetName)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 180, height: 230)
+                                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                            .stroke(LinearGradient(colors: [.white.opacity(0.4), .white.opacity(0.1)], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1.5)
+                                    )
+                                    .gesture(
+                                        DragGesture(minimumDistance: 20)
+                                            .onEnded { gesture in
+                                                let horizontalDrag = gesture.translation.width
+                                                if horizontalDrag > 20 {
+                                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                                        currentPoseIndex = (currentPoseIndex - 1 + poseImages.count) % poseImages.count
+                                                    }
+                                                } else if horizontalDrag < -20 {
+                                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                                        currentPoseIndex = (currentPoseIndex + 1) % poseImages.count
+                                                    }
+                                                }
+                                                lastActivityTime = Date()
+                                            }
+                                    )
+                                
+                                // Carousel Controls
+                                HStack(spacing: 8) {
+                                    Button(action: {
+                                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                            currentPoseIndex = (currentPoseIndex - 1 + poseImages.count) % poseImages.count
+                                        }
+                                    }) {
+                                        Image(systemName: "chevron.left.circle.fill")
+                                            .font(.system(size: 24))
+                                            .foregroundStyle(.white, .black.opacity(0.5))
+                                    }
+                                    
+                                    Button(action: {
+                                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                            currentPoseIndex = (currentPoseIndex + 1) % poseImages.count
+                                        }
+                                    }) {
+                                        Image(systemName: "chevron.right.circle.fill")
+                                            .font(.system(size: 24))
+                                            .foregroundStyle(.white, .black.opacity(0.5))
+                                    }
+                                }
+                                .padding(8)
+                            }
+                            
+                            // Dots & Label
+                            HStack {
+                                Text("\(detectedFaceCount > 0 ? "\(detectedFaceCount) Orang" : "Gaya Solo")")
+                                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                                    .foregroundStyle(Color.cyan)
+                                
+                                Spacer()
+                                
+                                HStack(spacing: 4) {
+                                    ForEach(0..<poseImages.count, id: \.self) { idx in
+                                        Circle()
+                                            .fill(idx == currentPoseIndex % poseImages.count ? Color.cyan : Color.white.opacity(0.3))
+                                            .frame(width: 5, height: 5)
+                                    }
+                                }
                             }
                         }
-                        
-                        // Dots Pagination
-                        HStack(spacing: 6) {
-                            ForEach(0..<poseImages.count, id: \.self) { idx in
-                                Circle()
-                                    .fill(idx == currentPoseIndex % poseImages.count ? Color.white : Color.white.opacity(0.3))
-                                    .frame(width: 6, height: 6)
-                            }
-                        }
-                        
-                        Text("Geser (Swipe) untuk pose lain • \(detectedFaceCount) Wajah")
-                            .font(.system(size: 11, weight: .bold))
-                            .tracking(1)
-                            .foregroundStyle(.white.opacity(0.6))
+                        .padding(14)
+                        .background(.ultraThinMaterial)
+                        .background(Color.black.opacity(0.6))
+                        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                .stroke(LinearGradient(colors: [Color.cyan.opacity(0.6), Color(hex: "#7C5CFC").opacity(0.3)], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1.5)
+                        )
+                        .shadow(color: .black.opacity(0.5), radius: 25, y: 10)
+                        .padding(.leading, 32)
+                        .padding(.bottom, 120)
                     }
+                    
+                    Spacer()
                 }
             }
-            .zIndex(25)
-            .transition(.opacity.combined(with: .scale(scale: 0.95)))
+            .zIndex(30)
+            .transition(.move(edge: .leading).combined(with: .opacity))
         }
     }
     
