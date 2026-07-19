@@ -179,7 +179,8 @@ struct LandingView: View {
                                 secretTapCount = 0
                             }
                             if secretTapCount >= 3 {
-                                playHaptic(style: .heavy)
+                                let generator = UIImpactFeedbackGenerator(style: .heavy)
+                                generator.impactOccurred()
                                 secretTapCount = 0
                                 withAnimation(.spring) {
                                     appState.operatorState.isVerifyingPIN = true
@@ -201,7 +202,8 @@ struct LandingView: View {
     }
     
     private func handleStartSession() {
-        playHaptic(style: .medium)
+        let generator = UIImpactFeedbackGenerator(style: .medium)
+        generator.impactOccurred()
         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
             appState.navigateTo(.guestRegistration)
         }
