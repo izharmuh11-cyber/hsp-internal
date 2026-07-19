@@ -171,8 +171,10 @@ final class StreamingDecoderService {
             
             // Analisis Vision AI secara periodik (di-throttled secara internal)
             if let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuf) {
-                PoseIntelligenceService.shared.analyzeFrame(pixelBuffer: pixelBuffer) { count, category, zoom, faceRect in
-                    self.onFrameAnalyzed?(count, category, zoom, faceRect)
+                PoseIntelligenceService.shared.analyzeFrame(pixelBuffer: pixelBuffer) { [weak self] count, category, zoom, faceRect in
+                    Task { @MainActor in
+                        self?.onFrameAnalyzed?(count, category, zoom, faceRect)
+                    }
                 }
             }
         }
