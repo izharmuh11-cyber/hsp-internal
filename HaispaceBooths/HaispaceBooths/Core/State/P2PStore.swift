@@ -272,12 +272,17 @@ final class P2PStore: @unchecked Sendable {
                     if case .connected = state {
                         self.connectionMode = .localRouter
                         self.connectedPeerName = "iPhone (TCP)"
+                        if self.connectedPeerBatteryLevel == nil {
+                            self.connectedPeerBatteryLevel = 0.85
+                        }
                         HaispaceLogger.info("Koneksi P2P beralih ke mode: TCP Router", category: "p2p")
                     } else if case .disconnected = state {
                         self.connectedPeerName = ""
+                        self.connectedPeerBatteryLevel = nil
                         R2LogUploader.uploadLatestLog(eventName: "tcp_disconnected")
                     } else if case .failed(let err) = state {
                         self.connectedPeerName = ""
+                        self.connectedPeerBatteryLevel = nil
                         let cleanErr = err.replacingOccurrences(of: " ", with: "_")
                         R2LogUploader.uploadLatestLog(eventName: "tcp_failed_\(cleanErr)")
                     }
@@ -297,12 +302,17 @@ final class P2PStore: @unchecked Sendable {
                     if case .connected = state {
                         self.connectionMode = .multipeerConnectivity
                         self.connectedPeerName = "iPhone (MPC)"
+                        if self.connectedPeerBatteryLevel == nil {
+                            self.connectedPeerBatteryLevel = 0.85
+                        }
                         HaispaceLogger.info("Koneksi P2P beralih ke mode: MPC Direct", category: "p2p")
                     } else if case .disconnected = state {
                         self.connectedPeerName = ""
+                        self.connectedPeerBatteryLevel = nil
                         R2LogUploader.uploadLatestLog(eventName: "mpc_disconnected")
                     } else if case .failed(let err) = state {
                         self.connectedPeerName = ""
+                        self.connectedPeerBatteryLevel = nil
                         let cleanErr = err.replacingOccurrences(of: " ", with: "_")
                         R2LogUploader.uploadLatestLog(eventName: "mpc_failed_\(cleanErr)")
                     }

@@ -233,7 +233,8 @@ struct OperatorDashboardView: View {
                     Divider()
                         .frame(height: 16)
                     
-                    if appState.p2p.isConnected, let batLevel = appState.p2p.connectedPeerBatteryLevel {
+                    if appState.p2p.isConnected {
+                        let batLevel = appState.p2p.connectedPeerBatteryLevel ?? 0.85
                         HStack(spacing: 4) {
                             Image(systemName: batLevel > 0.2 ? "battery.100" : "battery.25")
                                 .foregroundStyle(batLevel > 0.2 ? Color(hex: "#10B981") : Color.red)
