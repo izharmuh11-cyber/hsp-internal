@@ -810,20 +810,23 @@ extension CameraCaptureService {
     /// Helper internal untuk menerapkan Pro Studio Color Preset Filter.
     nonisolated func applyColorFilter(to image: CIImage, presetId: String) -> CIImage {
         switch presetId {
-        case "warm":
-            // Warm Studio (Kodak Warm Instant Style)
-            return image.applyingFilter("CIPhotoEffectInstant")
-        case "clean":
-            // Clean Portrait (Vogue High-Vibrance Chrome Style)
-            return image.applyingFilter("CIPhotoEffectChrome")
-        case "vintage":
-            // Vintage Film (Retro Transfer Pastel Style)
-            return image.applyingFilter("CIPhotoEffectTransfer")
         case "bw_noir":
-            // Noir B&W (Leica Monochrome Style)
+            // Noir B&W (Leica Monochrome High Contrast Style)
             return image.applyingFilter("CIPhotoEffectNoir")
+        case "soft_bw":
+            // Soft B&W (Tonal Fine Art Monochrome Style)
+            return image.applyingFilter("CIPhotoEffectTonal")
+        case "film":
+            // Retro Film (Kodak Fade Soft Vintage Style)
+            return image.applyingFilter("CIPhotoEffectFade")
+        case "airy":
+            // Airy Clean (Cool High-Key Process Style)
+            return image.applyingFilter("CIPhotoEffectProcess")
+        case "vivid":
+            // Vivid Color (Vogue High-Vibrance Chrome Style)
+            return image.applyingFilter("CIPhotoEffectChrome")
         default:
-            // Original (Tanpa Filter)
+            // Natural / Original (Tanpa Filter)
             return image
         }
     }

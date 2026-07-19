@@ -558,15 +558,16 @@ struct ActiveSessionView: View {
     @ViewBuilder
     private var colorFilterSelectorGroup: some View {
         let filters: [(id: String, name: String)] = [
-            ("original", "Clean"),
-            ("warm", "Warm"),
-            ("clean", "Vogue"),
-            ("vintage", "Retro"),
-            ("bw_noir", "B&W")
+            ("original", "Natural"),
+            ("bw_noir", "Noir"),
+            ("soft_bw", "Soft B&W"),
+            ("film", "Film"),
+            ("airy", "Airy"),
+            ("vivid", "Vivid")
         ]
         
         // Fixed Equal-Width Segment Bar (Pixel-Perfect Centered)
-        HStack(spacing: 4) {
+        HStack(spacing: 3) {
             ForEach(filters, id: \.id) { flt in
                 let isSelected = activeFilter == flt.id
                 Button(action: {
@@ -579,9 +580,9 @@ struct ActiveSessionView: View {
                     lastActivityTime = Date()
                 }) {
                     Text(flt.name)
-                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
                         .foregroundStyle(isSelected ? Color.black : Color.white.opacity(0.85))
-                        .frame(width: 66, height: 34)
+                        .frame(width: 62, height: 34)
                         .background(
                             ZStack {
                                 if isSelected {

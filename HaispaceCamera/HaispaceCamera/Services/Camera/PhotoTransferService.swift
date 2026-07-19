@@ -11,6 +11,7 @@ import AVFoundation
 import UIKit
 import ImageIO
 import CoreImage
+import Vision
 
 actor PhotoTransferService {
     static let shared = PhotoTransferService()
@@ -188,15 +189,229 @@ actor PhotoTransferService {
                     blurredBackground = bloomedSource
                 }
                 
-                // --- COMPOSITE FINAL ---
+                // --- COMPOSITE FINAL (Bokeh) ---
                 let composite = orientedPhoto.applyingFilter("CIBlendWithMask", parameters: [
                     kCIInputBackgroundImageKey: blurredBackground,
                     kCIInputMaskImageKey: softMatte
                 ])
                 
-                // Terapkan Pro Studio Color Filter pada foto 12MP hasil komposit
+                // --- HAISPACE CINEMATIC SMART GRADING (Portrait Mode Only) ---
+                // Hanya aktif jika user memilih preset non-original.
+                // Menggunakan softMatte yang sudah tersedia (zero-cost reuse) untuk membedakan
+                // grading antara subject (orang) dan background secara per-pixel.
                 let presetId = CameraCaptureService.shared.currentColorPreset
-                let finalPhoto = CameraCaptureService.shared.applyColorFilter(to: composite, presetId: presetId)
+                let finalPhoto: CIImage
+                
+                if presetId != "original" {
+                    
+                    // ── LAYER 1: Background Cinematic Grade ──
+                    // Cool tone shift pada background: R--, B++ → cinematic background
+                    let coolBackground = composite.applyingFilter("CIColorMatrix", parameters: [
+                        "inputRVector": CIVector(x: 0.88, y: 0, z: 0, w: 0),   // sedikit kurangi Red
+                        "inputGVector": CIVector(x: 0, y: 0.93, z: 0, w: 0),   // sedikit kurangi Green
+                        "inputBVector": CIVector(x: 0, y: 0, z: 1.06, w: 0),   // sedikit tambah Blue
+                        "inputBiasVector": CIVector(x: 0, y: 0, z: 0, w: 0)
+                    ])
+                    
+                    // Desaturasi ringan pada background → tidak bersaing dengan subject
+                    let desatBackground = coolBackground.applyingFilter("CIColorControls", parameters: [
+                        "inputSaturation": 0.72,  // 28% desaturasi
+                        "inputBrightness": -0.015, // slight darken
+                        "inputContrast":   1.04
+                    ])
+                    
+                    // Vignette ringan pada seluruh foto (bingkai sinematik)
+                    let vignetted = desatBackground
+                        .clampedToExtent()
+                        .applyingFilter("CIVignette", parameters: [
+                            "inputRadius":    1.8,
+                            "inputIntensity": 0.55
+                        ])
+                        .cropped(to: photoExtent)
+                    
+                    // Blend: background → graded, subject → original composite
+                    let gradedBackground = composite.applyingFilter("CIBlendWithMask", parameters: [
+                        kCIInputBackgroundImageKey: vignetted,
+                        kCIInputMaskImageKey: softMatte      // subject area dipertahankan
+                    ])
+                    
+                    // ── LAYER 2: Subject Skin Enhancement ──
+                    // Warm lift pada subject: skin lebih flatter, shadow diangkat
+                    let warmSubject = composite.applyingFilter("CIColorMatrix", parameters: [
+                        "inputRVector": CIVector(x: 1.04, y: 0, z: 0, w: 0),   // sedikit tambah Red (warm)
+                        "inputGVector": CIVector(x: 0, y: 1.01, z: 0, w: 0),
+                        "inputBVector": CIVector(x: 0, y: 0, z: 0.97, w: 0),   // sedikit kurangi Blue
+                        "inputBiasVector": CIVector(x: 0, y: 0, z: 0, w: 0)
+                    ])
+                    
+                    // Shadow lift + highlight protection pada subject
+                    let enhancedSubject = warmSubject.applyingFilter("CIHighlightShadowAdjust", parameters: [
+                        "inputHighlightAmount": 0.85,  // proteksi highlight agar tidak overexposed
+                        "inputShadowAmount":    0.6    // angkat shadow → detail di area gelap lebih terlihat
+                    ])
+                    
+                    // Blend graded background dengan enhanced subject menggunakan softMatte
+                    let subjectEnhanced = gradedBackground.applyingFilter("CIBlendWithMask", parameters: [
+                        kCIInputBackgroundImageKey: gradedBackground,
+                        kCIInputImageKey: enhancedSubject,
+                        kCIInputMaskImageKey: softMatte
+                    ])
+                    
+                    // ── LAYER 3: Face Region Micro-Contrast ──
+                    // VNDetectFaceLandmarksRequest → bounding box wajah → CIImage mask gradient
+                    // Micro-contrast & subtle brightness boost tepat di area wajah (mata, pipi, dahi)
+                    var faceEnhanced = subjectEnhanced
+
+                    var detectedFaceRect: CGRect = .zero  // expose ke Layer 4A
+                    
+                    if let cgForVision = self.ciContext.createCGImage(composite, from: photoExtent) {
+                        let faceRequest = VNDetectFaceLandmarksRequest()
+                        let handler = VNImageRequestHandler(cgImage: cgForVision, options: [:])
+                        
+                        if (try? handler.perform([faceRequest])) != nil,
+                           let faceObs = (faceRequest.results as? [VNFaceObservation])?.first {
+                            
+                            // Konversi normalized bounding box ke koordinat foto
+                            let faceBB = faceObs.boundingBox
+                            let faceRect = CGRect(
+                                x:      faceBB.minX * photoExtent.width,
+                                y:      faceBB.minY * photoExtent.height,
+                                width:  faceBB.width  * photoExtent.width  * 1.15,
+                                height: faceBB.height * photoExtent.height * 1.15
+                            ).intersection(photoExtent)
+                            
+                            if !faceRect.isEmpty {
+                                detectedFaceRect = faceRect
+                                
+                                // Crop area wajah dari subjectEnhanced
+                                let faceCrop = subjectEnhanced.cropped(to: faceRect)
+                                
+                                // Micro-contrast boost di area wajah
+                                let faceGraded = faceCrop.applyingFilter("CIColorControls", parameters: [
+                                    "inputSaturation": 1.06,
+                                    "inputBrightness": 0.012,
+                                    "inputContrast":   1.08
+                                ])
+                                
+                                // Gaussian gradient mask untuk blend natural di tepi wajah
+                                let faceMaskColor = CIImage(color: CIColor(red: 0.75, green: 0.75, blue: 0.75))
+                                    .cropped(to: faceRect)
+                                    .applyingFilter("CIGaussianBlur", parameters: ["inputRadius": 18.0])
+                                    .cropped(to: faceRect)
+                                
+                                faceEnhanced = subjectEnhanced.applyingFilter("CIBlendWithMask", parameters: [
+                                    kCIInputBackgroundImageKey: subjectEnhanced,
+                                    kCIInputImageKey: faceGraded,
+                                    kCIInputMaskImageKey: faceMaskColor
+                                ])
+                            }
+                        }
+                    }
+                    
+                    // ── LAYER 4A: Adaptive Skin Tone Calibration ──
+                    // Sampel warna kulit rata-rata dari area wajah yang terdeteksi (Layer 3).
+                    // Hitung koreksi bias yang diperlukan untuk mendekati "neutral flattering skin tone"
+                    // secara otomatis — adapts untuk semua warna kulit tanpa over-processing.
+                    var skinCalibrated = faceEnhanced
+                    
+                    if !detectedFaceRect.isEmpty {
+                        let faceSampleImage = faceEnhanced.cropped(to: detectedFaceRect)
+                        
+                        // CIAreaAverage: output 1x1 pixel berisi warna rata-rata area wajah
+                        let averaged = faceSampleImage.applyingFilter("CIAreaAverage", parameters: [
+                            kCIInputExtentKey: CIVector(cgRect: detectedFaceRect)
+                        ])
+                        
+                        // Render 1x1 pixel ke bitmap untuk baca R, G, B
+                        var pixelData = [UInt8](repeating: 0, count: 4)
+                        let colorSpace = CGColorSpaceCreateDeviceRGB()
+                        self.ciContext.render(
+                            averaged,
+                            toBitmap: &pixelData,
+                            rowBytes: 4,
+                            bounds: averaged.extent,
+                            format: .RGBA8,
+                            colorSpace: colorSpace
+                        )
+                        
+                        let avgR = CGFloat(pixelData[0]) / 255.0
+                        let avgG = CGFloat(pixelData[1]) / 255.0
+                        let avgB = CGFloat(pixelData[2]) / 255.0
+                        
+                        // Target "flattering neutral" skin tone (universal mid-point):
+                        // Sedikit warm, cukup untuk semua skin tone.
+                        // Koreksi dibatasi max 15% untuk menghindari unnatural look.
+                        let targetR: CGFloat = 0.68
+                        let targetG: CGFloat = 0.52
+                        let targetB: CGFloat = 0.42
+                        
+                        let biasR = max(-0.06, min(0.06, (targetR - avgR) * 0.14))
+                        let biasG = max(-0.04, min(0.04, (targetG - avgG) * 0.10))
+                        let biasB = max(-0.05, min(0.05, (targetB - avgB) * 0.12))
+                        
+                        // Terapkan koreksi pada SELURUH gambar (subject only via softMatte)
+                        let correctedSubject = faceEnhanced.applyingFilter("CIColorMatrix", parameters: [
+                            "inputRVector":    CIVector(x: 1.0, y: 0,   z: 0,   w: 0),
+                            "inputGVector":    CIVector(x: 0,   y: 1.0, z: 0,   w: 0),
+                            "inputBVector":    CIVector(x: 0,   y: 0,   z: 1.0, w: 0),
+                            "inputBiasVector": CIVector(x: biasR, y: biasG, z: biasB, w: 0)
+                        ])
+                        
+                        // Blend koreksi hanya ke area subject menggunakan softMatte
+                        skinCalibrated = faceEnhanced.applyingFilter("CIBlendWithMask", parameters: [
+                            kCIInputBackgroundImageKey: faceEnhanced,
+                            kCIInputImageKey: correctedSubject,
+                            kCIInputMaskImageKey: softMatte
+                        ])
+                        
+                        HaispaceLogger.info(
+                            "[SmartGrading] Adaptive Skin — measured R:\(String(format:"%.2f",avgR)) G:\(String(format:"%.2f",avgG)) B:\(String(format:"%.2f",avgB)) | bias R:\(String(format:"%.3f",biasR)) G:\(String(format:"%.3f",biasG)) B:\(String(format:"%.3f",biasB))",
+                            category: "camera"
+                        )
+                    }
+                    
+                    // ── GLOBAL PRESET TONE (Haispace Signature) ──
+                    // Terapkan tone preset pilihan user sebagai finishing layer
+                    let presetGraded = CameraCaptureService.shared.applyColorFilter(to: skinCalibrated, presetId: presetId)
+                    
+                    // ── LAYER 4B: Luminance-Aware Film Grain ──
+                    // Simulasi butiran film analog: grayscale noise, di-blend dengan CISoftLightBlendMode.
+                    // Soft light centered di 0.5 → nilai di atas/bawah 0.5 mencerahkan/menggelapkan sedikit.
+                    // Hasilnya: grain lebih terasa di shadow, nyaris menghilang di highlight — persis film analog.
+                    let noiseGen = CIFilter(name: "CIRandomGenerator")?.outputImage ?? CIImage.empty()
+                    let rawNoise = noiseGen.cropped(to: photoExtent)
+                    
+                    // Scale noise sedikit lebih besar dari per-pixel → clump 2-3px = karakter butiran film
+                    let scaledNoise = rawNoise
+                        .transformed(by: CGAffineTransform(scaleX: 1.6, y: 1.6))
+                        .cropped(to: photoExtent)
+                    
+                    // Konversi ke grayscale (luminance-only grain, tanpa chroma noise yang jelek)
+                    // Scale ke rentang sangat sempit di sekitar 0.5 → intensity grain 4%
+                    let filmGrain = scaledNoise.applyingFilter("CIColorMatrix", parameters: [
+                        "inputRVector":    CIVector(x: 0.04, y: 0,    z: 0,    w: 0),
+                        "inputGVector":    CIVector(x: 0,    y: 0.04, z: 0,    w: 0),
+                        "inputBVector":    CIVector(x: 0,    y: 0,    z: 0.04, w: 0),
+                        "inputBiasVector": CIVector(x: 0.48, y: 0.48, z: 0.48, w: 0)  // center di 0.5
+                    ])
+                    
+                    // Grayscale: semua channel sama → pure luminance grain
+                    let monoGrain = filmGrain.applyingFilter("CIColorMonochrome", parameters: [
+                        "inputColor":     CIColor(red: 0.5, green: 0.5, blue: 0.5),
+                        "inputIntensity": 1.0
+                    ])
+                    
+                    // CISoftLightBlendMode: noise 0.5 = no effect, 0.52 = slight brighten, 0.48 = slight darken
+                    // Shadow areas otomatis mendapat lebih banyak grain (soft light non-linearity)
+                    finalPhoto = monoGrain.applyingFilter("CISoftLightBlendMode", parameters: [
+                        kCIInputBackgroundImageKey: presetGraded
+                    ])
+                    
+                    HaispaceLogger.info("[SmartGrading] Haispace Cinematic 4-Layer AKTIF (Preset: \(presetId)) — Adaptive Skin ✓ Film Grain ✓", category: "camera")
+                } else {
+                    // Natural: hanya composite bokeh tanpa grading tambahan
+                    finalPhoto = composite
+                }
                 
                 guard let cgImage = self.ciContext.createCGImage(finalPhoto, from: photoExtent) else {
                     HaispaceLogger.warning("[PortraitMatte] Gagal render CGImage — foto asli digunakan", category: "camera")
