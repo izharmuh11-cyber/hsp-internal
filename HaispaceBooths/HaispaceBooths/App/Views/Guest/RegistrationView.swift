@@ -1,8 +1,7 @@
 // RegistrationView.swift
 // HaispaceBooths — App/Views/Guest
 //
-// Form pendaftaran nama dan instagram tamu.
-// Dilengkapi dengan custom virtual keyboard besar.
+// Form pendaftaran nama dan instagram tamu bertema VisionOS Liquid Glass & Cinematic Dark.
 
 import SwiftUI
 
@@ -11,179 +10,218 @@ struct RegistrationView: View {
     
     @State private var guestName: String = ""
     @State private var instagramHandle: String = ""
-    @State private var isNameFocused: Bool = true
+    @State private var activeField: FieldType = .name
     
-    // Custom Keyboard State
-    private let keyboardRows = [
-        ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
-        ["A", "S", "D", "F", "G", "H", "J", "K", "L"],
-        ["Z", "X", "C", "V", "B", "N", "M"]
-    ]
+    enum FieldType {
+        case name
+        case instagram
+    }
     
     var body: some View {
         ZStack {
-            Color(hex: "#080810").ignoresSafeArea()
+            // 1. Background Pitch Black Terdalam
+            Color(hex: "#030303").ignoresSafeArea()
             
-            VStack(spacing: 40) {
-                // Header
+            // 2. Ambient Light Orbs
+            ZStack {
+                Circle()
+                    .fill(Color(hex: "#7C5CFC").opacity(0.18))
+                    .blur(radius: 120)
+                    .frame(width: 550, height: 550)
+                
+                Circle()
+                    .fill(Color(hex: "#00D9A0").opacity(0.12))
+                    .blur(radius: 130)
+                    .frame(width: 480, height: 480)
+                    .offset(x: 200, y: -150)
+            }
+            .allowsHitTesting(false)
+            
+            // 3. MAIN CONTENT LAYOUT
+            VStack(spacing: 24) {
+                // TOP HEADER: Back Button & Haispace Project Logo
                 HStack {
                     Button(action: {
-                        withAnimation { appState.navigateTo(.landing) }
+                        let generator = UIImpactFeedbackGenerator(style: .light)
+                        generator.impactOccurred()
+                        withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
+                            appState.navigateTo(.landing)
+                        }
                     }) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundStyle(.white.opacity(0.8))
-                            .padding()
-                            .background(Circle().fill(Color.white.opacity(0.1)))
+                        HStack(spacing: 8) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 16, weight: .bold))
+                            Text("Kembali")
+                                .font(.system(size: 15, weight: .semibold, design: .rounded))
+                        }
+                        .foregroundStyle(.white.opacity(0.8))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(Color.white.opacity(0.08))
+                        .clipShape(Capsule())
+                        .overlay(Capsule().stroke(Color.white.opacity(0.15), lineWidth: 1))
                     }
                     
                     Spacer()
                     
-                    Text("Siapa namamu?")
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white)
+                    HaispaceOfficialLogoView()
                     
                     Spacer()
                     
-                    // Invisible view for symmetry
-                    Circle()
-                        .fill(Color.clear)
-                        .frame(width: 56, height: 56)
+                    // Balancing Spacer Placeholder
+                    Color.clear.frame(width: 100, height: 40)
                 }
-                .padding(.horizontal, 40)
-                .padding(.top, 40)
-                
-                // Form Fields
-                HStack(spacing: 32) {
-                    // Name Field
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Nama Panggilan")
-                            .font(.callout)
-                            .foregroundStyle(isNameFocused ? Color(hex: "#F5A623") : .white.opacity(0.5))
-                        
-                        Text(guestName.isEmpty ? "Cth: Budi" : guestName)
-                            .font(.system(size: 28, weight: .semibold))
-                            .foregroundStyle(guestName.isEmpty ? .white.opacity(0.2) : .white)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.vertical, 20)
-                            .padding(.horizontal, 24)
-                            .background(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .fill(Color.white.opacity(0.05))
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .stroke(isNameFocused ? Color(hex: "#F5A623") : Color.white.opacity(0.1), lineWidth: 2)
-                            )
-                            .onTapGesture {
-                                isNameFocused = true
-                            }
-                    }
-                    
-                    // Instagram Field
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Instagram (Opsional)")
-                            .font(.callout)
-                            .foregroundStyle(!isNameFocused ? Color(hex: "#7C5CFC") : .white.opacity(0.5))
-                        
-                        HStack {
-                            Text("@")
-                                .font(.system(size: 28, weight: .bold))
-                                .foregroundStyle(Color.white.opacity(0.3))
-                            
-                            Text(instagramHandle.isEmpty ? "username" : instagramHandle)
-                                .font(.system(size: 28, weight: .semibold))
-                                .foregroundStyle(instagramHandle.isEmpty ? .white.opacity(0.2) : .white)
-                                .lineLimit(1)
-                            
-                            Spacer()
-                        }
-                        .padding(.vertical, 20)
-                        .padding(.horizontal, 24)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(Color.white.opacity(0.05))
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16)
-                                .stroke(!isNameFocused ? Color(hex: "#7C5CFC") : Color.white.opacity(0.1), lineWidth: 2)
-                        )
-                        .onTapGesture {
-                            isNameFocused = false
-                        }
-                    }
-                }
-                .padding(.horizontal, 60)
+                .padding(.horizontal, 36)
+                .padding(.top, 28)
                 
                 Spacer()
                 
-                // Custom Virtual Keyboard
-                VStack(spacing: 12) {
-                    ForEach(keyboardRows.indices, id: \.self) { rowIndex in
-                        HStack(spacing: 12) {
-                            ForEach(keyboardRows[rowIndex], id: \.self) { key in
-                                KeyboardButton(text: key) {
-                                    type(key)
-                                }
-                            }
-                            
-                            if rowIndex == 2 {
-                                // Delete button at the end of bottom row
-                                KeyboardButton(text: "⌫", width: 80, isSpecial: true) {
-                                    delete()
-                                }
-                            }
-                        }
+                // GLASS REGISTRATION CARD
+                VStack(spacing: 24) {
+                    VStack(spacing: 6) {
+                        Text("Siapa Namamu?")
+                            .font(.system(size: 32, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white)
+                        
+                        Text("Isi nama & instagram kamu untuk memulai foto")
+                            .font(.system(size: 15, weight: .medium, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.6))
                     }
                     
-                    // Space and Next
-                    HStack(spacing: 12) {
-                        if !isNameFocused {
-                            KeyboardButton(text: "_", width: 60) { type("_") }
-                            KeyboardButton(text: ".", width: 60) { type(".") }
+                    // INPUT FIELDS
+                    HStack(spacing: 20) {
+                        // Input Nama
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Nama Panggilan")
+                                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                                .foregroundStyle(activeField == .name ? Color(hex: "#00D9A0") : .white.opacity(0.5))
+                            
+                            HStack {
+                                Image(systemName: "person.fill")
+                                    .foregroundStyle(activeField == .name ? Color(hex: "#00D9A0") : .white.opacity(0.3))
+                                
+                                Text(guestName.isEmpty ? "Cth: Budi" : guestName)
+                                    .font(.system(size: 18, weight: .semibold, design: .rounded))
+                                    .foregroundStyle(guestName.isEmpty ? .white.opacity(0.3) : .white)
+                                    .lineLimit(1)
+                                
+                                Spacer()
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 14)
+                            .background(Color.white.opacity(0.06))
+                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .stroke(activeField == .name ? Color(hex: "#00D9A0") : Color.white.opacity(0.12), lineWidth: activeField == .name ? 2 : 1)
+                            )
+                            .onTapGesture {
+                                let generator = UIImpactFeedbackGenerator(style: .light)
+                                generator.impactOccurred()
+                                withAnimation { activeField = .name }
+                            }
                         }
                         
-                        KeyboardButton(text: "SPASI", width: 400) {
-                            type(" ")
-                        }
-                        
-                        Button(action: {
-                            submit()
-                        }) {
-                            Text(guestName.isEmpty ? "Lewati" : "Lanjut →")
-                                .font(.system(size: 22, weight: .bold))
-                                .foregroundStyle(.white)
-                                .frame(width: 160, height: 65)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(LinearGradient(colors: [Color(hex: "#F5A623"), Color(hex: "#E8721A")], startPoint: .topLeading, endPoint: .bottomTrailing))
-                                )
-                                .shadow(color: Color(hex: "#F5A623").opacity(0.4), radius: 10)
+                        // Input Instagram
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Instagram (Opsional)")
+                                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                                .foregroundStyle(activeField == .instagram ? Color(hex: "#7C5CFC") : .white.opacity(0.5))
+                            
+                            HStack {
+                                Text("@")
+                                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                                    .foregroundStyle(activeField == .instagram ? Color(hex: "#7C5CFC") : .white.opacity(0.3))
+                                
+                                Text(instagramHandle.isEmpty ? "username" : instagramHandle)
+                                    .font(.system(size: 18, weight: .semibold, design: .rounded))
+                                    .foregroundStyle(instagramHandle.isEmpty ? .white.opacity(0.3) : .white)
+                                    .lineLimit(1)
+                                
+                                Spacer()
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 14)
+                            .background(Color.white.opacity(0.06))
+                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .stroke(activeField == .instagram ? Color(hex: "#7C5CFC") : Color.white.opacity(0.12), lineWidth: activeField == .instagram ? 2 : 1)
+                            )
+                            .onTapGesture {
+                                let generator = UIImpactFeedbackGenerator(style: .light)
+                                generator.impactOccurred()
+                                withAnimation { activeField = .instagram }
+                            }
                         }
                     }
+                    .frame(width: 580)
+                    
+                    // CUSTOM IN-APP KEYBOARD
+                    CustomInAppKeyboard(
+                        text: Binding(
+                            get: { activeField == .name ? guestName : instagramHandle },
+                            set: { newValue in
+                                if activeField == .name {
+                                    guestName = newValue
+                                } else {
+                                    instagramHandle = newValue
+                                }
+                            }
+                        ),
+                        onDone: {
+                            let generator = UIImpactFeedbackGenerator(style: .light)
+                            generator.impactOccurred()
+                        }
+                    )
+                    .frame(width: 640)
+                    
+                    // ACTION BUTTON
+                    Button(action: submit) {
+                        HStack(spacing: 8) {
+                            Text("Lanjutkan Ke Sesi Foto 📸")
+                                .font(.system(size: 17, weight: .bold, design: .rounded))
+                                .foregroundStyle(.white)
+                        }
+                        .padding(.vertical, 15)
+                        .padding(.horizontal, 42)
+                        .background(
+                            LinearGradient(
+                                colors: [Color(hex: "#7C5CFC"), Color(hex: "#00D9A0")],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .clipShape(Capsule())
+                        .shadow(color: Color(hex: "#7C5CFC").opacity(0.4), radius: 18)
+                    }
+                    .padding(.top, 4)
                 }
-                .padding(.bottom, 40)
+                .padding(32)
+                .background(.ultraThinMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 32, style: .continuous)
+                        .stroke(
+                            LinearGradient(
+                                colors: [.white.opacity(0.3), .white.opacity(0.08)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1.5
+                        )
+                )
+                .shadow(color: Color.black.opacity(0.5), radius: 30, y: 15)
+                
+                Spacer()
             }
         }
     }
     
-    private func type(_ char: String) {
-        if isNameFocused {
-            if guestName.count < 20 { guestName += char }
-        } else {
-            if instagramHandle.count < 30 { instagramHandle += char.lowercased() }
-        }
-    }
-    
-    private func delete() {
-        if isNameFocused {
-            if !guestName.isEmpty { guestName.removeLast() }
-        } else {
-            if !instagramHandle.isEmpty { instagramHandle.removeLast() }
-        }
-    }
-    
     private func submit() {
+        let generator = UIImpactFeedbackGenerator(style: .heavy)
+        generator.impactOccurred()
+        
         let finalName = guestName.trimmingCharacters(in: .whitespacesAndNewlines)
         appState.pendingGuest = GuestInfo(
             name: finalName.isEmpty ? "Guest" : finalName,
@@ -192,33 +230,9 @@ struct RegistrationView: View {
             queueNumber: Int.random(in: 100...999)
         )
         
-        withAnimation(.spring) {
+        withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
             appState.navigateTo(.packageSelection)
         }
-    }
-}
-
-// MARK: - Keyboard Button
-
-private struct KeyboardButton: View {
-    let text: String
-    var width: CGFloat = 65
-    var isSpecial: Bool = false
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            Text(text)
-                .font(.system(size: 24, weight: isSpecial ? .semibold : .medium))
-                .foregroundStyle(.white)
-                .frame(width: width, height: 65)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.white.opacity(isSpecial ? 0.2 : 0.1))
-                )
-        }
-        // Minimalize visual feedback for fast typing
-        .buttonStyle(.plain)
     }
 }
 

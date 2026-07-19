@@ -192,8 +192,11 @@ private struct KioskRouterView: View {
             case .delivery:
                 DeliveryView()
             }
-        }
-        .transition(.opacity.combined(with: .scale(scale: 0.98)))
+        .transition(.asymmetric(
+            insertion: .opacity.combined(with: .scale(scale: 1.03)),
+            removal: .opacity.combined(with: .scale(scale: 0.97))
+        ))
+        .animation(.spring(response: 0.52, dampingFraction: 0.82), value: appState.currentRoute)
         // Gesture untuk membuka Mission Control (3 finger tap di pojok kanan atas)
         .overlay(alignment: .topTrailing) {
             Color.clear
