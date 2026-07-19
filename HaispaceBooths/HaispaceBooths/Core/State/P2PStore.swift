@@ -308,6 +308,26 @@ final class P2PStore: @unchecked Sendable {
                     }
                 }
             }
+            
+            self.startIncomingMessageBroker()
+        }
+    }
+
+    private var incomingStatusTask: Task<Void, Never>?
+
+    private func startIncomingMessageBroker() {
+        incomingStatusTask?.cancel()
+        incomingStatusTask = Task { [weak self] in
+            guard let self = self else { return }
+            for await message in await P2PMessageRouter.shared.messageStream(for: .cameraStatus) {
+                guard !Task.isCancelled else { break }
+                if case .cameraStatus(let bat, _, let latency) = message {
+                    await MainActor.run {
+                        self.updatePeerStatus(batteryLevel: bat)
+                        self.updateLatency(latency)
+                    }
+                }
+            }
         }
     }
 
