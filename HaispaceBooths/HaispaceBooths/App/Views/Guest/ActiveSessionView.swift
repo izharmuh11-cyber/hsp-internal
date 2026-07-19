@@ -573,10 +573,13 @@ struct ActiveSessionView: View {
         ]
         
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
+            HStack(spacing: 8) {
                 ForEach(filters, id: \.id) { flt in
+                    let isSelected = activeFilter == flt.id
                     Button(action: {
-                        activeFilter = flt.id
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                            activeFilter = flt.id
+                        }
                         Task {
                             await P2PMessageRouter.shared.route(.setColorPreset(presetId: flt.id))
                         }
@@ -584,22 +587,34 @@ struct ActiveSessionView: View {
                     }) {
                         Text(flt.name)
                             .font(.system(size: 13, weight: .bold, design: .rounded))
-                            .foregroundStyle(activeFilter == flt.id ? Color.black : Color.white)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(activeFilter == flt.id ? Color.cyan : Color.white.opacity(0.15))
+                            .foregroundStyle(isSelected ? Color.black : Color.white.opacity(0.9))
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 9)
+                            .background(
+                                ZStack {
+                                    if isSelected {
+                                        Capsule()
+                                            .fill(LinearGradient(colors: [Color.cyan, Color(hex: "#7C5CFC")], startPoint: .leading, endPoint: .trailing))
+                                            .shadow(color: Color.cyan.opacity(0.55), radius: 8, y: 2)
+                                    } else {
+                                        Capsule()
+                                            .fill(Color.white.opacity(0.12))
+                                    }
+                                }
+                            )
                             .clipShape(Capsule())
                     }
                 }
             }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
         }
         .background(.ultraThinMaterial)
-        .background(.black.opacity(0.45))
+        .background(.black.opacity(0.5))
         .clipShape(Capsule())
-        .overlay(Capsule().stroke(Color.white.opacity(0.2), lineWidth: 1))
-        .frame(maxWidth: 400)
+        .overlay(Capsule().stroke(Color.white.opacity(0.25), lineWidth: 1))
+        .shadow(color: .black.opacity(0.35), radius: 15, y: 6)
+        .frame(maxWidth: 420)
     }
     
     @ViewBuilder
@@ -609,19 +624,30 @@ struct ActiveSessionView: View {
                 startManualCaptureSequence()
             }) {
                 ZStack {
+                    // Outer Pulsing Glow Ring
                     Circle()
-                        .fill(.white)
-                        .frame(width: 80, height: 80)
+                        .stroke(Color.white.opacity(0.35), lineWidth: 2)
+                        .frame(width: 110, height: 110)
+                        .scaleEffect(isPulsing ? 1.08 : 0.98)
+                        .opacity(isPulsing ? 0.3 : 0.8)
+                    
+                    // Main Outer Ring
                     Circle()
                         .stroke(.white, lineWidth: 4)
                         .frame(width: 96, height: 96)
+                        .shadow(color: .white.opacity(0.5), radius: 8, y: 0)
+                    
+                    // Shutter Core
+                    Circle()
+                        .fill(LinearGradient(colors: [.white, Color(hex: "#E0E0E0")], startPoint: .top, endPoint: .bottom))
+                        .frame(width: 80, height: 80)
                 }
-                .scaleEffect(isCapturing ? 0.90 : 1.0)
-                .shadow(color: Color.black.opacity(0.4), radius: 14, y: 6)
-                .animation(.spring(response: 0.2, dampingFraction: 0.5), value: isCapturing)
+                .scaleEffect(isCapturing ? 0.88 : 1.0)
+                .shadow(color: Color.black.opacity(0.5), radius: 18, y: 8)
+                .animation(.spring(response: 0.25, dampingFraction: 0.6), value: isCapturing)
             }
             .disabled(isCapturing)
-            .padding(.bottom, 32)
+            .padding(.bottom, 28)
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
     }
@@ -755,35 +781,55 @@ struct ActiveSessionView: View {
         if localCountdown == 0 && !showFlash && !isBriefing {
             VStack(spacing: 12) {
                 ScrollView(.vertical, showsIndicators: false) {
-                    VStack(spacing: 16) {
+                    VStack(spacing: 18) {
                         if let s = session {
                             ForEach(Array(s.photos.capturedPhotos.enumerated()), id: \.element.id) { index, photo in
                                 Button(action: {
-                                    activeSelectedPhotoForPreview = photo
+                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                        activeSelectedPhotoForPreview = photo
+                                    }
                                 }) {
                                     if let uiImage = UIImage(data: photo.thumbnailData) {
-                                        Image(uiImage: uiImage)
-                                            .resizable()
-                                            .scaledToFill()
-                                            .frame(width: 80, height: 104)
-                                            .cornerRadius(12)
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 12)
-                                                    .stroke(Color.white, lineWidth: 3) // Polaroid-style border
-                                            )
-                                            .shadow(color: .black.opacity(0.4), radius: 8, y: 4)
-                                            .rotationEffect(.degrees(index % 2 == 0 ? 2.5 : -2.5))
-                                            .clipped()
+                                        let isLandscape = uiImage.size.width > uiImage.size.height
+                                        let thumbWidth: CGFloat = isLandscape ? 104 : 80
+                                        let thumbHeight: CGFloat = isLandscape ? 78 : 104
+                                        
+                                        ZStack(alignment: .topLeading) {
+                                            Image(uiImage: uiImage)
+                                                .resizable()
+                                                .scaledToFill()
+                                                .frame(width: thumbWidth, height: thumbHeight)
+                                                .cornerRadius(14)
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 14)
+                                                        .stroke(LinearGradient(colors: [.white, .white.opacity(0.4)], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 2.5)
+                                                )
+                                                .shadow(color: .black.opacity(0.5), radius: 10, y: 5)
+                                                .rotationEffect(.degrees(index % 2 == 0 ? 2.5 : -2.5))
+                                                .clipped()
+                                            
+                                            // Photo Index Badge
+                                            Text("#\(index + 1)")
+                                                .font(.system(size: 10, weight: .black, design: .rounded))
+                                                .foregroundStyle(.white)
+                                                .padding(.horizontal, 7)
+                                                .padding(.vertical, 3)
+                                                .background(.ultraThinMaterial)
+                                                .background(Color.black.opacity(0.5))
+                                                .clipShape(Capsule())
+                                                .padding(6)
+                                                .offset(x: index % 2 == 0 ? 4 : -4)
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                    .padding(.vertical, 12)
+                    .padding(.vertical, 14)
                     .padding(.horizontal, 8)
                 }
             }
-            .frame(width: 110, height: ipadLandscape ? 480 : 360)
+            .frame(width: 120, height: ipadLandscape ? 480 : 360)
             .transition(.move(edge: .trailing).combined(with: .opacity))
             .zIndex(14)
         }
@@ -794,81 +840,69 @@ struct ActiveSessionView: View {
         if localCountdown == 0 && !showFlash && !isBriefing {
             VStack {
                 HStack {
-                    // Top Left: Queue Number
+                    // Unified iOS 18 Style Dynamic Island Pill
                     if let s = session {
-                        HStack(spacing: 6) {
-                            Image(systemName: "person.2.fill")
-                                .font(.system(size: 11, weight: .bold))
-                            Text("Antrian #\(String(format: "%03d", s.guest.queueNumber))")
-                                .font(.system(size: 12, weight: .bold, design: .rounded))
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(.ultraThinMaterial)
-                        .foregroundStyle(.white)
-                        .cornerRadius(16)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16)
-                                .stroke(.white.opacity(0.12), lineWidth: 1)
-                        )
-                    }
-                    
-                    Spacer()
-                    
-                    // Top Center: iOS Live Activity Timer
-                    if let s = session {
-                        HStack(spacing: 8) {
-                            Text("LIVE PREVIEW • \(formatTime(s.remainingSeconds))")
-                                .font(.system(size: 12, weight: .bold, design: .rounded))
+                        HStack(spacing: 18) {
+                            // Antrian
+                            HStack(spacing: 6) {
+                                Image(systemName: "person.2.fill")
+                                    .font(.system(size: 11, weight: .bold))
+                                    .foregroundStyle(Color.cyan)
+                                Text("#\(String(format: "%03d", s.guest.queueNumber))")
+                                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                            }
                             
-                            Circle()
-                                .fill(Color.green)
-                                .frame(width: 8, height: 8)
-                                .overlay(
-                                    Circle()
-                                        .stroke(Color.green, lineWidth: 1.5)
-                                        .scaleEffect(isPulsing ? 2.0 : 1.0)
-                                        .opacity(isPulsing ? 0.0 : 1.0)
-                                )
-                                .onAppear {
-                                    withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: false)) {
-                                        isPulsing = true
+                            Divider()
+                                .frame(height: 14)
+                                .background(Color.white.opacity(0.3))
+                            
+                            // Timer Status
+                            HStack(spacing: 8) {
+                                Circle()
+                                    .fill(s.remainingSeconds <= 30 ? Color.red : Color.green)
+                                    .frame(width: 8, height: 8)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(s.remainingSeconds <= 30 ? Color.red : Color.green, lineWidth: 1.5)
+                                            .scaleEffect(isPulsing ? 2.2 : 1.0)
+                                            .opacity(isPulsing ? 0.0 : 1.0)
+                                    )
+                                    .onAppear {
+                                        withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: false)) {
+                                            isPulsing = true
+                                        }
                                     }
-                                }
+                                
+                                Text("\(formatTime(s.remainingSeconds))")
+                                    .font(.system(size: 13, weight: .black, design: .rounded))
+                                    .foregroundStyle(s.remainingSeconds <= 30 ? Color.red : Color.white)
+                            }
+                            
+                            Divider()
+                                .frame(height: 14)
+                                .background(Color.white.opacity(0.3))
+                            
+                            // Quota
+                            HStack(spacing: 6) {
+                                Image(systemName: "camera.fill")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(Color(hex: "#7C5CFC"))
+                                Text("\(s.photos.capturedCount)/\(s.package_.maxPhotoCount)")
+                                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                            }
                         }
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
                         .background(.ultraThinMaterial)
-                        .foregroundStyle(s.remainingSeconds <= 30 ? Color.red : Color.white)
-                        .cornerRadius(16)
+                        .background(Color.black.opacity(0.6))
+                        .clipShape(Capsule())
                         .overlay(
-                            RoundedRectangle(cornerRadius: 16)
-                                .stroke(.white.opacity(0.12), lineWidth: 1)
+                            Capsule()
+                                .stroke(LinearGradient(colors: [.white.opacity(0.3), .white.opacity(0.08)], startPoint: .top, endPoint: .bottom), lineWidth: 1)
                         )
-                    }
-                    
-                    Spacer()
-                    
-                    // Top Right: Photo Count
-                    if let s = session {
-                        HStack(spacing: 6) {
-                            Image(systemName: "camera.fill")
-                                .font(.system(size: 11))
-                            Text("\(s.photos.capturedCount) / \(s.package_.maxPhotoCount)")
-                                .font(.system(size: 12, weight: .bold, design: .rounded))
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(.ultraThinMaterial)
-                        .foregroundStyle(.white)
-                        .cornerRadius(16)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16)
-                                .stroke(.white.opacity(0.12), lineWidth: 1)
-                        )
+                        .shadow(color: .black.opacity(0.45), radius: 16, y: 8)
                     }
                 }
-                .padding(.horizontal, 24)
                 .padding(.top, 24)
                 
                 Spacer()
@@ -886,7 +920,7 @@ struct ActiveSessionView: View {
                 Rectangle()
                     .fill(.ultraThinMaterial)
                     .ignoresSafeArea()
-                Color.black.opacity(0.45)
+                Color.black.opacity(0.65)
                     .ignoresSafeArea()
                     .onTapGesture {
                         withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
@@ -894,43 +928,43 @@ struct ActiveSessionView: View {
                         }
                     }
                 
-                VStack(spacing: 28) {
+                // Apple Vision Pro Style Floating Card
+                VStack(spacing: 24) {
                     // Modal Header
                     VStack(spacing: 6) {
                         Text("TINJAU POSE \(selectedPhoto.sortOrder + 1)")
-                            .font(.system(size: 20, weight: .black, design: .rounded))
+                            .font(.system(size: 22, weight: .black, design: .rounded))
                             .tracking(3)
                             .foregroundStyle(
                                 LinearGradient(
-                                    colors: [Color(hex: "#7C5CFC"), Color(hex: "#9D85FF")],
+                                    colors: [Color.cyan, Color(hex: "#7C5CFC")],
                                     startPoint: .leading,
                                     endPoint: .trailing
                                 )
                             )
                         
-                        Text("Apakah pose ini sudah sesuai, atau Anda ingin mengambil foto ulang?")
+                        Text("Apakah pose ini sudah pas, atau ingin mengambil foto ulang?")
                             .font(.system(size: 13, weight: .medium, design: .rounded))
-                            .foregroundStyle(.white.opacity(0.6))
+                            .foregroundStyle(.white.opacity(0.7))
                             .multilineTextAlignment(.center)
                     }
-                    .padding(.top, 12)
                     
                     // Photo Frame with Glowing Border
                     if let uiImage = UIImage(data: selectedPhoto.thumbnailData) {
                         Image(uiImage: uiImage)
                             .resizable()
                             .scaledToFit()
-                            .frame(maxHeight: 460)
-                            .cornerRadius(16)
+                            .frame(maxHeight: 440)
+                            .cornerRadius(22)
                             .overlay(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .stroke(Color.white.opacity(0.2), lineWidth: 1.5)
+                                RoundedRectangle(cornerRadius: 22)
+                                    .stroke(LinearGradient(colors: [.white.opacity(0.4), .white.opacity(0.1)], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 2)
                             )
-                            .shadow(color: .black.opacity(0.55), radius: 24, y: 12)
+                            .shadow(color: .black.opacity(0.7), radius: 30, y: 15)
                     }
                     
                     // Action Buttons
-                    HStack(spacing: 20) {
+                    HStack(spacing: 18) {
                         // Button Cancel / Close
                         Button(action: {
                             withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
@@ -938,14 +972,14 @@ struct ActiveSessionView: View {
                             }
                         }) {
                             Text("Batal")
-                                .font(.system(.headline, design: .rounded))
-                                .foregroundStyle(.white)
-                                .frame(width: 140, height: 48)
+                                .font(.system(.headline, design: .rounded).bold())
+                                .foregroundStyle(.white.opacity(0.9))
+                                .frame(width: 130, height: 50)
                                 .background(.white.opacity(0.12))
                                 .clipShape(Capsule())
                                 .overlay(
                                     Capsule()
-                                        .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
                                 )
                         }
                         
@@ -958,43 +992,39 @@ struct ActiveSessionView: View {
                             }
                             startManualCaptureSequence(replacePhotoId: targetId, sortOrder: targetOrder)
                         }) {
-                            HStack(spacing: 8) {
-                                Image(systemName: "arrow.triangle.2.circlepath.camera")
+                            HStack(spacing: 10) {
+                                Image(systemName: "arrow.triangle.2.circlepath.camera.fill")
+                                    .font(.system(size: 16, weight: .bold))
                                 Text("Foto Ulang (Retake)")
                             }
                             .font(.system(.headline, design: .rounded).bold())
                             .foregroundStyle(.white)
-                            .frame(width: 220, height: 48)
+                            .frame(width: 230, height: 50)
                             .background(
                                 LinearGradient(
-                                    colors: [Color(hex: "#7C5CFC"), Color(hex: "#9D85FF")],
+                                    colors: [Color(hex: "#7C5CFC"), Color.cyan],
                                     startPoint: .leading,
                                     endPoint: .trailing
                                 )
                             )
                             .clipShape(Capsule())
-                            .shadow(color: Color(hex: "#7C5CFC").opacity(0.35), radius: 12, y: 6)
+                            .shadow(color: Color(hex: "#7C5CFC").opacity(0.5), radius: 16, y: 6)
                         }
                     }
-                    .padding(.bottom, 12)
                 }
-                .padding(.horizontal, 32)
-                .padding(.vertical, 28)
-                .background(
-                    RoundedRectangle(cornerRadius: 28)
-                        .fill(Color(hex: "#0A0A10").opacity(0.92))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 28)
-                                .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                        )
-                )
                 .padding(32)
-                .transition(.asymmetric(
-                    insertion: .scale(scale: 0.95).combined(with: .opacity),
-                    removal: .scale(scale: 0.95).combined(with: .opacity)
-                ))
+                .background(.ultraThinMaterial)
+                .background(Color.black.opacity(0.5))
+                .clipShape(RoundedRectangle(cornerRadius: 36, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 36, style: .continuous)
+                        .stroke(LinearGradient(colors: [.white.opacity(0.35), .white.opacity(0.08)], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1.5)
+                )
+                .shadow(color: .black.opacity(0.6), radius: 40, y: 20)
+                .padding(.horizontal, 40)
+                .transition(.scale(scale: 0.9).combined(with: .opacity))
             }
-            .zIndex(30)
+            .zIndex(100)
         }
     }
     
