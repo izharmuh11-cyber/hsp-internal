@@ -30,7 +30,11 @@ struct OperatorLoginView: View {
                 endPoint: .bottomTrailing
             )
             .ignoresSafeArea()
-            // CATATAN UX: Tap di area kosong TIDAK MENUTUP keyboard agar mengetik tidak terganggu!
+            .onTapGesture {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                    activeField = nil
+                }
+            }
             
             // Soft ambient light aura
             Circle()
