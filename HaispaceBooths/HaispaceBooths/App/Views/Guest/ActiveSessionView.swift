@@ -26,8 +26,8 @@ class StreamingDecoderView: UIView {
     override func layoutSubviews() {
         super.layoutSubviews()
         displayLayer.frame = self.bounds
-        // Gunakan orientasi visual kamera asli (tanpa pembalikan horizontal agar tulisan & logo baju tidak terbalik)
-        displayLayer.transform = CATransform3DIdentity
+        // Transformasi Cermin Horizontal (Mirroring cermin alami: miring ke kiri bergerak ke kiri)
+        displayLayer.transform = CATransform3DMakeScale(-1.0, 1.0, 1.0)
     }
 }
 
@@ -455,7 +455,9 @@ struct ActiveSessionView: View {
         if localCountdown == 0 && !showFlash && !isBriefing {
             VStack {
                 VStack(spacing: 14) {
-                    zoomSelectorGroup
+                    if !isPortraitModeActive {
+                        zoomSelectorGroup
+                    }
                     portraitBokehButton
                     colorFilterSelectorGroup
                 }

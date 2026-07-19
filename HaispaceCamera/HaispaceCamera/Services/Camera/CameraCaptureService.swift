@@ -811,34 +811,14 @@ extension CameraCaptureService {
     nonisolated func applyColorFilter(to image: CIImage, presetId: String) -> CIImage {
         switch presetId {
         case "warm":
-            // Warm Studio (Kodak Portra Style)
-            let controls = image.applyingFilter("CIColorControls", parameters: [
-                "inputSaturation": 1.05,
-                "inputContrast": 1.03
-            ])
-            return controls.applyingFilter("CITemperatureAndTint", parameters: [
-                "inputNeutral": CIVector(x: 6800, y: 0),
-                "inputTargetNeutral": CIVector(x: 6500, y: 0)
-            ])
+            // Warm Studio (Kodak Warm Instant Style)
+            return image.applyingFilter("CIPhotoEffectInstant")
         case "clean":
-            // Clean Portrait (Vogue Editorial Style)
-            return image.applyingFilter("CIColorControls", parameters: [
-                "inputSaturation": 1.08,
-                "inputBrightness": 0.02,
-                "inputContrast": 1.05
-            ])
+            // Clean Portrait (Vogue High-Vibrance Chrome Style)
+            return image.applyingFilter("CIPhotoEffectChrome")
         case "vintage":
-            // Vintage Film (Retro Pastel Style)
-            let controls = image.applyingFilter("CIColorControls", parameters: [
-                "inputSaturation": 0.88,
-                "inputContrast": 0.95
-            ])
-            return controls.applyingFilter("CIColorMatrix", parameters: [
-                "inputRVector": CIVector(x: 0.95, y: 0, z: 0, w: 0),
-                "inputGVector": CIVector(x: 0, y: 0.95, z: 0, w: 0),
-                "inputBVector": CIVector(x: 0, y: 0, z: 0.95, w: 0),
-                "inputBiasVector": CIVector(x: 0.05, y: 0.04, z: 0.03, w: 0)
-            ])
+            // Vintage Film (Retro Transfer Pastel Style)
+            return image.applyingFilter("CIPhotoEffectTransfer")
         case "bw_noir":
             // Noir B&W (Leica Monochrome Style)
             return image.applyingFilter("CIPhotoEffectNoir")
