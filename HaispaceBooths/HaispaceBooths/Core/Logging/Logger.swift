@@ -225,12 +225,15 @@ struct R2LogUploader {
         }
 
         // Baca credentials dari AppSecretConfig (xcconfig → Info.plist → runtime)
-        _ = AppSecretConfig.R2.accountID // Not used in signing logic below
-        let accessKeyID  = AppSecretConfig.R2.accessKeyID
-        let secretKey    = AppSecretConfig.R2.secretKey
-        let bucket       = AppSecretConfig.R2.bucket
-        let publicBaseURL = AppSecretConfig.R2.publicBaseURL
-        let r2Endpoint   = AppSecretConfig.R2.endpoint
+        guard let accessKeyID = AppSecretConfig.R2.accessKeyID,
+              let secretKey = AppSecretConfig.R2.secretKey,
+              let bucket = AppSecretConfig.R2.bucket,
+              let publicBaseURL = AppSecretConfig.R2.publicBaseURL,
+              let r2Endpoint = AppSecretConfig.R2.endpoint else {
+            HaispaceLogger.warning("R2LogUploader SKIPPED — credentials belum diisi di xcconfig", category: "upload")
+            completion?(nil)
+            return
+        }
 
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyyMMdd-HHmmss"

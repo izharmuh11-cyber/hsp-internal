@@ -25,29 +25,29 @@ enum AppSecretConfig {
 
     struct R2 {
         /// Account ID Cloudflare
-        static var accountID: String { required("R2_ACCOUNT_ID") }
+        static var accountID: String? { value("R2_ACCOUNT_ID") }
 
         /// Access Key ID untuk S3-compatible API
-        static var accessKeyID: String { required("R2_ACCESS_KEY_ID") }
+        static var accessKeyID: String? { value("R2_ACCESS_KEY_ID") }
 
         /// Secret Key untuk signing — TIDAK boleh di-log
-        static var secretKey: String { required("R2_SECRET_KEY") }
+        static var secretKey: String? { value("R2_SECRET_KEY") }
 
         /// Nama bucket R2
-        static var bucket: String { required("R2_BUCKET") }
+        static var bucket: String? { value("R2_BUCKET") }
 
         /// Base URL publik untuk mengakses file yang sudah diupload
-        static var publicBaseURL: String { required("R2_PUBLIC_BASE_URL") }
+        static var publicBaseURL: String? { value("R2_PUBLIC_BASE_URL") }
 
         /// Endpoint S3-compatible untuk upload
-        static var endpoint: String { required("R2_ENDPOINT") }
+        static var endpoint: String? { value("R2_ENDPOINT") }
     }
 
     // MARK: - QR Payload
 
     struct QR {
         /// Shared secret untuk HMAC-SHA256 signing QR payment payload
-        static var payloadSharedSecret: String { required("QR_PAYLOAD_SHARED_SECRET") }
+        static var payloadSharedSecret: String { value("QR_PAYLOAD_SHARED_SECRET") ?? "haispace-default-qr-secret" }
     }
 
     // MARK: - License API
