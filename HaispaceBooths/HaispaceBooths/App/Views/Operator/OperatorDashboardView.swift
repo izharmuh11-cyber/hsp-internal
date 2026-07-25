@@ -262,6 +262,8 @@ struct OperatorDashboardView: View {
                 .clipShape(Capsule())
                 .shadow(color: Color.black.opacity(0.04), radius: 8, y: 3)
                 .overlay(Capsule().stroke(Color.white, lineWidth: 1.5))
+            }
+            
             // Log Sistem Button
             Button(action: {
                 playHaptic(style: .light)
