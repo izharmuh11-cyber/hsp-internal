@@ -51,6 +51,16 @@ public actor HealthAggregator {
         self.p2p = p2p
     }
 
+    public convenience init() {
+        self.init(
+            camera: NoOpCameraCapability(),
+            editing: NoOpEditingCapability(),
+            payment: NoOpPaymentCapability(),
+            delivery: NoOpDeliveryCapability(),
+            p2p: NoOpP2PCapability()
+        )
+    }
+
     // MARK: - Supervisor Injection (post-init)
 
     public func injectPrinterSupervisor(_ supervisor: PrinterSupervisor) {
