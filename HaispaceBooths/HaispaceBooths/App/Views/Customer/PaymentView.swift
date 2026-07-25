@@ -14,6 +14,11 @@ public struct PaymentView: View {
     let amountText: String
     let isPaymentConfirmed: Bool
 
+    public init(amountText: String = "Rp 50.000", isPaymentConfirmed: Bool = false) {
+        self.amountText = amountText
+        self.isPaymentConfirmed = isPaymentConfirmed
+    }
+
     public var body: some View {
         ZStack {
             AppTheme.Surface.background.ignoresSafeArea()

@@ -48,7 +48,7 @@ public final class MissionControlViewModel {
 
     // MARK: - Init
 
-    public init(healthAggregator: HealthAggregator, appState: AppState) {
+    init(healthAggregator: HealthAggregator, appState: AppState) {
         self.healthAggregator = healthAggregator
         self.appState = appState
     }

@@ -336,15 +336,15 @@ struct HealthOverviewView: View {
 
     var body: some View {
         List {
-            Section("Perangkat") {
+            Section(header: Text("Perangkat")) {
                 HealthRow(label: "Kamera",      status: snapshot.cameraHealth.status.displayLabel,  isHealthy: snapshot.cameraHealth.status == .ready || snapshot.cameraHealth.status == .healthy,   icon: "camera.fill")
                 HealthRow(label: "Koneksi P2P", status: snapshot.p2pHealth.status.displayLabel,     isHealthy: snapshot.p2pHealth.status == .connected,  icon: "wifi")
             }
-            Section("Layanan") {
+            Section(header: Text("Layanan")) {
                 HealthRow(label: "Pembayaran",      status: snapshot.paymentHealth.status.displayLabel,  isHealthy: snapshot.paymentHealth.status == .healthy || snapshot.paymentHealth.status == .ready,  icon: "creditcard.fill")
                 HealthRow(label: "Pengiriman Foto", status: snapshot.deliveryHealth.status.displayLabel, isHealthy: snapshot.deliveryHealth.status == .healthy, icon: "photo.fill")
             }
-            Section("Sesi Aktif") {
+            Section(header: Text("Sesi Aktif")) {
                 if let record = snapshot.activeSessionRecord {
                     LabeledContent("Session ID", value: String(record.sessionId.prefix(8)) + "...")
                     LabeledContent("Tahap",      value: record.lastStage.rawValue)
