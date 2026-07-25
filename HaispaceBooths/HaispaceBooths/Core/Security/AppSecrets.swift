@@ -67,31 +67,19 @@ enum AppSecretConfig {
     private static func required(_ key: String) -> String {
         guard let value = Bundle.main.infoDictionary?[key] as? String,
               !value.isEmpty,
-              !value.hasPrefix("GANTI_DENGAN") else {
-            #if DEBUG
-            fatalError("""
-            ❌ AppSecretConfig: Credential '\(key)' tidak ditemukan atau belum diisi.
-
-            LANGKAH SETUP:
-            1. Copy template: HaispaceBooths/Secrets/HaispaceBooths.xcconfig.template
-            2. Buat file:     HaispaceBooths/Secrets/HaispaceBooths.xcconfig
-            3. Isi semua nilai yang dibutuhkan
-            4. Di Xcode: Project → Info → Configurations → pilih xcconfig untuk Debug & Release
-
-            File xcconfig sudah terdaftar di .gitignore — aman untuk diisi credentials.
-            """)
-            #else
+              !value.hasPrefix("GANTI_DENGAN"),
+              !value.hasPrefix("$(") else {
+            print("⚠️ AppSecretConfig: Credential '\(key)' tidak ditemukan atau belum diisi. Pastikan HaispaceBooths.xcconfig sudah di-setup.")
             return ""
-            #endif
         }
         return value
     }
 
-    /// Baca optional value dari Info.plist.
     private static func value(_ key: String) -> String? {
         guard let value = Bundle.main.infoDictionary?[key] as? String,
               !value.isEmpty,
-              !value.hasPrefix("GANTI_DENGAN") else {
+              !value.hasPrefix("GANTI_DENGAN"),
+              !value.hasPrefix("$(") else {
             return nil
         }
         return value
