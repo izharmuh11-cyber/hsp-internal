@@ -15,8 +15,11 @@ import SwiftUI
 
 public struct MissionControlView: View {
 
+    @Environment(AppState.self) private var appState
     @Environment(MissionControlViewModel.self) private var vm
     @State private var selectedTab: Tab = .incidents
+    @State private var isUploadingLog = false
+    @State private var uploadLogToast: String?
 
     enum Tab: String, CaseIterable {
         case incidents = "Insiden"
@@ -29,14 +32,61 @@ public struct MissionControlView: View {
         NavigationStack {
             VStack(spacing: 0) {
                 PlatformStatusHeaderView(snapshot: vm.snapshot)
+                EmergencyQuickActionsBar(
+                    onResetSession: {
+                        Task { try? await appState.send(.cancelSessionByOperator) }
+                    },
+                    onReconnectCamera: {
+                        Task { appState.orchestrator.p2p.startAdvertising() }
+                    },
+                    onUploadLog: {
+                        isUploadingLog = true
+                        R2LogUploader.uploadLatestLog(eventName: "mission_control") { url, error in
+                            isUploadingLog = false
+                            if let url = url {
+                                UIPasteboard.general.string = url
+                                uploadLogToast = "Log Berhasil Diunggah & Disalin!"
+                            } else {
+                                uploadLogToast = "Gagal Unggah Log: \(error ?? "Error")"
+                            }
+                        }
+                    }
+                )
                 tabSelector
                 tabContent
             }
             .navigationTitle("Mission Control")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbarContent }
-            .task { await vm.refresh() }
+            .task {
+                // Initial refresh & auto-refresh loop every 3 seconds
+                await vm.refresh()
+                while !Task.isCancelled {
+                    try? await Task.sleep(nanoseconds: 3_000_000_000)
+                    if !Task.isCancelled {
+                        await vm.refresh()
+                    }
+                }
+            }
             .refreshable { await vm.refresh() }
+            .overlay(alignment: .bottom) {
+                if let toast = uploadLogToast {
+                    Text(toast)
+                        .font(.caption.bold())
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(Color.blue)
+                        .clipShape(Capsule())
+                        .shadow(radius: 10)
+                        .padding(.bottom, 20)
+                        .onAppear {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                                uploadLogToast = nil
+                            }
+                        }
+                }
+            }
         }
     }
 
@@ -117,21 +167,34 @@ public struct MissionControlView: View {
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) {
-            HStack(spacing: 6) {
-                Circle()
-                    .fill(statusColor)
-                    .frame(width: 8, height: 8)
-                Text(vm.snapshot.overallStatusLabel)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            Button {
+                appState.operatorState.dismissMissionControl()
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title3)
+                    Text("Tutup")
+                        .fontWeight(.bold)
+                }
+                .foregroundStyle(.red)
             }
         }
         ToolbarItem(placement: .topBarTrailing) {
-            if vm.isRefreshing {
-                ProgressView().scaleEffect(0.8)
-            } else {
-                Button { Task { await vm.refresh() } } label: {
-                    Image(systemName: "arrow.clockwise")
+            HStack(spacing: 12) {
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(statusColor)
+                        .frame(width: 8, height: 8)
+                    Text(vm.snapshot.overallStatusLabel)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                if vm.isRefreshing {
+                    ProgressView().scaleEffect(0.8)
+                } else {
+                    Button { Task { await vm.refresh() } } label: {
+                        Image(systemName: "arrow.clockwise")
+                    }
                 }
             }
         }
@@ -144,6 +207,53 @@ public struct MissionControlView: View {
         case .orange: return .orange
         case .red:    return .red
         }
+    }
+}
+
+// MARK: - EmergencyQuickActionsBar
+
+struct EmergencyQuickActionsBar: View {
+    let onResetSession: () -> Void
+    let onReconnectCamera: () -> Void
+    let onUploadLog: () -> Void
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                Button(action: onResetSession) {
+                    Label("Force Reset Sesi", systemImage: "arrow.counterclockwise.circle.fill")
+                        .font(.caption.bold())
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color.red.opacity(0.15))
+                        .foregroundStyle(.red)
+                        .clipShape(Capsule())
+                }
+
+                Button(action: onReconnectCamera) {
+                    Label("Restart Kamera P2P", systemImage: "arrow.triangle.2.circlepath.camera.fill")
+                        .font(.caption.bold())
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color.orange.opacity(0.15))
+                        .foregroundStyle(.orange)
+                        .clipShape(Capsule())
+                }
+
+                Button(action: onUploadLog) {
+                    Label("Unggah Log ke R2", systemImage: "icloud.and.arrow.up.fill")
+                        .font(.caption.bold())
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color.blue.opacity(0.15))
+                        .foregroundStyle(.blue)
+                        .clipShape(Capsule())
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+        }
+        .background(Color(.tertiarySystemGroupedBackground))
     }
 }
 
