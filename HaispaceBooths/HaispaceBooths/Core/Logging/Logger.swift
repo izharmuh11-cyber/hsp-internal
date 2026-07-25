@@ -230,10 +230,10 @@ struct LocalLogWriter {
 struct R2LogUploader {
 
     /// Upload log booth ke R2. Completion dipanggil di main thread dengan public URL atau nil.
-    static func uploadLatestLog(eventName: String = "auto", completion: ((Result<String, String>) -> Void)? = nil) {
+    static func uploadLatestLog(eventName: String = "auto", completion: ((String?, String?) -> Void)? = nil) {
         let logContent = LocalLogWriter.readLogContent()
         guard !logContent.isEmpty && logContent != "Log file tidak ditemukan atau kosong." else {
-            completion?(.failure("Log kosong"))
+            completion?(nil, "Log kosong")
             return
         }
 
@@ -246,7 +246,7 @@ struct R2LogUploader {
         
         guard !r2Endpoint.isEmpty, !accessKeyID.isEmpty, !secretKey.isEmpty else {
             HaispaceLogger.warning("R2 credentials not fully configured. Skipping log upload.", category: "logging")
-            completion?(.failure("R2 credentials belum di-setup di xcconfig"))
+            completion?(nil, "R2 credentials belum di-setup di xcconfig")
             return
         }
 
@@ -262,7 +262,7 @@ struct R2LogUploader {
         let publicLatestURL = "\(publicBaseURL)/\(latestKey)"
 
         guard let body = logContent.data(using: .utf8) else {
-            completion?(.failure("Gagal encode log"))
+            completion?(nil, "Gagal encode log")
             return
         }
 
@@ -294,7 +294,7 @@ struct R2LogUploader {
             region: "auto",
             service: "s3"
         ) else {
-            completion?(.failure("URL Endpoint Invalid"))
+            completion?(nil, "URL Endpoint Invalid")
             return
         }
         
@@ -302,15 +302,15 @@ struct R2LogUploader {
             DispatchQueue.main.async {
                 if let error = error {
                     HaispaceLogger.warning("R2 upload latest gagal: \(error.localizedDescription)", category: "logging")
-                    completion?(.failure(error.localizedDescription))
+                    completion?(nil, error.localizedDescription)
                 } else if let http = response as? HTTPURLResponse {
                     if (200...299).contains(http.statusCode) {
                         HaispaceLogger.info("R2 upload latest sukses → \(publicLatestURL)", category: "logging")
-                        completion?(.success(publicLatestURL))
+                        completion?(publicLatestURL, nil)
                     } else {
                         let bodyString = String(data: data ?? Data(), encoding: .utf8) ?? "no response body"
                         HaispaceLogger.warning("R2 upload latest gagal HTTP \(http.statusCode). Body: \(bodyString)", category: "logging")
-                        completion?(.failure("HTTP \(http.statusCode) - Cek kredensial R2 Anda. (Ini mungkin pakai akun dummy)"))
+                        completion?(nil, "HTTP \(http.statusCode) - Cek kredensial R2 Anda.")
                     }
                 }
             }
