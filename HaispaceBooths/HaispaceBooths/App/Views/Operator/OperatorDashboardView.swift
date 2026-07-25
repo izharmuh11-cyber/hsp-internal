@@ -20,6 +20,7 @@ struct OperatorDashboardView: View {
     @State private var showSuccessQRBadge = false
     @State private var isShowingNewEventSheet = false
     @State private var isShowingEventManagerSheet = false
+    @State private var isShowingLogViewer = false
     
     // State Form Tambah/Edit Event
     @State private var editingEventId: String? = nil
@@ -159,6 +160,9 @@ struct OperatorDashboardView: View {
         .sheet(isPresented: $isShowingEventManagerSheet) {
             eventManagerModalSheet
         }
+        .sheet(isPresented: $isShowingLogViewer) {
+            LogViewerSheet()
+        }
         .onAppear {
             setupQRPairingIfNeeded()
         }
@@ -255,6 +259,24 @@ struct OperatorDashboardView: View {
                 .padding(.horizontal, 18)
                 .padding(.vertical, 10)
                 .background(Color.white.opacity(0.75))
+                .clipShape(Capsule())
+                .shadow(color: Color.black.opacity(0.04), radius: 8, y: 3)
+                .overlay(Capsule().stroke(Color.white, lineWidth: 1.5))
+            // Log Sistem Button
+            Button(action: {
+                playHaptic(style: .light)
+                isShowingLogViewer = true
+            }) {
+                HStack(spacing: 6) {
+                    Image(systemName: "doc.text.magnifyingglass")
+                        .font(.system(size: 15, weight: .semibold))
+                    Text("Log Sistem")
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                }
+                .foregroundStyle(Color(hex: "#334155"))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(Color.white.opacity(0.85))
                 .clipShape(Capsule())
                 .shadow(color: Color.black.opacity(0.04), radius: 8, y: 3)
                 .overlay(Capsule().stroke(Color.white, lineWidth: 1.5))
