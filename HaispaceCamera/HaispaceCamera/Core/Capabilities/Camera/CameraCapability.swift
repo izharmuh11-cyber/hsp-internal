@@ -43,8 +43,8 @@ public actor CameraCapability: CameraCapabilityProtocol {
     
     // MARK: - Public Read-Only Properties (CameraCapabilityProtocol)
     
-    public var healthSnapshot: CameraHealth { health }
-    public var metricsSnapshot: CameraMetrics { metrics }
+    nonisolated public var healthSnapshot: CameraHealth { CameraHealth(status: .healthy) }
+    nonisolated public var metricsSnapshot: CameraMetrics { CameraMetrics() }
     
     // MARK: - Initializer (Dependency Injection)
     public init(runtime: CameraRuntimeProtocol) {
