@@ -218,7 +218,7 @@ public enum DiagnosisEngine {
 
     private static func analyzeCamera(_ health: CameraHealth) -> [DiagnosisEntry] {
         switch health.status {
-        case .ready: return []
+        case .ready, .healthy: return []
 
         case .unavailable:
             return [DiagnosisEntry(
@@ -276,21 +276,21 @@ public enum DiagnosisEngine {
 
     private static func analyzePayment(_ health: PaymentHealth) -> [DiagnosisEntry] {
         switch health.status {
-        case .ready: return []
+        case .healthy: return []
 
-        case .unavailable:
+        case .degraded:
             return [DiagnosisEntry(
                 severity: .warning, domain: "payment",
-                title: "Sistem Pembayaran Belum Siap",
-                description: "Modul QRIS belum diinisialisasi.",
+                title: "Sistem Pembayaran Menurun",
+                description: "Terjadi gangguan parsial pada gateway pembayaran.",
                 recommendedAction: "Cek koneksi internet dan konfigurasi payment gateway."
             )]
 
-        case .error(let msg):
+        case .unavailable:
             return [DiagnosisEntry(
                 severity: .critical, domain: "payment",
                 title: "Error Pembayaran",
-                description: "Gateway bermasalah: \(msg)",
+                description: "Modul pembayaran tidak tersedia.",
                 recommendedAction: "Hubungi tim teknis. Gunakan pembayaran manual sementara."
             )]
         }
@@ -298,13 +298,13 @@ public enum DiagnosisEngine {
 
     private static func analyzeDelivery(_ health: DeliveryHealth) -> [DiagnosisEntry] {
         switch health.status {
-        case .ready: return []
+        case .healthy: return []
 
-        case .queueBlocked(let count):
+        case .degraded:
             return [DiagnosisEntry(
                 severity: .warning, domain: "delivery",
-                title: "Antrian Pengiriman Tertunda (\(count) foto)",
-                description: "\(count) foto belum terkirim. Mungkin koneksi putus atau printer offline.",
+                title: "Antrian Pengiriman Terhambat",
+                description: "Performa pengiriman mengalami degradasi.",
                 recommendedAction: "Cek koneksi internet atau hubungkan printer, lalu retry.",
                 operatorAction: .retryDelivery(sessionId: "")
             )]
