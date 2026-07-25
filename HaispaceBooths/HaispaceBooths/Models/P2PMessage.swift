@@ -8,6 +8,7 @@
 // Ref: docs/design/40_concurrency_strategy.md — P2PMessageRouter
 
 import Foundation
+import CryptoKit
 
 // MARK: - P2PMessage
 
@@ -185,10 +186,12 @@ struct QRPairingPayload: Codable {
     }
 
     /// Generate HMAC-SHA256 signature untuk field utama
-    /// Shared secret di-embed di app (tidak hardcoded String — gunakan konstanta terenkompilasi)
+    /// Shared secret di-embed di app (menggunakan AppSecretConfig.QR.payloadSharedSecret)
     static func generateSignature(peerId: String, ip: String, port: Int, eventId: String, ts: Int64) -> String {
         let payload = "\(peerId)|\(ip)|\(port)|\(eventId)|\(ts)"
-        let secret = AppSecrets.qrPayloadSharedSecret
-        return HMACSHA256.sign(message: payload, key: secret)
+        let secret = AppSecretConfig.QR.payloadSharedSecret
+        let key = SymmetricKey(data: Data(secret.utf8))
+        let signature = HMAC<SHA256>.authenticationCode(for: Data(payload.utf8), using: key)
+        return Data(signature).map { String(format: "%02hhx", $0) }.joined()
     }
 }

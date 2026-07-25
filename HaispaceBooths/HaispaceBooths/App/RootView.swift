@@ -171,34 +171,36 @@ private struct KioskRouterView: View {
     @Environment(AppState.self) private var appState
 
     @ViewBuilder
-    var body: some View {
-        Group {
-            switch appState.currentRoute {
-            case .landing:
-                LandingView()
-            case .guestRegistration:
-                RegistrationView()
-            case .packageSelection:
-                PackageSelectionView()
-            case .activeSession:
-                ActiveSessionView()
-            case .photoSelection:
-                PhotoSelectionView()
-            case .frameSelection:
-                FrameSelectionView()
-            case .payment:
-                PaymentView()
-            case .processing:
-                FilterSelectionView()
-            case .delivery:
-                DeliveryView()
-            }
+    private var routedView: some View {
+        switch appState.currentRoute {
+        case .landing:
+            LandingView()
+        case .guestRegistration:
+            RegistrationView()
+        case .packageSelection:
+            PackageSelectionView()
+        case .activeSession:
+            ActiveSessionView()
+        case .photoSelection:
+            PhotoSelectionView()
+        case .frameSelection:
+            FrameSelectionView()
+        case .payment:
+            PaymentView()
+        case .processing:
+            FilterSelectionView()
+        case .delivery:
+            DeliveryView()
         }
-        .transition(.asymmetric(
-            insertion: .opacity.combined(with: .scale(scale: 1.03)),
-            removal: .opacity.combined(with: .scale(scale: 0.97))
-        ))
-        .animation(.spring(response: 0.52, dampingFraction: 0.82), value: appState.currentRoute)
+    }
+
+    var body: some View {
+        routedView
+            .transition(.asymmetric(
+                insertion: .opacity.combined(with: .scale(scale: 1.03)),
+                removal: .opacity.combined(with: .scale(scale: 0.97))
+            ))
+            .animation(.spring(response: 0.52, dampingFraction: 0.82), value: appState.currentRoute)
         // Gesture untuk membuka Mission Control (3 finger tap di pojok kanan atas)
         .overlay(alignment: .topTrailing) {
             Color.clear
