@@ -39,8 +39,7 @@ enum LicenseValidatorFactory {
     }
 }
 
-#if DEBUG
-// MARK: - MockLicenseValidator (DEBUG / TEST)
+// MARK: - MockLicenseValidator (DEBUG / TEST / STAGING)
 
 /// Implementasi mock untuk development dan testing.
 /// Selalu return valid — tidak ada network call.
@@ -76,7 +75,6 @@ final class MockLicenseValidator: LicenseValidatorProtocol {
         return "mock-license-token-\(UUID().uuidString)"
     }
 }
-#endif
 
 // MARK: - JWTLicenseValidator (RELEASE)
 

@@ -142,7 +142,7 @@ public actor WorkflowOrchestrator: @preconcurrency WorkflowOrchestratorProtocol 
         case .selectFilter(let filterId):
             guard currentStage == .editingPreview, let correlationId = currentCorrelationId else { return }
             let filterRef = FilterReference(filterId: filterId, lutFileName: "luts/\(filterId).cube")
-            let editingConfig = EditingConfiguration(filter: filterRef)
+            _ = EditingConfiguration(filter: filterRef)
             
             // Re-render Preview
             _ = try await editing.requestPreview(photoInput: "captured_photo.jpg", correlationId: correlationId)
