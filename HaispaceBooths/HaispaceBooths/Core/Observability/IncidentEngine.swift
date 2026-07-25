@@ -223,16 +223,15 @@ public enum IncidentEngine {
         _ report: DiagnosisReport,
         _ snapshot: PlatformHealthSnapshot
     ) -> [Incident] {
-        guard case .queueBlocked(let count) = snapshot.deliveryHealth.status,
-              count >= 3 else { return [] }
+        guard snapshot.deliveryHealth.status == .degraded || snapshot.deliveryHealth.status == .unavailable else { return [] }
         let relatedIds = report.entries.filter { $0.domain == "delivery" }.map { $0.id }
         return [Incident(
             severity: .high,
-            title: "Antrian Pengiriman Tersumbat (\(count) foto)",
-            summary: "\(count) foto menunggu dikirim.",
+            title: "Antrian Pengiriman Tersumbat",
+            summary: "Pengiriman foto mengalami masalah.",
             relatedDiagnosisIds: relatedIds,
             suggestedAction: .retryDelivery(sessionId: ""),
-            context: ["queueCount": "\(count)"]
+            context: [:]
         )]
     }
 
@@ -257,7 +256,7 @@ public enum IncidentEngine {
         _ report: DiagnosisReport,
         _ snapshot: PlatformHealthSnapshot
     ) -> [Incident] {
-        guard snapshot.p2pHealth.status == .disconnected,
+        guard snapshot.p2pHealth.status == .unavailable || snapshot.p2pHealth.status == .degraded,
               let record = snapshot.activeSessionRecord,
               record.lastStage == .capturing else { return [] }
         let relatedIds = report.entries.filter { $0.domain == "p2p" }.map { $0.id }

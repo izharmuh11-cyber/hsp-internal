@@ -82,10 +82,10 @@ public actor HealthAggregator {
 
         let snapshot = PlatformHealthSnapshot(
             cameraHealth: await camera.healthSnapshot,
-            editingHealth: await editing.healthSnapshot,
-            paymentHealth: await payment.healthSnapshot,
-            deliveryHealth: await delivery.healthSnapshot,
-            p2pHealth: await p2p.healthSnapshot,
+            editingHealth: editing.healthSnapshot,
+            paymentHealth: payment.healthSnapshot,
+            deliveryHealth: delivery.healthSnapshot,
+            p2pHealth: p2p.healthSnapshot,
             activeSessionRecord: activeSessionId.flatMap {
                 SessionAuditTrail.read(sessionId: $0)
             },

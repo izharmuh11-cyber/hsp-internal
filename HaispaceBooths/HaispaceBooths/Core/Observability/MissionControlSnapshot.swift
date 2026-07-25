@@ -153,7 +153,7 @@ public struct MissionControlSnapshot: Sendable {
             generatedAt: Date(),
             platformHealth: PlatformHealthSnapshot(
                 cameraHealth: CameraHealth(status: .unavailable),
-                editingHealth: EditingHealth(status: .ready),
+                editingHealth: EditingHealth(status: .unavailable),
                 paymentHealth: PaymentHealth(status: .unavailable),
                 deliveryHealth: DeliveryHealth(status: .unavailable),
                 p2pHealth: P2PHealth(status: .unavailable)
