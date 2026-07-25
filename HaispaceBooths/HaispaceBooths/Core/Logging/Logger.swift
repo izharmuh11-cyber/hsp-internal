@@ -211,16 +211,10 @@ struct LocalLogWriter {
 }
 
 // MARK: - R2 Log Uploader
-// Upload log ke Cloudflare R2 — tidak perlu setup token, tidak ada yang expired.
-// URL public langsung bisa dibuka dan dibagikan ke AI.
+// Upload log ke Cloudflare R2 — credentials dibaca dari AppSecretConfig (xcconfig).
+// Tidak ada hardcoded credential di sini. Lihat: Core/Security/AppSecrets.swift
 
 struct R2LogUploader {
-    private static let accountID      = "66c40e0caaaa333ca0f4977bf32be2a7"
-    private static let accessKeyID    = "b4612a74659f3f9ce39bd5ec1ffbefbf"
-    private static let secretKey      = "388aab4ee2e7cabb97c3ac0a30a34dac2f7480628ce6afbbec6e2c730ffcbc49"
-    private static let bucket         = "haispaceproject"
-    private static let publicBaseURL  = "https://api.haispaceproject.my.id/r2-media"
-    private static let r2Endpoint     = "https://66c40e0caaaa333ca0f4977bf32be2a7.r2.cloudflarestorage.com"
 
     /// Upload log booth ke R2. Completion dipanggil di main thread dengan public URL atau nil.
     static func uploadLatestLog(eventName: String = "auto", completion: ((String?) -> Void)? = nil) {
@@ -229,6 +223,14 @@ struct R2LogUploader {
             completion?(nil)
             return
         }
+
+        // Baca credentials dari AppSecretConfig (xcconfig → Info.plist → runtime)
+        let accountID    = AppSecretConfig.R2.accountID
+        let accessKeyID  = AppSecretConfig.R2.accessKeyID
+        let secretKey    = AppSecretConfig.R2.secretKey
+        let bucket       = AppSecretConfig.R2.bucket
+        let publicBaseURL = AppSecretConfig.R2.publicBaseURL
+        let r2Endpoint   = AppSecretConfig.R2.endpoint
 
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyyMMdd-HHmmss"
@@ -293,6 +295,7 @@ struct R2LogUploader {
         }.resume()
     }
 }
+
 
 // MARK: - AWS Signature V4 (minimal, no external dependency)
 // Implementasi minimal AWS SigV4 untuk S3-compatible PUT request.

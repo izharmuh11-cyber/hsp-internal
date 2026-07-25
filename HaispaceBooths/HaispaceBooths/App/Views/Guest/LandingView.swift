@@ -150,12 +150,14 @@ struct LandingView: View {
         }
     }
     
+    // ADR-001: View hanya mengirim intent — tidak menentukan route secara langsung
+    // Migration commit: LandingView ✅ (Step 2 dari 8 migration steps)
     private func handleStartSession() {
         let generator = UIImpactFeedbackGenerator(style: .medium)
         generator.impactOccurred()
-        
-        withAnimation(.spring(response: 0.48, dampingFraction: 0.82)) {
-            appState.navigateTo(.guestRegistration)
+
+        Task {
+            try await appState.send(.startGuestRegistration)
         }
     }
     

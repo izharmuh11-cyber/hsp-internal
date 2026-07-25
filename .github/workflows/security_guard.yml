@@ -1,0 +1,236 @@
+name: Haispace Security Guard
+
+# Berjalan di setiap PR dan push ke main
+# Memblokir credential, TODO di jalur kritis, dan mock di build Release
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # ────────────────────────────────────────────────────────────
+  # JOB 1: Secret Scanner
+  # Mencari pola credential yang tidak boleh ada di source code
+  # ────────────────────────────────────────────────────────────
+  secret-scan:
+    name: 🔐 Secret Scanner
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history untuk scan riwayat commit
+
+      - name: Scan for hardcoded AWS/R2 Access Key patterns
+        run: |
+          echo "🔍 Scanning for hardcoded credentials..."
+
+          # Pola: AWS/R2 Access Key ID (26-char alphanumeric)
+          # Contoh format: AKIAIOSFODNN7EXAMPLE atau b4612a74659f3f9ce39bd5ec1ffbefbf
+          if grep -rn \
+            --include="*.swift" \
+            --include="*.m" \
+            --include="*.plist" \
+            --include="*.json" \
+            --include="*.yml" \
+            --include="*.yaml" \
+            -E '(accessKeyID|access_key_id|accessKey)\s*=\s*"[A-Za-z0-9]{20,}"' \
+            --exclude-dir=".git" \
+            --exclude-dir="Secrets" \
+            .; then
+            echo "❌ GAGAL: Ditemukan pola Access Key ID hardcoded di source code!"
+            echo "   Pindahkan ke xcconfig dan baca via AppSecretConfig"
+            exit 1
+          fi
+          echo "✅ Tidak ada Access Key ID hardcoded"
+
+      - name: Scan for hardcoded Secret Keys
+        run: |
+          # Pola: Secret Key (40+ hex chars, biasanya di assignment)
+          if grep -rn \
+            --include="*.swift" \
+            --include="*.plist" \
+            -E '(secretKey|secret_key|secretAccessKey)\s*=\s*"[a-f0-9]{40,}"' \
+            --exclude-dir=".git" \
+            --exclude-dir="Secrets" \
+            .; then
+            echo "❌ GAGAL: Ditemukan pola Secret Key hardcoded di source code!"
+            exit 1
+          fi
+          echo "✅ Tidak ada Secret Key hardcoded"
+
+      - name: Scan for Cloudflare Account ID patterns
+        run: |
+          # Pola: Cloudflare account ID (32-char hex) dalam assignment string
+          if grep -rn \
+            --include="*.swift" \
+            -E '(accountID|account_id)\s*=\s*"[a-f0-9]{32}"' \
+            --exclude-dir=".git" \
+            .; then
+            echo "❌ GAGAL: Ditemukan Cloudflare Account ID hardcoded!"
+            exit 1
+          fi
+          echo "✅ Tidak ada Account ID hardcoded"
+
+      - name: Scan for r2.cloudflarestorage.com direct URLs with embedded IDs
+        run: |
+          # Deteksi URL R2 yang embed account ID secara langsung
+          if grep -rn \
+            --include="*.swift" \
+            -E '"https://[a-f0-9]{32}\.r2\.cloudflarestorage\.com"' \
+            --exclude-dir=".git" \
+            .; then
+            echo "❌ GAGAL: Ditemukan R2 endpoint URL dengan Account ID hardcoded!"
+            exit 1
+          fi
+          echo "✅ Tidak ada R2 URL hardcoded dengan Account ID"
+
+  # ────────────────────────────────────────────────────────────
+  # JOB 2: Critical Path TODO Scanner
+  # Memblokir TODO yang ada di jalur bisnis kritis
+  # ────────────────────────────────────────────────────────────
+  todo-critical-scan:
+    name: 🚫 Critical Path TODO Scanner
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Scan for TODO in critical payment path
+        run: |
+          echo "🔍 Scanning critical payment → delivery path for TODO..."
+
+          CRITICAL_FILES=(
+            "HaispaceBooths/HaispaceBooths/Core/State/PaymentStore.swift"
+            "HaispaceBooths/HaispaceBooths/Core/State/DeliveryStore.swift"
+            "HaispaceBooths/HaispaceBooths/Core/Capabilities/Payment/PaymentCapability.swift"
+            "HaispaceBooths/HaispaceBooths/Core/Capabilities/Delivery/DeliveryCapability.swift"
+            "HaispaceBooths/HaispaceBooths/Services/LicenseValidatorProtocol.swift"
+          )
+
+          FOUND_TODO=false
+          for FILE in "${CRITICAL_FILES[@]}"; do
+            if [ -f "$FILE" ]; then
+              if grep -n "// TODO" "$FILE"; then
+                echo "❌ TODO ditemukan di jalur kritis: $FILE"
+                FOUND_TODO=true
+              fi
+            fi
+          done
+
+          if [ "$FOUND_TODO" = true ]; then
+            echo ""
+            echo "❌ GAGAL: TODO ditemukan di jalur kritis (Payment/Delivery/License)."
+            echo "   Selesaikan implementasi atau pindahkan ke backlog secara eksplisit."
+            exit 1
+          fi
+          echo "✅ Tidak ada TODO di jalur kritis"
+
+  # ────────────────────────────────────────────────────────────
+  # JOB 3: Mock Guard
+  # Memastikan MockLicenseValidator tidak ter-reference di
+  # konteks Release (di luar #if DEBUG blok)
+  # ────────────────────────────────────────────────────────────
+  mock-release-guard:
+    name: 🧪 Mock-in-Release Guard
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check MockLicenseValidator only used inside #if DEBUG
+        run: |
+          echo "🔍 Checking MockLicenseValidator is guarded by #if DEBUG..."
+
+          # Deteksi penggunaan MockLicenseValidator di luar blok #if DEBUG
+          # Strategi: scan file yang BUKAN LicenseValidatorProtocol.swift
+          # (file definisi boleh punya MockLicenseValidator di luar guard)
+
+          VIOLATION=$(grep -rn "MockLicenseValidator" \
+            --include="*.swift" \
+            --exclude="LicenseValidatorProtocol.swift" \
+            . | grep -v "#if DEBUG" || true)
+
+          if [ -n "$VIOLATION" ]; then
+            echo "❌ GAGAL: MockLicenseValidator ditemukan di luar konteks #if DEBUG:"
+            echo "$VIOLATION"
+            exit 1
+          fi
+          echo "✅ MockLicenseValidator hanya digunakan di dalam #if DEBUG"
+
+      - name: Check AppState mock bypass is inside #if DEBUG
+        run: |
+          echo "🔍 Checking AppState mock bypass is properly guarded..."
+
+          # Pastikan 'license.status = .valid' di AppState.setup() terbungkus DEBUG guard
+          # Heuristik: cari 'license.status = .valid' yang tidak didahului '#if DEBUG' dalam 5 baris
+          python3 - << 'EOF'
+          import sys
+
+          with open("HaispaceBooths/HaispaceBooths/Core/State/AppState.swift") as f:
+              lines = f.readlines()
+
+          for i, line in enumerate(lines):
+              if 'license.status = .valid' in line:
+                  # Cek 10 baris sebelumnya ada #if DEBUG
+                  context = lines[max(0, i-10):i]
+                  has_debug_guard = any('#if DEBUG' in l for l in context)
+                  if not has_debug_guard:
+                      print(f"❌ 'license.status = .valid' di baris {i+1} tidak terbungkus #if DEBUG!")
+                      sys.exit(1)
+                  else:
+                      print(f"✅ 'license.status = .valid' di baris {i+1} sudah terbungkus #if DEBUG")
+          EOF
+
+  # ────────────────────────────────────────────────────────────
+  # JOB 4: Architecture Guard (ADR-001 Compliance)
+  # Memastikan aturan ADR-001 ditaati oleh kode baru
+  # ────────────────────────────────────────────────────────────
+  architecture-guard:
+    name: 🏛️ Architecture Guard (ADR-001)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify View layer does not assign currentRoute directly
+        run: |
+          echo "🔍 Checking Views do not mutate currentRoute directly..."
+
+          VIOLATION=$(grep -rn "currentRoute\s*=" \
+            --include="*.swift" \
+            --exclude="AppState.swift" \
+            HaispaceBooths/HaispaceBooths/App/ || true)
+
+          if [ -n "$VIOLATION" ]; then
+            echo "❌ GAGAL: Direct assignment ke currentRoute ditemukan di View layer:"
+            echo "$VIOLATION"
+            echo "   Sesuai ADR-001, View wajib menggunakan appState.send(intent)."
+            exit 1
+          fi
+          echo "✅ Tidak ada direct assignment ke currentRoute di View layer"
+
+      - name: Verify migrated views do not call deprecated navigateTo
+        run: |
+          echo "🔍 Checking migrated views (LandingView) do not call navigateTo..."
+
+          # LandingView sudah dimigrasikan — tidak boleh panggil navigateTo lagi
+          MIGRATED_FILES=(
+            "HaispaceBooths/HaispaceBooths/App/Views/Guest/LandingView.swift"
+          )
+
+          VIOLATION=false
+          for FILE in "${MIGRATED_FILES[@]}"; do
+            if grep -n "navigateTo(" "$FILE"; then
+              echo "❌ GAGAL: $FILE masih memanggil navigateTo() padahal sudah ditandai migrated!"
+              VIOLATION=true
+            fi
+          done
+
+          if [ "$VIOLATION" = true ]; then
+            exit 1
+          fi
+          echo "✅ Migrated views bebas dari pemanggilan navigateTo()"
+

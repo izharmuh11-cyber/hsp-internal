@@ -67,3 +67,20 @@ fastlane/test_output
 # rahasia. Hanya untuk konsumsi internal & AI Agent lokal.
 # ============================================================
 docs/design/
+
+# ============================================================
+# Secrets — JANGAN PERNAH COMMIT
+# File xcconfig yang berisi credentials aktual.
+# Template (.template) boleh di-commit, file aktual TIDAK.
+# ============================================================
+
+# HaispaceBooths secrets
+HaispaceBooths/Secrets/HaispaceBooths.xcconfig
+
+# HaispaceCamera secrets
+HaispaceCamera/Secrets/HaispaceCamera.xcconfig
+
+# Backup pattern — jaga-jaga jika ada secrets di root
+*.xcconfig.local
+Secrets/*.xcconfig
+!Secrets/*.xcconfig.template

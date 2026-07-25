@@ -27,6 +27,13 @@ enum LicenseStatus: Equatable {
 @Observable
 final class LicenseStore {
 
+    // MARK: Dependency
+    private let validator: any LicenseValidatorProtocol
+
+    init(validator: (any LicenseValidatorProtocol)? = nil) {
+        self.validator = validator ?? LicenseValidatorFactory.make()
+    }
+
     // MARK: State
     var status: LicenseStatus = .unknown
     var expiresAt: Date?
@@ -92,10 +99,10 @@ final class LicenseStore {
             return
         }
 
-        // 3. Validasi token lokal (offline)
+        // 3. Validasi token lokal (offline) via LicenseValidatorProtocol
         status = .checking
         do {
-            let licenseInfo = try LicenseValidator.validateOffline(token: token)
+            let licenseInfo = try validator.validateOffline(token: token)
             expiresAt = licenseInfo.expiresAt
             activationKey = licenseInfo.activationKey
             status = licenseInfo.isExpired ? .expired(daysOverdue: licenseInfo.daysOverdue) : .valid
@@ -121,7 +128,7 @@ final class LicenseStore {
 
         do {
             let renewedToken = try await withRetry(policy: .licenseCheck) {
-                try await LicenseAPIClient.heartbeat(token: token)
+                try await self.validator.heartbeat(token: token)
             }
             KeychainHelper.saveLicenseToken(renewedToken)
             lastHeartbeatAt = Date()
@@ -145,7 +152,7 @@ final class LicenseStore {
         status = .checking
 
         do {
-            let token = try await LicenseAPIClient.activate(
+            let token = try await validator.activate(
                 key: key,
                 deviceUUID: KeychainHelper.getOrCreateDeviceUUID()
             )
@@ -153,8 +160,8 @@ final class LicenseStore {
             activationKey = key
             lastHeartbeatAt = Date()
 
-            // Parse expiry dari token
-            let licenseInfo = try LicenseValidator.validateOffline(token: token)
+            // Parse expiry dari token via validator
+            let licenseInfo = try validator.validateOffline(token: token)
             expiresAt = licenseInfo.expiresAt
             status = .valid
 
@@ -211,7 +218,8 @@ struct JailbreakDetector {
     }
 }
 
-// MARK: - License Validator (Offline)
+// MARK: - LicenseInfo
+// Model ini dipakai oleh LicenseValidatorProtocol (lihat Services/LicenseValidatorProtocol.swift)
 
 struct LicenseInfo {
     let activationKey: String
@@ -219,36 +227,6 @@ struct LicenseInfo {
     let isExpired: Bool
     let daysOverdue: Int
 }
-
-/// Validasi token secara offline dari Keychain (tanpa network)
-struct LicenseValidator {
-    static func validateOffline(token: String) throws -> LicenseInfo {
-        // TODO: Fase 1 — decode JWT token dan validasi signature + expiry
-        // Untuk sekarang: placeholder yang selalu return valid untuk development
-        guard !token.isEmpty else {
-            throw HaispaceError.licenseInvalid(reason: .keyNotFound)
-        }
-
-        let mockExpiry = Date().addingTimeInterval(30 * 24 * 3600) // 30 hari dari sekarang
-        return LicenseInfo(
-            activationKey: "HAISP-XXXXX-XXXXX-XXXXX-XXXXX",
-            expiresAt: mockExpiry,
-            isExpired: false,
-            daysOverdue: 0
-        )
-    }
-}
-
-// MARK: - License API Client (Placeholder)
-
-struct LicenseAPIClient {
-    static func heartbeat(token: String) async throws -> String {
-        // TODO: Fase 3 — implementasi HTTP request ke https://api.haispace.id/license/heartbeat
-        return token
-    }
-
-    static func activate(key: String, deviceUUID: String) async throws -> String {
-        // TODO: Fase 3 — implementasi HTTP request ke https://api.haispace.id/license/activate
-        return "mock-license-token"
-    }
-}
+// LicenseValidator dan LicenseAPIClient (struct lama) telah dihapus.
+// Gunakan LicenseValidatorProtocol + LicenseValidatorFactory sebagai penggantinya.
+// Ref: Services/LicenseValidatorProtocol.swift

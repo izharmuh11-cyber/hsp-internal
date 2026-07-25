@@ -1,147 +1,230 @@
 // HaispaceError+Localized.swift
 // HaispaceBooths — Core/Error
 //
-// Pesan error dalam Bahasa Indonesia yang human-readable.
+// Pesan error dalam Bahasa Indonesia yang menenangkan, jelas, dan actionable.
 // Semua pesan yang ditampilkan ke tamu/operator HARUS melalui sini.
 //
-// Aturan: Error yang tampil ke tamu HARUS dalam Bahasa Indonesia.
+// PRINSIP PENULISAN PESAN ERROR (Apple HIG + Kiosk UX):
+// - Tamu TIDAK boleh melihat pesan teknis ("HTTP 500", "nil", stack trace)
+// - Gunakan bahasa yang menenangkan: "sedang menyiapkan", "belum berhasil"
+// - Selalu beri tahu apa yang akan terjadi selanjutnya
+// - Operator boleh mendapat detail teknis via `operatorNote`
+//
 // Ref: docs/design/41_error_handling.md
+// Ref: docs/design/ADR-003_platform_reliability.md
 
 import Foundation
 
 extension HaispaceError: LocalizedError {
 
-    /// Pesan utama error — ditampilkan di alert/banner
+    // MARK: - errorDescription (Pesan untuk Tamu — Bahasa Menenangkan)
+
+    /// Pesan utama — ditampilkan langsung ke tamu di layar
     var errorDescription: String? {
         switch self {
-        // P2P
-        case .p2pConnectionFailed(let reason):
-            return "Koneksi ke kamera gagal: \(reason.localizedDescription)"
+
+        // ── P2P / Kamera Remote ──────────────────────────────────────────────
+        case .p2pConnectionFailed:
+            return "Kamera sedang menyambungkan diri. Mohon tunggu sebentar."
         case .p2pConnectionLost:
-            return "Koneksi ke kamera terputus"
-        case .p2pMessageSendFailed(let type):
-            return "Gagal mengirim pesan '\(type)' ke kamera"
-        case .p2pReconnectExhausted(let attempts):
-            return "Gagal terhubung kembali setelah \(attempts) percobaan"
+            return "Koneksi ke kamera sempat terputus. Sistem sedang menyambungkan kembali."
+        case .p2pMessageSendFailed:
+            return "Kamera belum merespons. Sistem akan mencoba lagi secara otomatis."
+        case .p2pReconnectExhausted:
+            return "Kamera tidak dapat terhubung saat ini. Mohon panggil operator untuk bantuan."
 
-        // Kamera
+        // ── Kamera ──────────────────────────────────────────────────────────
         case .cameraPermissionDenied:
-            return "Izin kamera diperlukan untuk menggunakan HaiCamera"
+            return "Akses kamera diperlukan untuk melanjutkan. Mohon hubungi operator."
         case .cameraSetupFailed:
-            return "Kamera gagal diinisialisasi"
-        case .captureSessionInterrupted(let reason):
-            return "Sesi kamera terganggu: \(reason)"
+            return "Kamera sedang menyiapkan diri. Mohon tunggu sebentar."
+        case .captureSessionInterrupted:
+            return "Sesi foto terganggu sejenak. Sistem sedang memulihkan kamera."
         case .photoCaptureFailed:
-            return "Gagal mengambil foto"
+            return "Foto belum berhasil diambil. Sistem akan mencoba lagi secara otomatis."
         case .streamingStartFailed:
-            return "Gagal memulai streaming kamera"
+            return "Tampilan kamera sedang dimuat. Mohon tunggu sebentar."
 
-        // Transfer
+        // ── Transfer Foto ────────────────────────────────────────────────────
         case .thumbnailCompressionFailed:
-            return "Gagal memproses pratinjau foto"
+            return "Pratinjau foto sedang diproses. Mohon tunggu sebentar."
         case .fullQualityTransferFailed(_, let attempt):
-            return "Gagal mentransfer foto (percobaan ke-\(attempt))"
-        case .photoDecodeFailed:
-            return "Gagal memuat foto"
-
-        // CoreData
-        case .coreDataSaveFailed(let entity, _):
-            return "Gagal menyimpan data '\(entity)'"
-        case .coreDataFetchFailed(let entity, _):
-            return "Gagal memuat data '\(entity)'"
-        case .storageInsufficient(let required, let available):
-            let req = ByteCountFormatter.string(fromByteCount: required, countStyle: .file)
-            let avail = ByteCountFormatter.string(fromByteCount: available, countStyle: .file)
-            return "Penyimpanan tidak cukup. Dibutuhkan \(req), tersedia \(avail)"
-
-        // Pembayaran
-        case .qrisGenerationFailed(let reason):
-            return "Gagal membuat kode QRIS: \(reason)"
-        case .paymentTimeout:
-            return "Pembayaran melebihi batas waktu"
-
-        // Lisensi
-        case .licenseExpired(let days):
-            return "Lisensi sudah kadaluarsa \(days) hari yang lalu"
-        case .licenseInvalid(let reason):
-            return "Lisensi tidak valid: \(reason.localizedDescription)"
-        case .licenseDeviceLimitReached:
-            return "Batas maksimal perangkat tercapai untuk lisensi ini"
-        case .licenseHeartbeatFailed:
-            return "Verifikasi lisensi ke server gagal"
-        case .jailbreakDetected:
-            return "Perangkat tidak kompatibel karena alasan keamanan"
-
-        // Cloud / Network
-        case .networkUnavailable:
-            return "Tidak ada koneksi internet"
-        case .uploadFailed(_, let status):
-            if let status {
-                return "Upload gagal (HTTP \(status))"
+            if attempt <= 2 {
+                return "Foto sedang dikirim ke perangkat ini. Mohon tunggu sebentar."
+            } else {
+                return "Pengiriman foto membutuhkan waktu lebih lama dari biasanya. Operator sudah diberitahu."
             }
-            return "Upload gagal"
-        case .apiResponseInvalid(let endpoint):
-            return "Respons server tidak valid dari '\(endpoint)'"
+        case .photoDecodeFailed:
+            return "Foto sedang dimuat. Mohon tunggu sebentar."
+
+        // ── Penyimpanan ──────────────────────────────────────────────────────
+        case .coreDataSaveFailed:
+            return "Data sesi sedang disimpan. Mohon tunggu sebentar."
+        case .coreDataFetchFailed:
+            return "Memuat data sesi. Mohon tunggu sebentar."
+        case .storageInsufficient:
+            return "Ruang penyimpanan penuh. Mohon hubungi operator untuk bantuan."
+
+        // ── Pembayaran ───────────────────────────────────────────────────────
+        case .qrisGenerationFailed:
+            return "Kode pembayaran sedang disiapkan. Mohon tunggu sebentar."
+        case .paymentTimeout:
+            return "Pembayaran belum kami terima. Jika sudah membayar, sistem akan memperbarui secara otomatis."
+
+        // ── Lisensi (Operator-only, tidak tampil ke tamu) ────────────────────
+        case .licenseExpired(let days):
+            return "Layanan tidak tersedia saat ini. Mohon hubungi operator. (Kode: LIC-EXP-\(days))"
+        case .licenseInvalid:
+            return "Layanan tidak tersedia saat ini. Mohon hubungi operator."
+        case .licenseDeviceLimitReached:
+            return "Layanan tidak tersedia saat ini. Mohon hubungi operator."
+        case .licenseHeartbeatFailed:
+            return "Verifikasi lisensi sedang diproses. Koneksi internet diperlukan."
+        case .jailbreakDetected:
+            return "Perangkat tidak dapat menjalankan layanan ini. Hubungi tim Haispace."
+
+        // ── Jaringan & Cloud ─────────────────────────────────────────────────
+        case .networkUnavailable:
+            return "Koneksi internet sedang tidak tersedia. Fitur offline tetap berjalan normal."
+        case .uploadFailed:
+            return "Pengiriman foto digital sedang dalam antrean dan akan dikirim saat koneksi kembali."
+        case .apiResponseInvalid:
+            return "Server sedang sibuk. Sistem akan mencoba lagi secara otomatis."
         case .authTokenExpired:
-            return "Sesi login telah kadaluarsa. Silakan login kembali"
+            return "Sesi operator telah berakhir. Silakan login kembali."
         case .authTokenInvalid:
-            return "Token autentikasi tidak valid"
+            return "Akses tidak dikenali. Silakan login ulang."
 
-        // Filter / Rendering
+        // ── Filter & Rendering ───────────────────────────────────────────────
         case .lutFileNotFound(let name):
-            return "File filter '\(name)' tidak ditemukan"
-        case .lutFileParseFailed(let name, let reason):
-            return "Gagal memuat filter '\(name)': \(reason)"
-        case .filterRenderFailed(let name):
-            return "Gagal menerapkan filter '\(name)'"
-        case .frameCompositeFailed(let id):
-            return "Gagal menggabungkan foto dengan bingkai (ID: \(id))"
+            return "Filter '\(name)' tidak tersedia saat ini."
+        case .lutFileParseFailed(let name, _):
+            return "Filter '\(name)' sedang dimuat. Mohon tunggu sebentar."
+        case .filterRenderFailed:
+            return "Penerapan filter membutuhkan waktu lebih lama. Mohon tunggu sebentar."
+        case .frameCompositeFailed:
+            return "Penggabungan bingkai foto sedang diproses. Mohon tunggu sebentar."
 
-        // Printer
+        // ── Printer ──────────────────────────────────────────────────────────
         case .printerNotFound:
-            return "Printer tidak ditemukan di jaringan lokal"
+            return "Printer sedang menyiapkan diri. Mohon tunggu sebentar."
         case .printerJobFailed:
-            return "Gagal mencetak foto"
+            return "Printer sedang menyiapkan kembali. Mohon tunggu sebentar."
 
-        // System
-        case .thermalThrottling(let state):
-            return "Kamera melambat karena perangkat terlalu panas (Level: \(state.rawValue))"
-        case .unknown(let error):
-            return "Terjadi kesalahan: \(error.localizedDescription)"
+        // ── Sistem ───────────────────────────────────────────────────────────
+        case .thermalThrottling:
+            return "Perangkat sedang mendinginkan diri sejenak. Layanan tetap berjalan."
+        case .unknown:
+            return "Terjadi kendala kecil. Sistem sedang memulihkan diri secara otomatis."
         }
     }
 
-    /// Saran pemulihan — opsional, ditampilkan di bawah pesan utama
+    // MARK: - recoverySuggestion (Saran Tindakan — Untuk Tamu)
+
+    /// Langkah lanjutan yang bisa dilakukan tamu — tampil di bawah pesan utama
     var recoverySuggestion: String? {
         switch self {
-        case .p2pConnectionLost, .p2pConnectionFailed:
-            return "Pastikan iPhone dan iPad masih dalam jangkauan WiFi atau Bluetooth"
-        case .p2pReconnectExhausted:
-            return "Coba restart WiFi dan Bluetooth di kedua perangkat"
-        case .cameraPermissionDenied:
-            return "Buka Pengaturan → HaiCamera → Izinkan Kamera"
-        case .storageInsufficient:
-            return "Hapus file lama atau pindahkan foto ke cloud untuk membebaskan ruang"
-        case .licenseExpired:
-            return "Hubungi admin untuk memperpanjang lisensi"
-        case .licenseInvalid:
-            return "Hubungi admin untuk verifikasi activation key"
-        case .licenseDeviceLimitReached:
-            return "Nonaktifkan perangkat lama di Web Dashboard terlebih dahulu"
+        case .p2pConnectionLost, .p2pConnectionFailed, .p2pReconnectExhausted:
+            return "Mohon panggil operator jika layar tidak kembali normal dalam 30 detik."
         case .paymentTimeout:
-            return "Minta tamu untuk scan ulang kode QR atau bayar tunai"
+            return "Tidak perlu panik — foto Anda aman. Silakan scan ulang kode QR untuk melanjutkan."
         case .qrisGenerationFailed:
-            return "Gunakan metode pembayaran tunai sementara"
+            return "Silakan hubungi operator untuk pilihan pembayaran lainnya."
+        case .storageInsufficient:
+            return "Silakan hubungi operator. Foto Anda tidak akan hilang."
+        case .printerNotFound, .printerJobFailed:
+            return "Silakan tunggu — operator sedang diberitahu secara otomatis."
+        case .networkUnavailable:
+            return "Foto cetak dan softcopy akan dikirim begitu koneksi kembali tersedia."
         case .thermalThrottling:
-            return "Istirahatkan kamera beberapa menit dan hindari sinar matahari langsung"
-        case .printerNotFound:
-            return "Pastikan printer Epson L8050 menyala dan tersambung ke WiFi yang sama"
-        case .jailbreakDetected:
-            return "Hubungi tim Haispace jika Anda merasa ini adalah kesalahan"
+            return "Layanan akan kembali normal dalam beberapa menit."
+        case .licenseExpired, .licenseInvalid, .licenseDeviceLimitReached:
+            return "Hubungi tim Haispace di nomor yang tertera di booth."
         case .authTokenExpired, .authTokenInvalid:
-            return "Login ulang dengan email dan password operator"
+            return "Gunakan email dan password operator untuk login kembali."
         default:
             return nil
+        }
+    }
+
+    // MARK: - operatorNote (Detail Teknis — Hanya untuk Operator & MissionControl)
+
+    /// Detail teknis error — TIDAK boleh ditampilkan ke tamu
+    /// Dipakai oleh MissionControlView dan log system
+    var operatorNote: String {
+        switch self {
+        case .p2pConnectionFailed(let reason):
+            return "[P2P] Connection failed: \(reason.localizedDescription)"
+        case .p2pConnectionLost:
+            return "[P2P] Connection lost unexpectedly"
+        case .p2pMessageSendFailed(let type):
+            return "[P2P] Failed to send message type: '\(type)'"
+        case .p2pReconnectExhausted(let attempts):
+            return "[P2P] Reconnect exhausted after \(attempts) attempts"
+        case .cameraPermissionDenied:
+            return "[CAM] Permission denied — check Settings > HaiCamera > Camera"
+        case .cameraSetupFailed:
+            return "[CAM] AVCaptureSession setup failed"
+        case .captureSessionInterrupted(let reason):
+            return "[CAM] Session interrupted: \(reason)"
+        case .photoCaptureFailed:
+            return "[CAM] AVCapturePhotoOutput capture failed"
+        case .streamingStartFailed:
+            return "[CAM] Streaming start failed"
+        case .thumbnailCompressionFailed:
+            return "[XFER] JPEG thumbnail compression failed"
+        case .fullQualityTransferFailed(let id, let attempt):
+            return "[XFER] Full quality transfer failed for photoId=\(id) attempt=\(attempt)"
+        case .photoDecodeFailed:
+            return "[XFER] Photo decode failed"
+        case .coreDataSaveFailed(let entity, let error):
+            return "[DB] CoreData save failed for entity='\(entity)': \(error.localizedDescription)"
+        case .coreDataFetchFailed(let entity, let error):
+            return "[DB] CoreData fetch failed for entity='\(entity)': \(error.localizedDescription)"
+        case .storageInsufficient(let required, let available):
+            let req = ByteCountFormatter.string(fromByteCount: required, countStyle: .file)
+            let avail = ByteCountFormatter.string(fromByteCount: available, countStyle: .file)
+            return "[STORAGE] Insufficient: required=\(req) available=\(avail)"
+        case .qrisGenerationFailed(let reason):
+            return "[PAY] QRIS generation failed: \(reason)"
+        case .paymentTimeout:
+            return "[PAY] Payment polling timeout"
+        case .licenseExpired(let days):
+            return "[LIC] License expired \(days) days ago"
+        case .licenseInvalid(let reason):
+            return "[LIC] Invalid: \(reason.localizedDescription)"
+        case .licenseDeviceLimitReached:
+            return "[LIC] Device limit reached"
+        case .licenseHeartbeatFailed:
+            return "[LIC] Heartbeat to server failed"
+        case .jailbreakDetected:
+            return "[SEC] Jailbreak detected"
+        case .networkUnavailable:
+            return "[NET] NWPathMonitor: no connectivity"
+        case .uploadFailed(let path, let status):
+            return "[NET] Upload failed path='\(path)' status=\(status.map { "\($0)" } ?? "unknown")"
+        case .apiResponseInvalid(let endpoint):
+            return "[NET] Invalid API response from '\(endpoint)'"
+        case .authTokenExpired:
+            return "[AUTH] JWT token expired"
+        case .authTokenInvalid:
+            return "[AUTH] JWT token invalid"
+        case .lutFileNotFound(let name):
+            return "[RENDER] LUT file not found: '\(name)'"
+        case .lutFileParseFailed(let name, let reason):
+            return "[RENDER] LUT parse failed: '\(name)' — \(reason)"
+        case .filterRenderFailed(let name):
+            return "[RENDER] Filter render failed: '\(name)'"
+        case .frameCompositeFailed(let id):
+            return "[RENDER] Frame composite failed for frameId=\(id)"
+        case .printerNotFound:
+            return "[PRINT] Printer not found on local network"
+        case .printerJobFailed:
+            return "[PRINT] Print job failed"
+        case .thermalThrottling(let state):
+            return "[SYS] Thermal throttling: level=\(state.rawValue)"
+        case .unknown(let error):
+            return "[SYS] Unknown error: \(error.localizedDescription)"
         }
     }
 }

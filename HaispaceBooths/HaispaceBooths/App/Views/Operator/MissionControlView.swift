@@ -1,391 +1,436 @@
 // MissionControlView.swift
 // HaispaceBooths — App/Views/Operator
 //
-// Sidebar panel kontrol utama untuk operator booth.
-// Menggunakan desain premium "Apple Control Center" dengan visual kelas dunia.
+// Layar utama operator. Menampilkan status platform secara real-time.
+//
+// ATURAN (ADR-003): View ini HANYA merender MissionControlSnapshot.
+// Tidak ada kalkulasi, tidak ada logic bisnis di sini.
+// Semua angka dan teks sudah disiapkan oleh layer di bawahnya.
+//
+// Ref: docs/design/ADR-003_mission_control_boundary.md
 
 import SwiftUI
 
-struct MissionControlView: View {
-    @Environment(AppState.self) private var appState
-    @Environment(\.dismiss) private var dismiss
-    
-    @State private var offset: CGFloat = 400
-    @State private var isShowingPairingSetup = false
-    @State private var isShowingLogViewer = false
-    
-    var body: some View {
-        ZStack {
-            // Background overlay (frosted glass behind sidebar)
-            Color.black.opacity(0.4)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    close()
-                }
-            
-            HStack {
-                Spacer()
-                
-                // Sidebar Content (macOS Control Center Style)
-                VStack(alignment: .leading, spacing: 20) {
-                    // Header
-                    HStack {
-                        Image(systemName: "slider.horizontal.3")
-                            .font(.title3.bold())
-                            .foregroundStyle(Color(hex: "#7C5CFC"))
-                        
-                        Text("MISSION CONTROL")
-                            .font(.system(.headline, design: .rounded))
-                            .tracking(2)
-                            .foregroundStyle(.white)
-                        
-                        Spacer()
-                        
-                        Button(action: close) {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.title2)
-                                .foregroundStyle(.white.opacity(0.3))
-                        }
-                    }
-                    .padding(.bottom, 8)
-                    
-                    ScrollView(showsIndicators: false) {
-                        scrollContent
-                    }
-                    
-                    Spacer()
-                    
-                    // Logout Shift Button
-                    Button(action: {
-                        appState.operatorState.swapOperator()
-                    }) {
-                        HStack {
-                            Image(systemName: "arrow.rectangle.portrait.and.arrow.right")
-                                .font(.headline)
-                            Text("Logout Shift")
-                                .font(.system(.headline, design: .rounded))
-                        }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                        .background(Color.red.opacity(0.15))
-                        .foregroundStyle(.red)
-                        .clipShape(Capsule())
-                    }
-                }
-                .padding(24)
-                .frame(width: 420)
-                .frame(maxHeight: .infinity)
-                .background(
-                    Color(hex: "#0A0A10")
-                        .opacity(0.95)
-                        .ignoresSafeArea()
-                )
-                .overlay(
-                    HStack {
-                        Rectangle()
-                            .fill(LinearGradient(colors: [Color.white.opacity(0.08), .clear], startPoint: .leading, endPoint: .trailing))
-                            .frame(width: 1)
-                        Spacer()
-                    }
-                    .ignoresSafeArea()
-                )
-                .offset(x: offset)
-                .onAppear {
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                        offset = 0
-                    }
-                }
+// MARK: - MissionControlView
+
+public struct MissionControlView: View {
+
+    @Environment(MissionControlViewModel.self) private var vm
+    @State private var selectedTab: Tab = .incidents
+
+    enum Tab: String, CaseIterable {
+        case incidents = "Insiden"
+        case diagnosis = "Diagnosis"
+        case health    = "Kesehatan"
+        case kpis      = "KPI"
+    }
+
+    public var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                PlatformStatusHeaderView(snapshot: vm.snapshot)
+                tabSelector
+                tabContent
             }
-        }
-        .fullScreenCover(isPresented: $isShowingPairingSetup) {
-            PairingSetupView()
-        }
-        .sheet(isPresented: $isShowingLogViewer) {
-            LogViewerSheet()
+            .navigationTitle("Mission Control")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { toolbarContent }
+            .task { await vm.refresh() }
+            .refreshable { await vm.refresh() }
         }
     }
-    
-    private func close() {
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-            offset = 400
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            appState.operatorState.dismissMissionControl()
-        }
-    }
-    
-    @ViewBuilder
-    private var scrollContent: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            
-            // 1. STATUS PERANGKAT
-            VStack(alignment: .leading, spacing: 12) {
-                SectionHeader(title: "STATUS PERANGKAT", icon: "antenna.radiowaves.left.and.right")
-                
-                HStack(spacing: 12) {
-                    StatusCard(
-                        title: "HaiCamera",
-                        value: "\(Int((appState.p2p.connectedPeerBatteryLevel ?? 0) * 100))%",
-                        icon: (appState.p2p.connectedPeerBatteryLevel ?? 0) > 0.2 ? "battery.100" : "battery.25",
-                        color: (appState.p2p.connectedPeerBatteryLevel ?? 0) > 0.2 ? .green : .red
-                    )
-                    
-                    StatusCard(
-                        title: "P2P Link",
-                        value: appState.p2p.isConnected ? "Bagus" : "Terputus",
-                        icon: appState.p2p.signalQuality.sfSymbol,
-                        color: appState.p2p.isConnected ? .green : .red
-                    )
-                }
-            }
-            
-            // 2. QUICK ACTIONS
-            VStack(alignment: .leading, spacing: 12) {
-                SectionHeader(title: "QUICK ACTIONS", icon: "bolt.fill")
-                
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                    ActionButton(title: "Reset Sesi", icon: "arrow.counterclockwise", color: .red) {
-                        appState.currentSession?.reset()
-                        appState.navigateTo(.landing)
-                        close()
-                    }
-                    
-                    ActionButton(title: "Pairing QR", icon: "qrcode.viewfinder", color: .purple) {
-                        isShowingPairingSetup = true
-                    }
-                    
-                    ActionButton(title: "Pause", icon: "pause.fill", color: .orange) {
-                        Task {
-                            await P2PMessageRouter.shared.route(.sessionPause)
-                        }
-                    }
-                    
-                    ActionButton(title: "+5 Menit", icon: "timer", color: .blue) {
-                        appState.currentSession?.addTime(minutes: 5)
-                    }
-                }
-            }
-            
-            // 3. FRAME AKTIF
-            VStack(alignment: .leading, spacing: 12) {
-                SectionHeader(title: "FRAME AKTIF", icon: "photo.on.rectangle")
-                
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
-                        FrameThumbnail(name: "Classic", isSelected: true)
-                        FrameThumbnail(name: "Floral", isSelected: false)
-                        
-                        // Import Button
-                        Button(action: {}) {
-                            VStack(spacing: 8) {
-                                Image(systemName: "plus")
-                                    .font(.headline)
-                                Text("Impor")
-                                    .font(.caption.bold())
+
+    // MARK: - Tab Selector
+
+    private var tabSelector: some View {
+        HStack(spacing: 0) {
+            ForEach(Tab.allCases, id: \.self) { tab in
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) { selectedTab = tab }
+                } label: {
+                    VStack(spacing: 4) {
+                        HStack(spacing: 4) {
+                            Text(tab.rawValue)
+                                .font(.system(size: 13, weight: selectedTab == tab ? .semibold : .regular))
+                                .foregroundStyle(selectedTab == tab ? .primary : .secondary)
+
+                            if tab == .incidents {
+                                let count = vm.snapshot.activeIncidentCount
+                                if count > 0 {
+                                    Text("\(count)")
+                                        .font(.system(size: 10, weight: .bold))
+                                        .foregroundStyle(.white)
+                                        .padding(.horizontal, 5)
+                                        .padding(.vertical, 2)
+                                        .background(vm.snapshot.incidents.criticalCount > 0 ? Color.red : Color.orange)
+                                        .clipShape(Capsule())
+                                }
                             }
-                            .frame(width: 80, height: 100)
-                            .background(Color.white.opacity(0.06))
-                            .cornerRadius(16)
-                            .foregroundStyle(.white.opacity(0.6))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                            )
                         }
                     }
-                    .padding(.vertical, 4)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
                 }
-            }
-            
-            // 4. KONTROL KAMERA
-            VStack(alignment: .leading, spacing: 12) {
-                SectionHeader(title: "KONTROL KAMERA", icon: "camera.aperture")
-                
-                VStack(spacing: 16) {
-                    HStack {
-                        Text("Lock AE/AF")
-                            .font(.system(.subheadline, design: .rounded))
-                            .foregroundStyle(.white.opacity(0.8))
-                        
-                        Spacer()
-                        
-                        Button("Kunci") {
-                            // P2P trigger lock
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .tint(Color(hex: "#7C5CFC"))
-                        .clipShape(Capsule())
-                    }
-                    
-                    Divider()
-                        .background(Color.white.opacity(0.1))
-                    
-                    HStack {
-                        Text("Zoom")
-                            .font(.system(.subheadline, design: .rounded))
-                            .foregroundStyle(.white.opacity(0.8))
-                        
-                        Spacer()
-                        
-                        Picker("Zoom", selection: .constant(1)) {
-                            Text("1x").tag(1)
-                            Text("2x").tag(2)
-                            Text("3x").tag(3)
-                        }
-                        .pickerStyle(.segmented)
-                        .frame(width: 160)
-                    }
-                }
-                .padding(16)
-                .background(Color.white.opacity(0.05))
-                .cornerRadius(16)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                )
-            }
-            
-            // 5. DIAGNOSTIK & LOGS
-            VStack(alignment: .leading, spacing: 12) {
-                SectionHeader(title: "DIAGNOSTIK & LOGS", icon: "doc.text.magnifyingglass")
-                
-                HStack(spacing: 12) {
-                    Button(action: {
-                        isShowingLogViewer = true
-                    }) {
-                        HStack {
-                            Image(systemName: "doc.plaintext")
-                            Text("Lihat Log")
-                        }
-                        .font(.system(.headline, design: .rounded))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 48)
-                        .background(Color.blue.opacity(0.15))
-                        .foregroundStyle(.blue)
-                        .cornerRadius(12)
-                    }
-                    
-                    ShareLink(item: LocalLogWriter.readLogContent()) {
-                        HStack {
-                            Image(systemName: "square.and.arrow.up")
-                            Text("Bagikan Log")
-                        }
-                        .font(.system(.headline, design: .rounded))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 48)
-                        .background(Color.green.opacity(0.15))
-                        .foregroundStyle(.green)
-                        .cornerRadius(12)
-                    }
-                }
+                .buttonStyle(.plain)
             }
         }
-    }
-}
-
-// MARK: - Subviews
-
-private struct SectionHeader: View {
-    let title: String
-    let icon: String
-    
-    var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: icon)
-                .foregroundStyle(Color(hex: "#7C5CFC"))
-            Text(title)
-                .foregroundStyle(.white.opacity(0.4))
-                .font(.system(size: 13, weight: .bold, design: .rounded))
-                .tracking(1.5)
-        }
-        .padding(.leading, 4)
-    }
-}
-
-private struct StatusCard: View {
-    let title: String
-    let value: String
-    let icon: String
-    let color: Color
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Image(systemName: icon)
-                    .font(.title3)
-                    .foregroundStyle(color)
-                Spacer()
+        .background(Color(.systemGroupedBackground))
+        .overlay(alignment: .bottom) {
+            GeometryReader { geo in
+                let w = geo.size.width / CGFloat(Tab.allCases.count)
+                let idx = CGFloat(Tab.allCases.firstIndex(of: selectedTab) ?? 0)
+                RoundedRectangle(cornerRadius: 1.5)
+                    .fill(Color.accentColor)
+                    .frame(width: w * 0.5, height: 3)
+                    .offset(x: w * idx + w * 0.25)
+                    .animation(.spring(response: 0.3), value: selectedTab)
             }
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
+            .frame(height: 3)
+        }
+    }
+
+    // MARK: - Tab Content
+
+    @ViewBuilder
+    private var tabContent: some View {
+        switch selectedTab {
+        case .incidents:
+            IncidentListView(
+                report: vm.snapshot.incidents,
+                onAcknowledge: { vm.acknowledgeIncident(id: $0) },
+                onRetry: { id in Task { await vm.retryIncident(id: id) } }
+            )
+        case .diagnosis:
+            DiagnosisListView(
+                report: vm.snapshot.diagnosis,
+                onDismiss: { vm.dismissDiagnosis(id: $0) }
+            )
+        case .health:
+            HealthOverviewView(snapshot: vm.snapshot.platformHealth)
+        case .kpis:
+            KPIDashboardView(kpis: vm.snapshot.kpis, auditSummary: vm.snapshot.auditSummary)
+        }
+    }
+
+    // MARK: - Toolbar
+
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .topBarLeading) {
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(statusColor)
+                    .frame(width: 8, height: 8)
+                Text(vm.snapshot.overallStatusLabel)
                     .font(.caption)
-                    .foregroundStyle(.white.opacity(0.5))
-                
-                Text(value)
-                    .font(.system(.title3, design: .rounded))
-                    .bold()
+                    .foregroundStyle(.secondary)
+            }
+        }
+        ToolbarItem(placement: .topBarTrailing) {
+            if vm.isRefreshing {
+                ProgressView().scaleEffect(0.8)
+            } else {
+                Button { Task { await vm.refresh() } } label: {
+                    Image(systemName: "arrow.clockwise")
+                }
+            }
+        }
+    }
+
+    private var statusColor: Color {
+        switch vm.snapshot.overallStatusColor {
+        case .green:  return .green
+        case .yellow: return .yellow
+        case .orange: return .orange
+        case .red:    return .red
+        }
+    }
+}
+
+// MARK: - PlatformStatusHeaderView
+
+struct PlatformStatusHeaderView: View {
+    let snapshot: MissionControlSnapshot
+
+    var body: some View {
+        HStack(spacing: 10) {
+            if snapshot.incidents.criticalCount > 0 {
+                StatusChip(label: "\(snapshot.incidents.criticalCount) Kritis", color: .red, icon: "exclamationmark.triangle.fill")
+            }
+            if snapshot.incidents.highCount > 0 {
+                StatusChip(label: "\(snapshot.incidents.highCount) Tinggi", color: .orange, icon: "exclamationmark.circle.fill")
+            }
+            if !snapshot.incidents.hasActiveIncidents {
+                StatusChip(label: "Semua Normal", color: .green, icon: "checkmark.circle.fill")
+            }
+            Spacer()
+            Text(snapshot.generatedAt, style: .time)
+                .font(.caption2).foregroundStyle(.tertiary)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(Color(.systemGroupedBackground))
+    }
+}
+
+// MARK: - IncidentListView
+
+struct IncidentListView: View {
+    let report: IncidentReport
+    let onAcknowledge: (String) -> Void
+    let onRetry: (String) -> Void
+
+    var body: some View {
+        if report.activeIncidents.isEmpty {
+            ContentUnavailableView(
+                "Tidak Ada Insiden Aktif",
+                systemImage: "checkmark.shield.fill",
+                description: Text("Semua sistem berjalan normal")
+            )
+        } else {
+            List {
+                Section("Aktif (\(report.activeIncidents.count))") {
+                    ForEach(report.activeIncidents) { incident in
+                        IncidentRowView(
+                            incident: incident,
+                            onAcknowledge: { onAcknowledge(incident.id) },
+                            onRetry: { onRetry(incident.id) }
+                        )
+                    }
+                }
+
+                let resolved = report.incidents.filter { !$0.state.isActive }
+                if !resolved.isEmpty {
+                    Section("Selesai") {
+                        ForEach(resolved) { incident in
+                            IncidentRowView(incident: incident, onAcknowledge: nil, onRetry: nil)
+                                .opacity(0.5)
+                        }
+                    }
+                }
+            }
+            .listStyle(.insetGrouped)
+        }
+    }
+}
+
+// MARK: - IncidentRowView
+
+struct IncidentRowView: View {
+    let incident: Incident
+    let onAcknowledge: (() -> Void)?
+    let onRetry: (() -> Void)?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(incident.severity.displayLabel)
+                    .font(.caption2).fontWeight(.bold)
+                    .padding(.horizontal, 8).padding(.vertical, 3)
+                    .background(severityColor)
                     .foregroundStyle(.white)
+                    .clipShape(Capsule())
+
+                Spacer()
+
+                Text(incident.state.displayLabel)
+                    .font(.caption2).foregroundStyle(.secondary)
+                Text(incident.detectedAt, style: .relative)
+                    .font(.caption2).foregroundStyle(.tertiary)
+            }
+
+            Text(incident.title)
+                .font(.subheadline).fontWeight(.medium)
+
+            Text(incident.summary)
+                .font(.caption).foregroundStyle(.secondary).lineLimit(2)
+
+            if incident.state.isActive {
+                HStack(spacing: 8) {
+                    if let onAcknowledge, incident.state == .detected {
+                        Button("Akui", action: onAcknowledge)
+                            .buttonStyle(.bordered).controlSize(.mini)
+                    }
+                    if let onRetry, incident.suggestedAction != nil {
+                        Button("Retry", action: onRetry)
+                            .buttonStyle(.borderedProminent).controlSize(.mini)
+                    }
+                }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(Color.white.opacity(0.05))
-        .cornerRadius(16)
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.white.opacity(0.08), lineWidth: 1)
-        )
+        .padding(.vertical, 4)
+    }
+
+    private var severityColor: Color {
+        switch incident.severity {
+        case .critical: return .red
+        case .high:     return .orange
+        case .medium:   return .yellow
+        case .low:      return .blue
+        case .info:     return .gray
+        }
     }
 }
 
-private struct ActionButton: View {
-    let title: String
-    let icon: String
-    let color: Color
-    let action: () -> Void
-    
+// MARK: - DiagnosisListView
+
+struct DiagnosisListView: View {
+    let report: DiagnosisReport
+    let onDismiss: (String) -> Void
+
     var body: some View {
-        Button(action: action) {
-            HStack(spacing: 10) {
-                Image(systemName: icon)
-                    .font(.headline)
-                Text(title)
-                    .font(.system(.subheadline, design: .rounded))
-                    .bold()
+        if report.entries.isEmpty {
+            ContentUnavailableView("Tidak Ada Masalah", systemImage: "checkmark.circle.fill")
+        } else {
+            List {
+                let criticals = report.entries.filter { $0.severity == .critical }
+                let warnings  = report.entries.filter { $0.severity == .warning }
+                let infos     = report.entries.filter { $0.severity == .info }
+
+                if !criticals.isEmpty {
+                    Section("Kritis") {
+                        ForEach(criticals) { e in DiagnosisRowView(entry: e) { onDismiss(e.id) } }
+                    }
+                }
+                if !warnings.isEmpty {
+                    Section("Peringatan") {
+                        ForEach(warnings) { e in DiagnosisRowView(entry: e) { onDismiss(e.id) } }
+                    }
+                }
+                if !infos.isEmpty {
+                    Section("Info") {
+                        ForEach(infos) { e in DiagnosisRowView(entry: e) { onDismiss(e.id) } }
+                    }
+                }
             }
-            .frame(maxWidth: .infinity, alignment: .center)
-            .frame(height: 52)
-            .background(color.opacity(0.12))
+            .listStyle(.insetGrouped)
+        }
+    }
+}
+
+struct DiagnosisRowView: View {
+    let entry: DiagnosisEntry
+    let onDismiss: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(entry.title).font(.subheadline).fontWeight(.medium)
+                Spacer()
+                Button(action: onDismiss) {
+                    Image(systemName: "xmark.circle").foregroundStyle(.secondary)
+                }.buttonStyle(.plain)
+            }
+            Text(entry.description).font(.caption).foregroundStyle(.secondary)
+            Label(entry.recommendedAction, systemImage: "arrow.right.circle")
+                .font(.caption).foregroundStyle(.blue)
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+// MARK: - HealthOverviewView
+
+struct HealthOverviewView: View {
+    let snapshot: PlatformHealthSnapshot
+
+    var body: some View {
+        List {
+            Section("Perangkat") {
+                HealthRow(label: "Kamera",      status: snapshot.cameraHealth.status.displayLabel,  isHealthy: snapshot.cameraHealth.status == .ready,   icon: "camera.fill")
+                HealthRow(label: "Koneksi P2P", status: snapshot.p2pHealth.status.displayLabel,     isHealthy: snapshot.p2pHealth.status == .connected,  icon: "wifi")
+            }
+            Section("Layanan") {
+                HealthRow(label: "Pembayaran",      status: snapshot.paymentHealth.status.displayLabel,  isHealthy: snapshot.paymentHealth.status == .ready,  icon: "creditcard.fill")
+                HealthRow(label: "Pengiriman Foto", status: snapshot.deliveryHealth.status.displayLabel, isHealthy: snapshot.deliveryHealth.status == .ready, icon: "photo.fill")
+            }
+            Section("Sesi Aktif") {
+                if let record = snapshot.activeSessionRecord {
+                    LabeledContent("Session ID", value: String(record.sessionId.prefix(8)) + "...")
+                    LabeledContent("Tahap",      value: record.lastStage.rawValue)
+                    LabeledContent("Event",      value: "\(record.events.count)")
+                } else {
+                    Text("Tidak ada sesi aktif").foregroundStyle(.secondary).font(.subheadline)
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
+    }
+}
+
+struct HealthRow: View {
+    let label: String; let status: String; let isHealthy: Bool; let icon: String
+
+    var body: some View {
+        HStack {
+            Label(label, systemImage: icon)
+            Spacer()
+            HStack(spacing: 4) {
+                Circle().fill(isHealthy ? Color.green : Color.red).frame(width: 8, height: 8)
+                Text(status).font(.caption).foregroundStyle(.secondary)
+            }
+        }
+    }
+}
+
+// MARK: - KPIDashboardView
+
+struct KPIDashboardView: View {
+    let kpis: OperationalKPIs
+    let auditSummary: AuditSummary
+
+    var body: some View {
+        List {
+            Section("Workflow Hari Ini") {
+                LabeledContent("Sesi Selesai",    value: "\(auditSummary.completedSessions)")
+                LabeledContent("Sesi Terhenti",   value: "\(auditSummary.orphanedSessions)")
+                LabeledContent("Completion Rate", value: String(format: "%.0f%%", auditSummary.completionRate * 100))
+            }
+            Section("Operasional") {
+                LabeledContent("Insiden Aktif",    value: "\(kpis.activeIncidentCount)")
+                LabeledContent("Insiden Hari Ini", value: "\(kpis.incidentsToday)")
+                LabeledContent("Rata-rata Tangani",
+                    value: kpis.meanTimeToResolveSeconds.map { String(format: "%.0f menit", $0 / 60) } ?? "—")
+            }
+            Section("Uptime") {
+                KPIProgressRow(label: "Kamera", value: kpis.cameraUptimePercent)
+                KPIProgressRow(label: "P2P",    value: kpis.p2pUptimePercent)
+                KPIProgressRow(label: "Printer",value: kpis.printerUptimePercent)
+            }
+        }
+        .listStyle(.insetGrouped)
+    }
+}
+
+struct KPIProgressRow: View {
+    let label: String; let value: Double
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(label)
+                Spacer()
+                Text(String(format: "%.0f%%", value))
+                    .font(.caption)
+                    .foregroundStyle(value >= 95 ? .green : value >= 80 ? .orange : .red)
+            }
+            ProgressView(value: value / 100)
+                .tint(value >= 95 ? .green : value >= 80 ? .orange : .red)
+        }
+    }
+}
+
+// MARK: - StatusChip
+
+struct StatusChip: View {
+    let label: String; let color: Color; let icon: String
+
+    var body: some View {
+        Label(label, systemImage: icon)
+            .font(.caption).fontWeight(.medium)
             .foregroundStyle(color)
-            .cornerRadius(16)
-        }
+            .padding(.horizontal, 10).padding(.vertical, 5)
+            .background(color.opacity(0.12))
+            .clipShape(Capsule())
     }
-}
-
-private struct FrameThumbnail: View {
-    let name: String
-    let isSelected: Bool
-    
-    var body: some View {
-        VStack(spacing: 8) {
-            Rectangle()
-                .fill(Color.white.opacity(0.08))
-                .frame(width: 80, height: 100)
-                .overlay(
-                    isSelected ? RoundedRectangle(cornerRadius: 16).stroke(Color(hex: "#00D9A0"), lineWidth: 2.5) : nil
-                )
-                .cornerRadius(16)
-                .shadow(color: isSelected ? Color(hex: "#00D9A0").opacity(0.2) : .clear, radius: 8)
-            
-            Text(name)
-                .font(.caption.bold())
-                .foregroundStyle(isSelected ? Color(hex: "#00D9A0") : .white.opacity(0.5))
-        }
-    }
-}
-
-#Preview {
-    MissionControlView()
-        .environment(AppState.preview)
 }
