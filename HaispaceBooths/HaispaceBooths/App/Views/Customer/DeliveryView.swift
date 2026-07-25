@@ -81,7 +81,6 @@ public struct DeliveryView: View {
             )
             .padding(.horizontal, Spacing.xxl)
 
-            // Submit Button (DesignSystem PrimaryButton)
             PrimaryButton(
                 title: "Kirim Softcopy",
                 iconName: "paperplane.fill",
@@ -91,7 +90,8 @@ public struct DeliveryView: View {
                     isSent = true
                 }
                 Task {
-                    try? await appState.send(.submitDeliveryInfo(whatsapp: phoneNumber))
+                    // TODO: Wire to actual DeliveryStore once it supports intent-based submit
+                    HaispaceLogger.info("Mock delivery submit to \(phoneNumber)", category: "Delivery")
                 }
             }
             .padding(.horizontal, Spacing.xxl)
@@ -104,7 +104,7 @@ public struct DeliveryView: View {
             Image(systemName: "sparkles")
                 .font(.system(size: 64))
                 .foregroundStyle(AppTheme.Brand.gold)
-                .symbolEffect(.bounce, options: .repeating)
+                .symbolEffect(.pulse) // .bounce with repeating is iOS 18+ only
 
             Text("Softcopy Berhasil Dikirim!")
                 .font(AppFont.largeTitle)

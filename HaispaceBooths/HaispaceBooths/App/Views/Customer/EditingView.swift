@@ -69,7 +69,7 @@ public struct EditingView: View {
 
                 // Finish Button (DesignSystem PrimaryButton)
                 PrimaryButton(title: "Selesai") {
-                    Task { try? await appState.send(.confirmEditing(frameId: selectedFrameId, filterId: selectedFilterId)) }
+                    Task { try? await appState.send(.acceptPreview) }
                 }
                 .padding(.horizontal, Spacing.xxl)
                 .padding(.bottom, Spacing.section)
