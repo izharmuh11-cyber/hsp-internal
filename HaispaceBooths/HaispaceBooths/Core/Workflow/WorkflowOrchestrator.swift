@@ -101,7 +101,7 @@ public actor WorkflowOrchestrator: WorkflowOrchestratorProtocol {
             guard let sessionId = activeSessionId else { throw WorkflowError.sessionNotActive }
 
             // Prepare Camera & Editing Capabilities
-            try await camera.prepare(configuration: CameraConfiguration(captureMode: .singlePhoto))
+            try await camera.prepare(configuration: CameraConfiguration())
             try await camera.startSession(sessionId: sessionId)
 
             let editingConfig = EditingConfiguration(frame: FrameReference(frameId: frameId, assetPath: "frames/\(frameId).png"))
@@ -135,7 +135,7 @@ public actor WorkflowOrchestrator: WorkflowOrchestratorProtocol {
             SessionAuditTrail.append(
                 sessionId: sessionId.uuidString,
                 stage: .editingPreview,
-                eventType: .photoCapured
+                eventType: .photoCaptured
             )
             self.currentStage = .editingPreview
             
@@ -170,7 +170,7 @@ public actor WorkflowOrchestrator: WorkflowOrchestratorProtocol {
                 _ = try await payment.requestPayment(
                     sessionId: sessionId,
                     correlationId: correlationId,
-                    amount: PaymentAmount(amountValue: 35000),
+                    amount: PaymentAmount(amountValue: 35000, method: .localQRIS),
                     method: .localQRIS
                 )
             } catch {
