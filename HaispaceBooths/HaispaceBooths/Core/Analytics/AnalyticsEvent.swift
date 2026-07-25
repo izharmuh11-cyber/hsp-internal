@@ -90,7 +90,7 @@ public struct AnalyticsEvent: Codable, Sendable {
 // MARK: - AnyCodable (lightweight, tidak perlu library)
 
 /// Wrapper agar [String: Any] bisa di-Codable
-public struct AnyCodable: Codable, Sendable {
+public struct AnyCodable: Codable, @unchecked Sendable {
     public let value: Any
 
     public init(_ value: some Sendable) {

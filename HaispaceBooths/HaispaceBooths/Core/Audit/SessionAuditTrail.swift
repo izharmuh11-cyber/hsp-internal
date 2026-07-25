@@ -370,7 +370,7 @@ public enum SessionAuditTrail {
     /// Tidak membaca file, tidak menulis ulang — hanya seekToEnd() + write().
     private static func appendLine(encoded data: Data?, to sessionId: String) {
         guard let data = data else {
-            HaispaceLogger.error("AuditTrail ENCODE FAILED: \(sessionId)", category: "audit")
+            HaispaceLogger.warning("AuditTrail ENCODE FAILED: \(sessionId)", category: "audit")
             return
         }
 
@@ -388,7 +388,7 @@ public enum SessionAuditTrail {
             try handle.write(contentsOf: data)
             try handle.write(contentsOf: Data("\n".utf8))  // newline separator
         } catch {
-            HaispaceLogger.error(
+            HaispaceLogger.warning(
                 "AuditTrail APPEND FAILED: \(sessionId) — \(error.localizedDescription)",
                 category: "audit"
             )
