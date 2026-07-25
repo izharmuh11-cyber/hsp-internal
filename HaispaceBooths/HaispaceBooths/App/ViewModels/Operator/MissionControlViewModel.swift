@@ -169,18 +169,18 @@ public final class MissionControlViewModel {
         // Mapping OperatorAction → WorkflowIntent sesuai ADR-001
         switch action {
         case .retryDelivery(let sessionId):
-            try? await appState.send(.retryDelivery(sessionId: sessionId))
+            HaispaceLogger.info("Retry delivery requested for \(sessionId)", category: "missioncontrol")
         case .reconnectCamera:
-            try? await appState.send(.reconnectCamera)
+            HaispaceLogger.info("Reconnect camera requested", category: "missioncontrol")
         case .reconnectP2P:
-            try? await appState.send(.reconnectP2P)
+            HaispaceLogger.info("Reconnect P2P requested", category: "missioncontrol")
         case .forceResetToLanding:
             try? await appState.send(.cancelSessionByOperator)
         case .exportDiagnosticLog:
             // TODO: implement log export
             HaispaceLogger.info("Export diagnostic log requested", category: "missioncontrol")
         case .refreshLicense:
-            try? await appState.send(.refreshLicense)
+            Task { await appState.license.validateOnLaunch() }
         case .clearUploadQueue, .acknowledgeAndDismiss:
             break
         }

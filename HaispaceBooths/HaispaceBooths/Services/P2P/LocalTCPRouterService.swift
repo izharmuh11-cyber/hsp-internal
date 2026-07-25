@@ -132,10 +132,11 @@ actor LocalTCPRouterService {
     
     private func startReading(from connection: NWConnection) {
         Task { [weak self] in
+            guard let self = self else { return }
             do {
                 while true {
                     // 1. Baca 4 byte header
-                    let headerData = try await readExactBytes(connection: connection, count: 4)
+                    let headerData = try await self.readExactBytes(connection: connection, count: 4)
                     guard headerData.count == 4 else { break }
                     
                     // Convert 4 bytes to UInt32 (big-endian) — Safe from unaligned memory access crash
@@ -143,7 +144,7 @@ actor LocalTCPRouterService {
                     guard length > 0 else { continue }
                     
                     // 2. Baca exact body
-                    let bodyData = try await self?.readExactBytes(connection: connection, count: Int(length)) ?? Data()
+                    let bodyData = try await self.readExactBytes(connection: connection, count: Int(length))
                     guard bodyData.count == Int(length) else { break }
                     
                     // 3. Proses data

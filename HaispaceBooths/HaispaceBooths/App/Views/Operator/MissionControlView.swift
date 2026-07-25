@@ -336,15 +336,19 @@ struct HealthOverviewView: View {
 
     var body: some View {
         List {
-            Section(header: Text("Perangkat")) {
+            Section {
                 HealthRow(label: "Kamera",      status: snapshot.cameraHealth.status.displayLabel,  isHealthy: snapshot.cameraHealth.status == .ready || snapshot.cameraHealth.status == .healthy,   icon: "camera.fill")
                 HealthRow(label: "Koneksi P2P", status: snapshot.p2pHealth.status.displayLabel,     isHealthy: snapshot.p2pHealth.status == .connected,  icon: "wifi")
+            } header: {
+                Text("Perangkat")
             }
-            Section(header: Text("Layanan")) {
+            Section {
                 HealthRow(label: "Pembayaran",      status: snapshot.paymentHealth.status.displayLabel,  isHealthy: snapshot.paymentHealth.status == .healthy || snapshot.paymentHealth.status == .ready,  icon: "creditcard.fill")
                 HealthRow(label: "Pengiriman Foto", status: snapshot.deliveryHealth.status.displayLabel, isHealthy: snapshot.deliveryHealth.status == .healthy, icon: "photo.fill")
+            } header: {
+                Text("Layanan")
             }
-            Section(header: Text("Sesi Aktif")) {
+            Section {
                 if let record = snapshot.activeSessionRecord {
                     LabeledContent("Session ID", value: String(record.sessionId.prefix(8)) + "...")
                     LabeledContent("Tahap",      value: record.lastStage.rawValue)
@@ -352,6 +356,8 @@ struct HealthOverviewView: View {
                 } else {
                     Text("Tidak ada sesi aktif").foregroundStyle(.secondary).font(.subheadline)
                 }
+            } header: {
+                Text("Sesi Aktif")
             }
         }
         .listStyle(.insetGrouped)

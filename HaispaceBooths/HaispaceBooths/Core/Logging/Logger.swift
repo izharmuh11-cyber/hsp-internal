@@ -225,7 +225,7 @@ struct R2LogUploader {
         }
 
         // Baca credentials dari AppSecretConfig (xcconfig → Info.plist → runtime)
-        let accountID    = AppSecretConfig.R2.accountID
+        _ = AppSecretConfig.R2.accountID // Not used in signing logic below
         let accessKeyID  = AppSecretConfig.R2.accessKeyID
         let secretKey    = AppSecretConfig.R2.secretKey
         let bucket       = AppSecretConfig.R2.bucket
