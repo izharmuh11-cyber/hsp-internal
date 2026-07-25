@@ -14,8 +14,10 @@ public actor PaymentCapability: PaymentCapabilityProtocol {
     private enum InternalState: Sendable {
         case idle
         case prepared(PConfiguration: PaymentConfiguration)
-        case requested(sessionId: SessionID, paymentId: PaymentID, amount: PaymentAmount, method: PaymentMethod, config: PaymentConfiguration)
-        case confirmed(sessionId: SessionID, paymentId: PaymentID)
+        case requested(sessionId: SessionID, paymentId: PaymentID, amount: PaymentAmount, method: PaymentCapabilityMethod, config: PaymentConfiguration)
+        case processing(sessionId: SessionID, paymentId: PaymentID, amount: PaymentAmount, method: PaymentCapabilityMethod, config: PaymentConfiguration)
+        case confirmed(sessionId: SessionID, paymentId: PaymentID, result: PaymentResult)
+        case failed(sessionId: SessionID, paymentId: PaymentID, reason: String)
         case stopped
         
         var name: String {
@@ -25,6 +27,8 @@ public actor PaymentCapability: PaymentCapabilityProtocol {
             case .requested: return "requested"
             case .confirmed: return "confirmed"
             case .stopped: return "stopped"
+            case .processing: return "processing"
+            case .failed: return "failed"
             }
         }
     }
@@ -73,7 +77,7 @@ public actor PaymentCapability: PaymentCapabilityProtocol {
         sessionId: SessionID,
         correlationId: CorrelationID,
         amount: PaymentAmount,
-        method: PaymentMethod
+        method: PaymentCapabilityMethod
     ) async throws -> PaymentResult {
         guard case .prepared(let config) = state else {
             throw PaymentCapabilityError.sessionNotActive

@@ -40,9 +40,9 @@ public struct SessionRestoreDecision: Sendable {
     }
 }
 
-// MARK: - AuditSummary (simplified read result)
+// MARK: - RestoreAuditSummary (simplified read result)
 
-public struct AuditSummary: Sendable {
+public struct RestoreAuditSummary: Sendable {
     public let sessionId: String
     public let hasFinancialTransaction: Bool
     public let hasDeliveryCompleted: Bool

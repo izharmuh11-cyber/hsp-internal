@@ -11,11 +11,10 @@ public protocol PaymentRuntimeProtocol: Sendable {
     /// Menyiapkan runtime pembayaran
     func setupRuntime(configuration: PaymentConfiguration) async throws
     
-    /// Membangkitkan payload pembayaran (misal: String QRIS EMVCo CRC16)
     func generatePayload(
         paymentId: PaymentID,
         amount: PaymentAmount,
-        method: PaymentMethod
+        method: PaymentCapabilityMethod
     ) async throws -> String
     
     /// Memeriksa otorisasi pembayaran

@@ -58,16 +58,19 @@ public enum PaymentHealthLevel: String, Codable, Sendable {
 /// Snapshot Kesehatan Domain Pembayaran
 public struct PaymentHealth: Codable, Sendable {
     public let status: PaymentHealthLevel
-    public let activeMethod: PaymentMethod
+    public let activeMethod: PaymentCapabilityMethod
+    public let timestamp: Date
     public let lastErrorMessage: String?
     
     public init(
         status: PaymentHealthLevel = .healthy,
-        activeMethod: PaymentMethod = .localQRIS,
+        activeMethod: PaymentCapabilityMethod = .localQRIS,
+        timestamp: Date = Date(),
         lastErrorMessage: String? = nil
     ) {
         self.status = status
         self.activeMethod = activeMethod
+        self.timestamp = timestamp
         self.lastErrorMessage = lastErrorMessage
     }
     

@@ -83,6 +83,20 @@ public struct DiagnosisEntry: Identifiable, Sendable {
     }
 }
 
+// MARK: - CameraHealth (Booths domain representation)
+
+public struct CameraHealth: Codable, Sendable {
+    public let status: String
+    public let fps: Double
+    public let isConnected: Bool
+
+    public init(status: String = "healthy", fps: Double = 30.0, isConnected: Bool = true) {
+        self.status = status
+        self.fps = fps
+        self.isConnected = isConnected
+    }
+}
+
 // MARK: - PlatformHealthSnapshot
 
 /// Data bag murni dari HealthAggregator.collect().

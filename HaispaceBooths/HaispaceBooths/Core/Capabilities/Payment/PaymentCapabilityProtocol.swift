@@ -22,7 +22,7 @@ public protocol PaymentCapabilityProtocol: Sendable {
         sessionId: SessionID,
         correlationId: CorrelationID,
         amount: PaymentAmount,
-        method: PaymentMethod
+        method: PaymentCapabilityMethod
     ) async throws -> PaymentResult
     
     /// Mengonfirmasi otorisasi pembayaran (Idempotent)

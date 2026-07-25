@@ -6,13 +6,13 @@
 import Foundation
 
 public struct PaymentConfiguration: Codable, Sendable, Equatable {
-    public let defaultMethod: PaymentMethod
-    public let timeoutSeconds: Double
+    public let defaultMethod: PaymentCapabilityMethod
+    public let timeoutSeconds: Int
     public let allowOperatorOverride: Bool
     
     public init(
-        defaultMethod: PaymentMethod = .localQRIS,
-        timeoutSeconds: Double = 180.0,
+        defaultMethod: PaymentCapabilityMethod = .localQRIS,
+        timeoutSeconds: Int = 300,
         allowOperatorOverride: Bool = true
     ) {
         self.defaultMethod = defaultMethod

@@ -17,7 +17,7 @@ public struct PaymentID: Hashable, Codable, Sendable, CustomStringConvertible {
 }
 
 /// Jenis Metode Pembayaran Bisnis
-public enum PaymentMethod: String, Codable, Sendable {
+public enum PaymentCapabilityMethod: String, Codable, Sendable {
     case localQRIS
     case midtransGateway
     case cash
@@ -28,10 +28,12 @@ public enum PaymentMethod: String, Codable, Sendable {
 public struct PaymentAmount: Codable, Sendable, Equatable {
     public let amountValue: Double
     public let currencyCode: String
+    public let method: PaymentCapabilityMethod
     
-    public init(amountValue: Double, currencyCode: String = "IDR") {
+    public init(amountValue: Double, currencyCode: String = "IDR", method: PaymentCapabilityMethod) {
         self.amountValue = amountValue
         self.currencyCode = currencyCode
+        self.method = method
     }
 }
 
@@ -40,7 +42,7 @@ public struct PaymentResult: Codable, Sendable {
     public let paymentId: PaymentID
     public let sessionId: SessionID
     public let amount: PaymentAmount
-    public let method: PaymentMethod
+    public let method: PaymentCapabilityMethod
     public let payloadString: String // String QRIS / Link / Ref Token
     public let confirmedAt: Date?
     
@@ -48,7 +50,7 @@ public struct PaymentResult: Codable, Sendable {
         paymentId: PaymentID,
         sessionId: SessionID,
         amount: PaymentAmount,
-        method: PaymentMethod,
+        method: PaymentCapabilityMethod,
         payloadString: String,
         confirmedAt: Date? = nil
     ) {
