@@ -58,9 +58,55 @@ public struct WorkflowHealth: Codable, Sendable {
     }
 }
 
-// MARK: - Global Identifiers (Typealiases)
+// MARK: - Global Domain Value Objects
 
-public typealias SessionID = String
-public typealias CorrelationID = String
-public typealias PhotoID = String
-public typealias TransferID = String
+public struct SessionID: Hashable, Codable, Sendable, CustomStringConvertible, ExpressibleByStringLiteral {
+    public let rawValue: String
+    public init(rawValue: String = UUID().uuidString) { self.rawValue = rawValue }
+    public init(_ rawValue: String) { self.rawValue = rawValue }
+    public init(stringLiteral value: String) { self.rawValue = value }
+    public var description: String { rawValue }
+}
+
+public struct PhotoID: Hashable, Codable, Sendable, CustomStringConvertible, ExpressibleByStringLiteral {
+    public let rawValue: String
+    public init(rawValue: String = UUID().uuidString) { self.rawValue = rawValue }
+    public init(_ rawValue: String) { self.rawValue = rawValue }
+    public init(stringLiteral value: String) { self.rawValue = value }
+    public var description: String { rawValue }
+}
+
+public struct CorrelationID: Hashable, Codable, Sendable, CustomStringConvertible, ExpressibleByStringLiteral {
+    public let rawValue: String
+    public init(rawValue: String = UUID().uuidString) { self.rawValue = rawValue }
+    public init(_ rawValue: String) { self.rawValue = rawValue }
+    public init(stringLiteral value: String) { self.rawValue = value }
+    public var description: String { rawValue }
+}
+
+public struct TransferID: Hashable, Codable, Sendable, CustomStringConvertible, ExpressibleByStringLiteral {
+    public let rawValue: String
+    public init(rawValue: String = UUID().uuidString) { self.rawValue = rawValue }
+    public init(_ rawValue: String) { self.rawValue = rawValue }
+    public init(stringLiteral value: String) { self.rawValue = value }
+    public var description: String { rawValue }
+}
+
+// MARK: - Workflow Observability Models
+
+public enum WorkflowEvent: Sendable {
+    case sessionCreated
+    case photoCaptured
+    case photoRendered
+    case paymentCompleted
+    case sessionCompleted
+    case operatorIntervened
+    case errorOccurred
+}
+
+public struct WorkflowState: Sendable {
+    public let stage: WorkflowStage
+    public init(stage: WorkflowStage = .landing) {
+        self.stage = stage
+    }
+}
