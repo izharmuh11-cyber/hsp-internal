@@ -42,11 +42,11 @@ public actor NoOpEditingCapability: @preconcurrency EditingCapabilityProtocol {
     }
     public func requestPreview(photoInput: String, correlationId: CorrelationID) async throws -> PreviewResult {
         HaispaceLogger.warning("NoOpEditingCapability.requestPreview() dipanggil", category: "capability")
-        return PreviewResult(previewPath: "", correlationId: correlationId)
+        return PreviewResult(photoId: PhotoID(), outputReference: "", renderDurationMs: 0.0)
     }
     public func requestExport(photoInput: String, correlationId: CorrelationID) async throws -> ExportResult {
         HaispaceLogger.warning("NoOpEditingCapability.requestExport() dipanggil", category: "capability")
-        return ExportResult(photoId: PhotoID(), outputReference: "", correlationId: correlationId)
+        return ExportResult(photoId: PhotoID(), outputReference: "", renderDurationMs: 0.0, fileSizeBytes: 0, exportFormat: .jpeg)
     }
     public func stopSession() async {
         HaispaceLogger.debug("NoOpEditingCapability.stopSession()", category: "capability")
@@ -66,14 +66,15 @@ public actor NoOpPaymentCapability: @preconcurrency PaymentCapabilityProtocol {
         sessionId: SessionID,
         correlationId: CorrelationID,
         amount: PaymentAmount,
-        method: PaymentMethod
+        method: PaymentCapabilityMethod
     ) async throws -> PaymentResult {
         HaispaceLogger.warning("NoOpPaymentCapability.requestPayment() dipanggil", category: "capability")
-        return PaymentResult(paymentId: PaymentID(), status: .pending, correlationId: correlationId)
+        return PaymentResult(paymentId: PaymentID(), sessionId: sessionId, amount: amount, method: method, payloadString: "")
     }
     public func confirmPayment(paymentId: PaymentID) async throws -> PaymentResult {
         HaispaceLogger.warning("NoOpPaymentCapability.confirmPayment() dipanggil", category: "capability")
-        return PaymentResult(paymentId: paymentId, status: .confirmed, correlationId: CorrelationID())
+        let dummyAmount = PaymentAmount(amountValue: 0, method: .qrisDynamic)
+        return PaymentResult(paymentId: paymentId, sessionId: SessionID(), amount: dummyAmount, method: .qrisDynamic, payloadString: "", confirmedAt: Date())
     }
     public func cancelPayment(paymentId: PaymentID) async throws {
         HaispaceLogger.warning("NoOpPaymentCapability.cancelPayment() dipanggil", category: "capability")
@@ -100,11 +101,11 @@ public actor NoOpDeliveryCapability: @preconcurrency DeliveryCapabilityProtocol 
         channel: DeliveryChannel
     ) async throws -> DeliveryResult {
         HaispaceLogger.warning("NoOpDeliveryCapability.requestDelivery() dipanggil", category: "capability")
-        return DeliveryResult(deliveryId: DeliveryID(), status: .pending, correlationId: correlationId)
+        return DeliveryResult(deliveryId: DeliveryID(), sessionId: sessionId, photoId: photoId, channel: channel, deliveryReference: "")
     }
     public func retryDelivery(deliveryId: DeliveryID, correlationId: CorrelationID) async throws -> DeliveryResult {
         HaispaceLogger.warning("NoOpDeliveryCapability.retryDelivery() dipanggil", category: "capability")
-        return DeliveryResult(deliveryId: deliveryId, status: .pending, correlationId: correlationId)
+        return DeliveryResult(deliveryId: deliveryId, sessionId: SessionID(), photoId: PhotoID(), channel: .localBonjourWiFiServer, deliveryReference: "")
     }
     public func cancelDelivery(deliveryId: DeliveryID) async throws {
         HaispaceLogger.warning("NoOpDeliveryCapability.cancelDelivery() dipanggil", category: "capability")
@@ -125,17 +126,17 @@ public actor NoOpP2PCapability: @preconcurrency P2PCapabilityProtocol {
     }
     public func startSession(sessionId: SessionID) async throws -> P2PPeerInfo {
         HaispaceLogger.warning("NoOpP2PCapability.startSession() dipanggil", category: "capability")
-        return P2PPeerInfo(peerId: "noop", activeTransport: .multipeerConnectivity)
+        return P2PPeerInfo(deviceId: "noop", deviceName: "NoOp Peer", role: "iPhoneCamera", activeTransport: .multipeerConnectivity)
     }
     public func stopSession() async {
         HaispaceLogger.debug("NoOpP2PCapability.stopSession()", category: "capability")
     }
     public func requestTransfer(transferId: TransferID, payloadPath: String) async throws -> P2PTransferResult {
         HaispaceLogger.warning("NoOpP2PCapability.requestTransfer() dipanggil", category: "capability")
-        return P2PTransferResult(transferId: transferId, totalBytes: 0, durationMs: 0)
+        return P2PTransferResult(transferId: transferId, sessionId: SessionID(), outputReference: "", totalBytes: 0, transferDurationMs: 0)
     }
     public func requestResume(transferId: TransferID, fromChunkIndex: UInt32) async throws -> P2PTransferResult {
         HaispaceLogger.warning("NoOpP2PCapability.requestResume() dipanggil", category: "capability")
-        return P2PTransferResult(transferId: transferId, totalBytes: 0, durationMs: 0)
+        return P2PTransferResult(transferId: transferId, sessionId: SessionID(), outputReference: "", totalBytes: 0, transferDurationMs: 0)
     }
 }
