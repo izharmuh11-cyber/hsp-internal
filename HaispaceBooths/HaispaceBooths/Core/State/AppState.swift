@@ -211,6 +211,7 @@ extension AppState {
     static var preview: AppState {
         let state = AppState()
 
+        #if DEBUG
         state.auth.currentUser = .mockOperator
         state.auth.authStatus = .authenticated
         state.license.status = .valid
@@ -218,6 +219,7 @@ extension AppState {
         state.p2p.connectionState = .connected
         state.p2p.latencyMs = 12
         state.p2p.connectedPeerName = "iPhone 14 Haispace"
+        #endif
         state.p2p.connectedPeerBatteryLevel = 0.85
         state.boothConfig.activeEventId = "event-preview-001"
         state.boothConfig.activeEventName = "Wisuda BINUS 2026"
