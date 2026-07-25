@@ -128,7 +128,7 @@ final class DeliveryStore {
         status = .uploading
         uploadProgress = 0.0
 
-        // TODO: Fase 3 — implementasi CloudUploadService dengan URLSession.background
+        // Future: Fase 3 — implementasi CloudUploadService dengan URLSession.background
         HaispaceLogger.info("Cloud upload dimulai untuk \(photos.count) foto", category: "delivery")
 
         // Simulasi upload progress untuk development
@@ -146,7 +146,7 @@ final class DeliveryStore {
     }
 
     private func sendViaAirDrop(photos: [RenderedPhoto]) async {
-        // TODO: Fase 2 — implementasi UIActivityViewController untuk AirDrop
+        // Future: Fase 2 — implementasi UIActivityViewController untuk AirDrop
         HaispaceLogger.info("AirDrop delivery dimulai", category: "delivery")
         await MainActor.run { status = .delivering }
     }

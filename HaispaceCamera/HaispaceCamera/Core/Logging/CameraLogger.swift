@@ -135,14 +135,24 @@ struct LocalLogWriter {
 // URL public langsung bisa dibuka dan dibagikan ke AI.
 
 struct R2LogUploader {
-    // R2 credentials — developer-only, bukan user credential
-    // Access key ini statis dan tidak pernah expired seperti GitHub PAT
-    private static let accountID      = "66c40e0caaaa333ca0f4977bf32be2a7"
-    private static let accessKeyID    = "b4612a74659f3f9ce39bd5ec1ffbefbf"
-    private static let secretKey      = "388aab4ee2e7cabb97c3ac0a30a34dac2f7480628ce6afbbec6e2c730ffcbc49"
-    private static let bucket         = "haispaceproject"
-    private static let publicBaseURL  = "https://api.haispaceproject.my.id/r2-media"
-    private static let r2Endpoint     = "https://66c40e0caaaa333ca0f4977bf32be2a7.r2.cloudflarestorage.com"
+    private static var accountID: String {
+        (Bundle.main.object(forInfoDictionaryKey: "R2_ACCOUNT_ID") as? String) ?? ""
+    }
+    private static var accessKeyID: String {
+        (Bundle.main.object(forInfoDictionaryKey: "R2_ACCESS_KEY_ID") as? String) ?? ""
+    }
+    private static var secretKey: String {
+        (Bundle.main.object(forInfoDictionaryKey: "R2_SECRET_KEY") as? String) ?? ""
+    }
+    private static var bucket: String {
+        (Bundle.main.object(forInfoDictionaryKey: "R2_BUCKET") as? String) ?? "haispaceproject"
+    }
+    private static var publicBaseURL: String {
+        (Bundle.main.object(forInfoDictionaryKey: "R2_PUBLIC_BASE_URL") as? String) ?? "https://api.haispaceproject.my.id/r2-media"
+    }
+    private static var r2Endpoint: String {
+        accountID.isEmpty ? "" : "https://\(accountID).r2.cloudflarestorage.com"
+    }
 
     /// Upload log kamera ke R2. Completion dipanggil di main thread dengan public URL atau nil.
     static func uploadLatestLog(eventName: String = "auto", completion: ((String?) -> Void)? = nil) {

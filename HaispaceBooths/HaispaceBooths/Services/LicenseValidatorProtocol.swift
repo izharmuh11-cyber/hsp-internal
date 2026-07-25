@@ -42,6 +42,7 @@ enum LicenseValidatorFactory {
     }
 }
 
+#if DEBUG
 // MARK: - MockLicenseValidator (DEBUG / TEST)
 
 /// Implementasi mock untuk development dan testing.
@@ -78,11 +79,12 @@ final class MockLicenseValidator: LicenseValidatorProtocol {
         return "mock-license-token-\(UUID().uuidString)"
     }
 }
+#endif
 
 // MARK: - JWTLicenseValidator (RELEASE)
 
 /// Implementasi production — decode dan verify JWT, network call ke server.
-/// TODO: Sprint Foundation — implementasi JWT decode + HMAC verification
+/// Future: Sprint Foundation — implementasi JWT decode + HMAC verification
 /// Ref: docs/design/20_license_system.md — 5 Lapis Anti-Bajak
 final class JWTLicenseValidator: LicenseValidatorProtocol {
     private let apiBaseURL: String
@@ -96,7 +98,7 @@ final class JWTLicenseValidator: LicenseValidatorProtocol {
             throw HaispaceError.licenseInvalid(reason: .keyNotFound)
         }
 
-        // TODO: Sprint Foundation — decode JWT payload, verify HMAC signature
+        // Future: Sprint Foundation — decode JWT payload, verify HMAC signature
         // Steps:
         // 1. Split token menjadi header.payload.signature
         // 2. Base64-decode payload
@@ -119,7 +121,7 @@ final class JWTLicenseValidator: LicenseValidatorProtocol {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.timeoutInterval = 30
 
-        // TODO: Sprint Foundation — implementasi HTTP request
+        // Future: Sprint Foundation — implementasi HTTP request
         // Untuk sementara: throw agar tidak ada bypass tak terdeteksi
         throw HaispaceError.networkUnavailable
     }
@@ -137,7 +139,7 @@ final class JWTLicenseValidator: LicenseValidatorProtocol {
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         request.timeoutInterval = 30
 
-        // TODO: Sprint Foundation — implementasi HTTP request + parse response token
+        // Future: Sprint Foundation — implementasi HTTP request + parse response token
         throw HaispaceError.networkUnavailable
     }
 }
