@@ -16,13 +16,10 @@
 		11E64212A0D3983889C0CF45 /* DeliveryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 508E425EB69AC2B09FAF5485 /* DeliveryStore.swift */; };
 		172F4D73BD652060296151E4 /* BoothPackage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29AE450EBFA4A832631E88C8 /* BoothPackage.swift */; };
 		238840068AE6204A2426E01C /* FrameSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FEE4F728E6A16DBDFC2234B /* FrameSelectionView.swift */; };
-		26C34948B9DCB9C7273A7EAD /* LandingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4BC46EFB2B5F953ED907698 /* LandingView.swift */; };
-		2BF44B3BAD9F0E743484205E /* PackageSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF7D4FCD99325CDC3DA361FB /* PackageSelectionView.swift */; };
 		3C4440858942246225BBC7BF /* BonjourDownloadServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2B8472B98693D947C717F0B /* BonjourDownloadServer.swift */; };
 		445F4E40846C38E0D0F5715E /* HaispaceError+Localized.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CF9449EA0E22D26000FC5F2 /* HaispaceError+Localized.swift */; };
 		44DE4870970E90F359548E45 /* PairingSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26764B7BA174B7D97ABB3210 /* PairingSetupView.swift */; };
 		49D44CD9B5AE036096CF5336 /* ErrorPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60A2475FB20AC8D50783DC5D /* ErrorPresenter.swift */; };
-		4B0C48F9ABCEB0E3A75B35B0 /* PaymentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D07E43039D5E64878E2A8F08 /* PaymentView.swift */; };
 		4C7143AB9FB62919C5F64F21 /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5074BE6A914FAF616C5C05B /* SessionStore.swift */; };
 		591F4B21BC03B8BFEBC22916 /* NetworkUtility.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2E54487AEFE80E630C986AE /* NetworkUtility.swift */; };
 		59EE4866874549054DCCAAA2 /* FrameCompositorService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06704BCFA5CED676F21AC28C /* FrameCompositorService.swift */; };
@@ -46,7 +43,6 @@
 		8E53419D8B5DDD442C2CCDE3 /* P2PMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 037E4A4AB4521072A527340C /* P2PMessage.swift */; };
 		98EF4E8E8C66958A5CEB4DDB /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A2F430A90F28F2054DD44C2 /* KeychainHelper.swift */; };
 		A12041FA8CDCBD40DFDAB179 /* ErrorHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77374321AAC17BFE7F26AF82 /* ErrorHandler.swift */; };
-		A48F489386304D6ED4D75830 /* DeliveryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A18842248973A314EC5159B1 /* DeliveryView.swift */; };
 		'B1000001' = {isa = PBXBuildFile; fileRef = B1000010; };
 		'B1000002' = {isa = PBXBuildFile; fileRef = B1000011; };
 		'B1000003' = {isa = PBXBuildFile; fileRef = B1000012; };
@@ -100,7 +96,6 @@
 		979D4F79954242D1741DA9BC /* P2PStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = P2PStore.swift; path = HaispaceBooths/Core/State/P2PStore.swift; sourceTree = SOURCE_ROOT; };
 		980F40418CF73C0D676C821D /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppState.swift; path = HaispaceBooths/Core/State/AppState.swift; sourceTree = SOURCE_ROOT; };
 		9F484B76A261A92EC5BEF870 /* LocalTCPRouterService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = LocalTCPRouterService.swift; path = HaispaceBooths/Services/P2P/LocalTCPRouterService.swift; sourceTree = SOURCE_ROOT; };
-		A18842248973A314EC5159B1 /* DeliveryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DeliveryView.swift; path = HaispaceBooths/App/Views/Guest/DeliveryView.swift; sourceTree = SOURCE_ROOT; };
 		A96C437B80FBD32A2A57B39B /* RegistrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RegistrationView.swift; path = HaispaceBooths/App/Views/Guest/RegistrationView.swift; sourceTree = SOURCE_ROOT; };
 		A9FD4F898EB7A82BCB2C8D46 /* QRISGeneratorService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = QRISGeneratorService.swift; path = HaispaceBooths/Services/Payment/QRISGeneratorService.swift; sourceTree = SOURCE_ROOT; };
 		'B1000005' = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HaispaceBooths.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -109,7 +104,6 @@
 		'B1000012' = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoothDashboardView.swift; sourceTree = "<group>"; };
 		'B1000013' = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B3FF426D88D2CFEC0AFD3AF6 /* HaispaceError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = HaispaceError.swift; path = HaispaceBooths/Core/Error/HaispaceError.swift; sourceTree = SOURCE_ROOT; };
-		B4BC46EFB2B5F953ED907698 /* LandingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = LandingView.swift; path = HaispaceBooths/App/Views/Guest/LandingView.swift; sourceTree = SOURCE_ROOT; };
 		B89142A9A7021E786706D371 /* PoseGuidePanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PoseGuidePanel.swift; path = HaispaceBooths/App/Views/Components/PoseGuidePanel.swift; sourceTree = SOURCE_ROOT; };
 		BB4B43C7AE47F88617E34D94 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RootView.swift; path = HaispaceBooths/App/RootView.swift; sourceTree = SOURCE_ROOT; };
 		C2E54487AEFE80E630C986AE /* NetworkUtility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NetworkUtility.swift; path = HaispaceBooths/Core/Network/NetworkUtility.swift; sourceTree = SOURCE_ROOT; };
@@ -118,14 +112,12 @@
 		C59B4359803B91C0BD635CF3 /* SessionFeedbackService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SessionFeedbackService.swift; path = HaispaceBooths/Services/Utility/SessionFeedbackService.swift; sourceTree = SOURCE_ROOT; };
 		C9C948A7AF25277B22C90702 /* PINEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PINEntryView.swift; path = HaispaceBooths/App/Views/Operator/PINEntryView.swift; sourceTree = SOURCE_ROOT; };
 		CEBA47C793B7C8DC8423CFCD /* RenderedPhoto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RenderedPhoto.swift; path = HaispaceBooths/Models/RenderedPhoto.swift; sourceTree = SOURCE_ROOT; };
-		D07E43039D5E64878E2A8F08 /* PaymentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PaymentView.swift; path = HaispaceBooths/App/Views/Guest/PaymentView.swift; sourceTree = SOURCE_ROOT; };
 		D2CB4F6DA453047EDFDEE49A /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AuthService.swift; path = HaispaceBooths/Services/AuthService.swift; sourceTree = SOURCE_ROOT; };
 		D47740478F8297996C1C22D2 /* MissionControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MissionControlView.swift; path = HaispaceBooths/App/Views/Operator/MissionControlView.swift; sourceTree = SOURCE_ROOT; };
 		D5074BE6A914FAF616C5C05B /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SessionStore.swift; path = HaispaceBooths/Core/State/SessionStore.swift; sourceTree = SOURCE_ROOT; };
 		D8BD4BB593B53A523B87C221 /* HaispaceUser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = HaispaceUser.swift; path = HaispaceBooths/Models/HaispaceUser.swift; sourceTree = SOURCE_ROOT; };
 		DA5944B59C0BB79A9EE7BA40 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Logger.swift; path = HaispaceBooths/Core/Logging/Logger.swift; sourceTree = SOURCE_ROOT; };
 		DD1F4E59A655EDFCEE97FF56 /* AuthStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AuthStore.swift; path = HaispaceBooths/Core/State/AuthStore.swift; sourceTree = SOURCE_ROOT; };
-		DF7D4FCD99325CDC3DA361FB /* PackageSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PackageSelectionView.swift; path = HaispaceBooths/App/Views/Guest/PackageSelectionView.swift; sourceTree = SOURCE_ROOT; };
 		E2B8472B98693D947C717F0B /* BonjourDownloadServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BonjourDownloadServer.swift; path = HaispaceBooths/Services/Delivery/BonjourDownloadServer.swift; sourceTree = SOURCE_ROOT; };
 		EC834480BB0FF8638F3E1C82 /* ErrorRecovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ErrorRecovery.swift; path = HaispaceBooths/Core/Error/ErrorRecovery.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
@@ -168,12 +160,8 @@
 				BB4B43C7AE47F88617E34D94 /* RootView.swift */,
 				B89142A9A7021E786706D371 /* PoseGuidePanel.swift */,
 				45274B929C478AC399BB5416 /* ActiveSessionView.swift */,
-				A18842248973A314EC5159B1 /* DeliveryView.swift */,
 				71A849A999647B8DB0C4739F /* FilterSelectionView.swift */,
 				5FEE4F728E6A16DBDFC2234B /* FrameSelectionView.swift */,
-				B4BC46EFB2B5F953ED907698 /* LandingView.swift */,
-				DF7D4FCD99325CDC3DA361FB /* PackageSelectionView.swift */,
-				D07E43039D5E64878E2A8F08 /* PaymentView.swift */,
 				4A554870A6C0211281C77A96 /* PhotoSelectionView.swift */,
 				A96C437B80FBD32A2A57B39B /* RegistrationView.swift */,
 				D47740478F8297996C1C22D2 /* MissionControlView.swift */,
@@ -292,12 +280,8 @@
 				CA12474EA1D470795A830A19 /* RootView.swift in Sources */,
 				F4DA4F4EA8FEBB600C886BE5 /* PoseGuidePanel.swift in Sources */,
 				DD8148CE9DDE51E79E73FB29 /* ActiveSessionView.swift in Sources */,
-				A48F489386304D6ED4D75830 /* DeliveryView.swift in Sources */,
 				7E44470283CB194155BAF355 /* FilterSelectionView.swift in Sources */,
 				238840068AE6204A2426E01C /* FrameSelectionView.swift in Sources */,
-				26C34948B9DCB9C7273A7EAD /* LandingView.swift in Sources */,
-				2BF44B3BAD9F0E743484205E /* PackageSelectionView.swift in Sources */,
-				4B0C48F9ABCEB0E3A75B35B0 /* PaymentView.swift in Sources */,
 				61974903B38FE92F3428ED8A /* PhotoSelectionView.swift in Sources */,
 				B3DF453B99DE2781B3DF3F4F /* RegistrationView.swift in Sources */,
 				F271482FB823D4B3BE5AD066 /* MissionControlView.swift in Sources */,
