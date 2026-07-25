@@ -122,26 +122,16 @@ public actor PaymentCapability: @preconcurrency PaymentCapabilityProtocol {
     /// Mengonfirmasi otorisasi pembayaran (Idempotent - Invariant #12)
     public func confirmPayment(paymentId: PaymentID) async throws -> PaymentResult {
         switch state {
-        case .confirmed(let sessionId, let pid) where pid == paymentId:
+        case .confirmed(_, let pid, let result) where pid == paymentId:
             // Idempotent duplicate call protection: Return previous confirmed state without side-effects
-            return PaymentResult(
-                paymentId: paymentId,
-                sessionId: sessionId,
-                amount: PaymentAmount(amountValue: 0),
-                method: .localQRIS,
-                payloadString: "IDEMPOTENT_CONFIRMED",
-                confirmedAt: Date()
-            )
+            return result
             
         case .requested(let sessionId, let pid, let amount, let method, _):
             guard pid == paymentId else {
                 throw PaymentCapabilityError.verificationFailed(reason: "PaymentID Mismatch")
             }
             
-            self.state = .confirmed(sessionId: sessionId, paymentId: paymentId)
-            self.health = health.updated(status: .healthy, error: nil)
-            
-            return PaymentResult(
+            let result = PaymentResult(
                 paymentId: paymentId,
                 sessionId: sessionId,
                 amount: amount,
@@ -149,6 +139,11 @@ public actor PaymentCapability: @preconcurrency PaymentCapabilityProtocol {
                 payloadString: "CONFIRMED",
                 confirmedAt: Date()
             )
+            
+            self.state = .confirmed(sessionId: sessionId, paymentId: paymentId, result: result)
+            self.health = health.updated(status: .healthy, error: nil)
+            
+            return result
             
         default:
             throw PaymentCapabilityError.sessionNotActive

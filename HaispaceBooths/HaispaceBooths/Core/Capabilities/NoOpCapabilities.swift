@@ -73,8 +73,8 @@ public actor NoOpPaymentCapability: @preconcurrency PaymentCapabilityProtocol {
     }
     public func confirmPayment(paymentId: PaymentID) async throws -> PaymentResult {
         HaispaceLogger.warning("NoOpPaymentCapability.confirmPayment() dipanggil", category: "capability")
-        let dummyAmount = PaymentAmount(amountValue: 0, method: .qrisDynamic)
-        return PaymentResult(paymentId: paymentId, sessionId: SessionID(), amount: dummyAmount, method: .qrisDynamic, payloadString: "", confirmedAt: Date())
+        let dummyAmount = PaymentAmount(amountValue: 0, method: .localQRIS)
+        return PaymentResult(paymentId: paymentId, sessionId: SessionID(), amount: dummyAmount, method: .localQRIS, payloadString: "", confirmedAt: Date())
     }
     public func cancelPayment(paymentId: PaymentID) async throws {
         HaispaceLogger.warning("NoOpPaymentCapability.cancelPayment() dipanggil", category: "capability")
