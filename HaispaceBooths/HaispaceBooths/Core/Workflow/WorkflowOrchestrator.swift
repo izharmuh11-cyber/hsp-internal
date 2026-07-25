@@ -8,7 +8,7 @@
 
 import Foundation
 
-public actor WorkflowOrchestrator: WorkflowOrchestratorProtocol {
+public actor WorkflowOrchestrator: @preconcurrency WorkflowOrchestratorProtocol {
     
     // MARK: - State Properties
     private(set) public var currentStage: WorkflowStage = .landing

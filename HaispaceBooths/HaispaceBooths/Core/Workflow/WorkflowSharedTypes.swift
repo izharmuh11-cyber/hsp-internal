@@ -110,3 +110,13 @@ public struct WorkflowState: Sendable {
         self.stage = stage
     }
 }
+
+public struct EventEnvelope<Payload: Sendable>: Sendable {
+    public let eventName: String
+    public let payload: Payload
+    
+    public init(eventName: String, payload: Payload) {
+        self.eventName = eventName
+        self.payload = payload
+    }
+}
