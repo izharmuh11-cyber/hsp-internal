@@ -202,6 +202,7 @@ final class AppState {
     }
 }
 
+#if DEBUG
 // MARK: - AppState Preview Mock
 
 extension AppState {
@@ -248,3 +249,5 @@ extension AppState {
         return state
     }
 }
+#endif
+
