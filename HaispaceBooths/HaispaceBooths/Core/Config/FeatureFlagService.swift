@@ -156,6 +156,7 @@ public enum FeatureFlags {
 
 // MARK: - SwiftUI Environment Key
 
+@MainActor
 private struct FeatureFlagServiceKey: EnvironmentKey {
     static let defaultValue = FeatureFlagService.shared
 }

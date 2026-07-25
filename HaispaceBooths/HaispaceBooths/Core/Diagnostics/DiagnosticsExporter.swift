@@ -39,7 +39,7 @@ public struct DiagnosticsManifest: Codable {
     public let boothId: String
     public let appVersion: String
     public let bundleVersion: String
-    public let schemaVersion: Int   = 1
+    public var schemaVersion: Int   = 1
     public let includedComponents: [String]
 }
 
@@ -88,19 +88,15 @@ public enum DiagnosticsExporter {
             withIntermediateDirectories: true
         )
 
-        // 2. Kumpulkan semua komponen (concurrent)
-        async let manifestTask = writeManifest(to: bundleDir, boothId: boothId, bundleName: bundleName)
-        async let deviceTask = writeDeviceInfo(to: bundleDir)
-        async let auditTask = writeAuditTrails(to: bundleDir)
-        async let analyticsTask = writeAnalytics(to: bundleDir)
-        async let performanceTask = writePerformanceViolations(to: bundleDir)
-        async let deliveryTask = writeDeliveryQueue(to: bundleDir)
-        async let configTask = writeRemoteConfig(to: bundleDir)
-        async let snapshotsTask = writeOrphanedSnapshots(to: bundleDir)
-
-        // Tunggu semua selesai
-        _ = try await (manifestTask, deviceTask, auditTask, analyticsTask,
-                       performanceTask, deliveryTask, configTask, snapshotsTask)
+        // 2. Kumpulkan semua komponen
+        try await writeManifest(to: bundleDir, boothId: boothId, bundleName: bundleName)
+        try await writeDeviceInfo(to: bundleDir)
+        try await writeAuditTrails(to: bundleDir)
+        try await writeAnalytics(to: bundleDir)
+        try await writePerformanceViolations(to: bundleDir)
+        try await writeDeliveryQueue(to: bundleDir)
+        try await writeRemoteConfig(to: bundleDir)
+        try await writeOrphanedSnapshots(to: bundleDir)
 
         // 3. Buat ZIP
         let zipURL = exportDir.appendingPathComponent("\(bundleName).zip")
