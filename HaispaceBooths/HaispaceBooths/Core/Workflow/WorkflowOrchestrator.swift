@@ -256,7 +256,7 @@ public actor WorkflowOrchestrator: @preconcurrency WorkflowOrchestratorProtocol 
                     stage: currentStage,
                     eventType: .operatorCancel
                 )
-                let finalStatus: AuditTrailRecord.FinalStatus = hasFinancialTransaction
+                let finalStatus: AuditTrailFooter.FinalStatus = hasFinancialTransaction
                     ? .completed  // payment pernah confirmed — tidak di-abandon
                     : .cancelledByOperator
                 SessionAuditTrail.close(sessionId: sessionId.rawValue, status: finalStatus)
