@@ -41,7 +41,7 @@ public actor WorkflowOrchestrator: @preconcurrency WorkflowOrchestratorProtocol 
     /// Dipakai untuk menentukan recovery strategy saat cancel atau crash.
     private var hasFinancialTransaction: Bool {
         guard let sessionId = activeSessionId else { return false }
-        let record = SessionAuditTrail.read(sessionId: sessionId.uuidString)
+        let record = SessionAuditTrail.read(sessionId: sessionId.rawValue)
         return record?.hasFinancialTransaction ?? false
     }
 
@@ -69,9 +69,9 @@ public actor WorkflowOrchestrator: @preconcurrency WorkflowOrchestratorProtocol 
             self.activeSessionId = newSession
 
             // Invariant 19: AuditTrail dibuat SEBELUM stage berubah
-            SessionAuditTrail.create(sessionId: newSession.uuidString)
+            SessionAuditTrail.create(sessionId: newSession.rawValue)
             SessionAuditTrail.append(
-                sessionId: newSession.uuidString,
+                sessionId: newSession.rawValue,
                 stage: .guestRegistration,
                 eventType: .sessionStarted
             )
@@ -80,7 +80,7 @@ public actor WorkflowOrchestrator: @preconcurrency WorkflowOrchestratorProtocol 
         case .guestSubmittedInfo(let name, let email):
             guard let sessionId = activeSessionId else { throw WorkflowError.sessionNotActive }
             SessionAuditTrail.append(
-                sessionId: sessionId.uuidString,
+                sessionId: sessionId.rawValue,
                 stage: .packageSelection,
                 eventType: .infoSubmitted,
                 metadata: ["guestName": name, "email": email]
@@ -90,7 +90,7 @@ public actor WorkflowOrchestrator: @preconcurrency WorkflowOrchestratorProtocol 
         case .selectPackage(let packageId):
             guard let sessionId = activeSessionId else { throw WorkflowError.sessionNotActive }
             SessionAuditTrail.append(
-                sessionId: sessionId.uuidString,
+                sessionId: sessionId.rawValue,
                 stage: .templateSelection,
                 eventType: .packageSelected,
                 metadata: ["packageId": packageId]
@@ -108,7 +108,7 @@ public actor WorkflowOrchestrator: @preconcurrency WorkflowOrchestratorProtocol 
             try await editing.prepare(sessionId: sessionId, configuration: editingConfig)
 
             SessionAuditTrail.append(
-                sessionId: sessionId.uuidString,
+                sessionId: sessionId.rawValue,
                 stage: .capturing,
                 eventType: .templateSelected,
                 metadata: ["frameId": frameId]
@@ -124,7 +124,7 @@ public actor WorkflowOrchestrator: @preconcurrency WorkflowOrchestratorProtocol 
                 try await camera.requestCapture(correlationId: correlationId)
             } catch {
                 SessionAuditTrail.append(
-                    sessionId: sessionId.uuidString,
+                    sessionId: sessionId.rawValue,
                     stage: .capturing,
                     eventType: .cameraFailure,
                     metadata: ["error": error.localizedDescription]
@@ -133,7 +133,7 @@ public actor WorkflowOrchestrator: @preconcurrency WorkflowOrchestratorProtocol 
             }
 
             SessionAuditTrail.append(
-                sessionId: sessionId.uuidString,
+                sessionId: sessionId.rawValue,
                 stage: .editingPreview,
                 eventType: .photoCaptured
             )
@@ -159,7 +159,7 @@ public actor WorkflowOrchestrator: @preconcurrency WorkflowOrchestratorProtocol 
             self.activeOutputReference = exportResult.outputReference
 
             SessionAuditTrail.append(
-                sessionId: sessionId.uuidString,
+                sessionId: sessionId.rawValue,
                 stage: .exporting,
                 eventType: .exportCompleted
             )
@@ -175,7 +175,7 @@ public actor WorkflowOrchestrator: @preconcurrency WorkflowOrchestratorProtocol 
                 )
             } catch {
                 SessionAuditTrail.append(
-                    sessionId: sessionId.uuidString,
+                    sessionId: sessionId.rawValue,
                     stage: .exporting,
                     eventType: .paymentFailed,
                     metadata: ["error": error.localizedDescription]
@@ -184,7 +184,7 @@ public actor WorkflowOrchestrator: @preconcurrency WorkflowOrchestratorProtocol 
             }
 
             SessionAuditTrail.append(
-                sessionId: sessionId.uuidString,
+                sessionId: sessionId.rawValue,
                 stage: .paymentRequested,
                 eventType: .paymentRequested
             )
@@ -200,11 +200,11 @@ public actor WorkflowOrchestrator: @preconcurrency WorkflowOrchestratorProtocol 
             // POIN KRITIS: Payment confirmed — tulis audit SEBELUM delivery dimulai
             // Invariant 20: trail ini yang dipakai untuk recovery jika crash terjadi setelah ini
             SessionAuditTrail.append(
-                sessionId: sessionId.uuidString,
+                sessionId: sessionId.rawValue,
                 stage: .paymentConfirmed,
                 eventType: .paymentConfirmed,
                 metadata: [
-                    "photoId": photoId.uuidString,
+                    "photoId": photoId.rawValue,
                     "outputRef": outputRef
                 ]
             )
@@ -222,7 +222,7 @@ public actor WorkflowOrchestrator: @preconcurrency WorkflowOrchestratorProtocol 
                 )
             } catch {
                 SessionAuditTrail.append(
-                    sessionId: sessionId.uuidString,
+                    sessionId: sessionId.rawValue,
                     stage: .paymentConfirmed,
                     eventType: .deliveryFailure,
                     metadata: ["error": error.localizedDescription]
@@ -232,7 +232,7 @@ public actor WorkflowOrchestrator: @preconcurrency WorkflowOrchestratorProtocol 
             }
 
             SessionAuditTrail.append(
-                sessionId: sessionId.uuidString,
+                sessionId: sessionId.rawValue,
                 stage: .deliveryDispatch,
                 eventType: .deliveryStarted
             )
@@ -241,25 +241,25 @@ public actor WorkflowOrchestrator: @preconcurrency WorkflowOrchestratorProtocol 
         case .finishSession:
             if let sessionId = activeSessionId {
                 SessionAuditTrail.append(
-                    sessionId: sessionId.uuidString,
+                    sessionId: sessionId.rawValue,
                     stage: .sessionCompleted,
                     eventType: .sessionCompleted
                 )
-                SessionAuditTrail.close(sessionId: sessionId.uuidString, status: .completed)
+                SessionAuditTrail.close(sessionId: sessionId.rawValue, status: .completed)
             }
             await resetToLanding()
             
         case .cancelSessionByOperator:
             if let sessionId = activeSessionId {
                 SessionAuditTrail.append(
-                    sessionId: sessionId.uuidString,
+                    sessionId: sessionId.rawValue,
                     stage: currentStage,
                     eventType: .operatorCancel
                 )
                 let finalStatus: AuditTrailRecord.FinalStatus = hasFinancialTransaction
                     ? .completed  // payment pernah confirmed — tidak di-abandon
                     : .cancelledByOperator
-                SessionAuditTrail.close(sessionId: sessionId.uuidString, status: finalStatus)
+                SessionAuditTrail.close(sessionId: sessionId.rawValue, status: finalStatus)
             }
             await resetToLanding()
         }
