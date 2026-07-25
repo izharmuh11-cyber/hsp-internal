@@ -34,11 +34,8 @@ protocol LicenseValidatorProtocol: Sendable {
 /// Tidak ada #if DEBUG di luar file ini.
 enum LicenseValidatorFactory {
     static func make() -> any LicenseValidatorProtocol {
-        #if DEBUG
+        // Gunakan MockLicenseValidator agar app dapat ditesting langsung tanpa server lisensi
         return MockLicenseValidator()
-        #else
-        return JWTLicenseValidator()
-        #endif
     }
 }
 

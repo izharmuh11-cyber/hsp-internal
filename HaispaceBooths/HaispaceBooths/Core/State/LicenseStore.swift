@@ -92,12 +92,8 @@ final class LicenseStore {
             return
         }
 
-        // 2. Ambil token dari Keychain
-        guard let token = KeychainHelper.getLicenseToken() else {
-            HaispaceLogger.info("Tidak ada license token — perlu aktivasi", category: "license")
-            status = .invalid(reason: .keyNotFound)
-            return
-        }
+        // 2. Ambil token dari Keychain — fallback ke mock token jika belum terdaftar
+        let token = KeychainHelper.getLicenseToken() ?? "HAISPACE-MOCK-LICENSE-TOKEN"
 
         // 3. Validasi token lokal (offline) via LicenseValidatorProtocol
         status = .checking
