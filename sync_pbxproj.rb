@@ -67,7 +67,7 @@ def sync_project(project_path, source_dir, target_name)
   xcconfig_path = "Secrets/#{target_name}.xcconfig"
   xcconfig_ref = project.files.find { |f| f.path == xcconfig_path || f.path&.end_with?(xcconfig_path) }
   if xcconfig_ref.nil?
-    xcconfig_ref = project.main_group.new_file("../#{xcconfig_path}")
+    xcconfig_ref = project.main_group.new_file(xcconfig_path)
   end
   
   target.build_configurations.each do |config|
