@@ -243,6 +243,12 @@ struct R2LogUploader {
         let bucket = AppSecretConfig.R2.bucket
         let publicBaseURL = AppSecretConfig.R2.publicBaseURL
         let r2Endpoint = AppSecretConfig.R2.endpoint
+        
+        guard !r2Endpoint.isEmpty, !accessKeyID.isEmpty, !secretKey.isEmpty else {
+            HaispaceLogger.warning("R2 credentials not fully configured. Skipping log upload.", category: "logging")
+            completion?(nil)
+            return
+        }
 
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyyMMdd-HHmmss"
