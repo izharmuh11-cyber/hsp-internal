@@ -148,23 +148,19 @@ actor LocalTCPRouterService {
                     guard bodyData.count == Int(length) else { break }
                     
                     // 3. Proses data
-                    if let self = self {
-                        await self.onDataReceived?(bodyData)
-                        if bodyData.count > 4 && bodyData[0] == 0 && bodyData[1] == 0 && bodyData[2] == 0 && bodyData[3] == 1 {
-                            await StreamingDecoderService.shared.enqueue(nalu: bodyData)
-                        } else if let message = try? P2PMessage.decode(from: bodyData) {
-                            await P2PMessageRouter.shared.route(message)
-                        }
+                    await self.onDataReceived?(bodyData)
+                    if bodyData.count > 4 && bodyData[0] == 0 && bodyData[1] == 0 && bodyData[2] == 0 && bodyData[3] == 1 {
+                        await StreamingDecoderService.shared.enqueue(nalu: bodyData)
+                    } else if let message = try? P2PMessage.decode(from: bodyData) {
+                        await P2PMessageRouter.shared.route(message)
                     }
                 }
             } catch {
                 HaispaceLogger.warning("TCP Stream terhenti atau error: \(error)", category: "p2p")
             }
             
-            if let self = self {
-                await self.onConnectionStateChange?(.disconnected)
-                await self.clearConnection(ifMatches: connection)
-            }
+            await self.onConnectionStateChange?(.disconnected)
+            await self.clearConnection(ifMatches: connection)
         }
     }
     

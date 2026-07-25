@@ -191,8 +191,9 @@ private struct CornerGuideView: View {
 
     var body: some View {
         ZStack {
-            ForEach([Alignment.topLeading, .topTrailing, .bottomLeading, .bottomTrailing], id: \.hashValue) { alignment in
-                CornerMark(alignment: alignment, length: length, thickness: thickness)
+            let alignments: [Alignment] = [.topLeading, .topTrailing, .bottomLeading, .bottomTrailing]
+            ForEach(0..<4, id: \.self) { i in
+                CornerMark(alignment: alignments[i], length: length, thickness: thickness)
             }
         }
         .padding(28)
