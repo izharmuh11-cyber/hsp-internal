@@ -70,7 +70,16 @@ struct RootView: View {
                 .zIndex(100) // Paling atas
         } else if appState.operatorState.isMissionControlVisible {
             MissionControlView()
-                .environment(MissionControlViewModel(healthAggregator: HealthAggregator(), appState: appState))
+                .environment(MissionControlViewModel(
+                    healthAggregator: HealthAggregator(
+                        camera: appState.orchestrator.camera,
+                        editing: appState.orchestrator.editing,
+                        payment: appState.orchestrator.payment,
+                        delivery: appState.orchestrator.delivery,
+                        p2p: appState.orchestrator.p2p
+                    ),
+                    appState: appState
+                ))
                 .zIndex(99)
         }
     }

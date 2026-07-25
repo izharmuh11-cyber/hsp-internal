@@ -171,16 +171,15 @@ struct FrameSelectionView: View {
                         Button(action: {
                             if let frameId = selectedFrameId {
                                 session.photos.selectedFrameId = frameId
-                                withAnimation(.spring) {
-                                    session.proceedToPayment()
-                                    appState.navigateTo(.payment)
+                                Task {
+                                    try? await appState.send(.selectTemplate(frameId: frameId))
                                 }
                             }
                         }) {
                             HStack {
-                                Text("Lanjut ke Pembayaran")
+                                Text("Mulai Sesi Foto 📸")
                                     .font(.system(size: 20, weight: .bold))
-                                Image(systemName: "creditcard.fill")
+                                Image(systemName: "camera.fill")
                                     .font(.system(size: 18))
                             }
                             .foregroundStyle(.white)

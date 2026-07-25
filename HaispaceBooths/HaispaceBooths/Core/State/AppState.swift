@@ -92,14 +92,12 @@ final class AppState {
     // MARK: - Initializer
 
     init() {
-        // Orchestrator di-init dengan NoOp capabilities sebagai safe default.
-        // Akan di-wire dengan real capabilities di masa mendatang saat platform matang.
         self.orchestrator = WorkflowOrchestrator(
             camera: NoOpCameraCapability(),
-            editing: NoOpEditingCapability(),
-            payment: NoOpPaymentCapability(),
-            delivery: NoOpDeliveryCapability(),
-            p2p: NoOpP2PCapability()
+            editing: EditingCapability(),
+            payment: PaymentCapability(),
+            delivery: DeliveryCapability(),
+            p2p: P2PCapability()
         )
     }
 

@@ -18,11 +18,11 @@ public actor WorkflowOrchestrator: @preconcurrency WorkflowOrchestratorProtocol 
     private var activeOutputReference: String?
     
     // Capabilities Injected via Protocols
-    private let camera: CameraCapabilityProtocol
-    private let editing: EditingCapabilityProtocol
-    private let payment: PaymentCapabilityProtocol
-    private let delivery: DeliveryCapabilityProtocol
-    private let p2p: P2PCapabilityProtocol
+    public let camera: CameraCapabilityProtocol
+    public let editing: EditingCapabilityProtocol
+    public let payment: PaymentCapabilityProtocol
+    public let delivery: DeliveryCapabilityProtocol
+    public let p2p: P2PCapabilityProtocol
     
     // Health Monitor
     private var health: WorkflowHealth = WorkflowHealth()
