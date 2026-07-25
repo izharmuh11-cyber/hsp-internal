@@ -47,7 +47,7 @@ enum AppSecretConfig {
 
     struct QR {
         /// Shared secret untuk HMAC-SHA256 signing QR payment payload
-        static var payloadSharedSecret: String { value("QR_PAYLOAD_SHARED_SECRET") ?? "haispace-default-qr-secret" }
+        static var payloadSharedSecret: String { value("QR_PAYLOAD_SHARED_SECRET") ?? "hs_qr_secret_2026_x1y2z3" }
     }
 
     // MARK: - License API
