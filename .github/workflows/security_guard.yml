@@ -218,7 +218,7 @@ jobs:
 
           # LandingView sudah dimigrasikan — tidak boleh panggil navigateTo lagi
           MIGRATED_FILES=(
-            "HaispaceBooths/HaispaceBooths/App/Views/Guest/LandingView.swift"
+            "HaispaceBooths/HaispaceBooths/App/Views/Customer/LandingView.swift"
           )
 
           VIOLATION=false
