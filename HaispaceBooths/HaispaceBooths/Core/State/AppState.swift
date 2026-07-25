@@ -112,6 +112,14 @@ final class AppState {
         try await orchestrator.handleIntent(intent)
         // Sync currentRoute dari Orchestrator setelah intent diproses
         let newStage = await orchestrator.currentStage
+
+        // Ensure currentSession is initialized if workflow moves beyond landing
+        if newStage != .landing && currentSession == nil {
+            let pkg = BoothPackage.mockStandard
+            let guest = pendingGuest ?? GuestInfo(name: "Guest", instagram: nil, phoneNumber: nil, queueNumber: 1)
+            startNewSession(package: pkg, guest: guest)
+        }
+
         currentRoute = WorkflowRouteMapper.route(for: newStage)
     }
 
@@ -123,6 +131,11 @@ final class AppState {
     @available(*, deprecated, message: "Gunakan send(_ intent: WorkflowIntent) sesuai ADR-001. navigateTo akan dihapus setelah migrasi selesai.")
     func navigateTo(_ route: KioskRoute) {
         currentRoute = route
+        if route != .landing && currentSession == nil {
+            let pkg = BoothPackage.mockStandard
+            let guest = pendingGuest ?? GuestInfo(name: "Guest", instagram: nil, phoneNumber: nil, queueNumber: 1)
+            startNewSession(package: pkg, guest: guest)
+        }
         HaispaceLogger.warning("[DEPRECATED] navigateTo(\(route)) — migrasi ke send(intent) sesuai ADR-001", category: "workflow")
     }
 
