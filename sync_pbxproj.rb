@@ -35,15 +35,12 @@ def sync_project(project_path, source_dir, target_name)
   swift_files.each do |file_path|
     file_path_normalized = File.expand_path(file_path).gsub('\\', '/').downcase
     
+    filename = File.basename(file_path).downcase
+    
     # Check if the file is already in the project to avoid duplicates
     exists = project.files.any? do |f|
-      begin
-        f_real_path = f.real_path.to_s
-        next false if f_real_path.nil? || f_real_path.empty?
-        File.expand_path(f_real_path).gsub('\\', '/').downcase == file_path_normalized
-      rescue => e
-        false
-      end
+      next false if f.path.nil? || f.path.empty?
+      File.basename(f.path.to_s).downcase == filename
     end
 
     unless exists
