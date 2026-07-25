@@ -156,6 +156,14 @@ struct R2LogUploader {
 
     /// Upload log kamera ke R2. Completion dipanggil di main thread dengan public URL atau nil.
     static func uploadLatestLog(eventName: String = "auto", completion: ((String?) -> Void)? = nil) {
+        guard !accountID.isEmpty && !accountID.hasPrefix("GANTI_DENGAN"),
+              !accessKeyID.isEmpty && !accessKeyID.hasPrefix("GANTI_DENGAN"),
+              !secretKey.isEmpty && !secretKey.hasPrefix("GANTI_DENGAN") else {
+            HaispaceLogger.warning("R2 log upload SKIPPED — credentials belum diisi", category: "logging")
+            completion?(nil)
+            return
+        }
+
         let logContent = LocalLogWriter.readLogContent(subsystem: "camera")
         guard !logContent.isEmpty && logContent != "Log file tidak ditemukan atau kosong." else {
             completion?(nil)
@@ -179,7 +187,7 @@ struct R2LogUploader {
         }
 
         // 1. Upload ke unique timestamped file
-        let uniqueRequest = AWSV4Signer.sign(
+        guard let uniqueRequest = AWSV4Signer.sign(
             method: "PUT",
             endpoint: r2Endpoint,
             bucket: bucket,
@@ -190,11 +198,7 @@ struct R2LogUploader {
             secretKey: secretKey,
             region: "auto",
             service: "s3"
-        )
-        URLSession.shared.dataTask(with: uniqueRequest).resume()
-
-        // 2. Upload ke 'iphone-latest.txt' (overwrite)
-        let latestRequest = AWSV4Signer.sign(
+        ), let latestRequest = AWSV4Signer.sign(
             method: "PUT",
             endpoint: r2Endpoint,
             bucket: bucket,
@@ -205,8 +209,14 @@ struct R2LogUploader {
             secretKey: secretKey,
             region: "auto",
             service: "s3"
-        )
+        ) else {
+            completion?(nil)
+            return
+        }
 
+        URLSession.shared.dataTask(with: uniqueRequest).resume()
+
+        // 2. Upload ke 'iphone-latest.txt' (overwrite)
         URLSession.shared.dataTask(with: latestRequest) { _, response, error in
             DispatchQueue.main.async {
                 if let error = error {
@@ -242,10 +252,11 @@ enum AWSV4Signer {
         secretKey: String,
         region: String,
         service: String
-    ) -> URLRequest {
+    ) -> URLRequest? {
         let urlString = "\(endpoint)/\(bucket)/\(key)"
         guard let url = URL(string: urlString) else {
-            fatalError("Invalid R2 URL: \(urlString)")
+            HaispaceLogger.error("Invalid R2 URL: \(urlString)", category: "logging")
+            return nil
         }
 
         let now = Date()
