@@ -89,6 +89,7 @@ public struct PaymentView: View {
         }
     }
 
+    private var paymentSuccessView: some View {
         VStack(spacing: Spacing.xl) {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 80))
