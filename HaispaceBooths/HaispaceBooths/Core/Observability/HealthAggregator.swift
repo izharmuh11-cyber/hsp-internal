@@ -51,14 +51,12 @@ public actor HealthAggregator {
         self.p2p = p2p
     }
 
-    public convenience init() {
-        self.init(
-            camera: NoOpCameraCapability(),
-            editing: NoOpEditingCapability(),
-            payment: NoOpPaymentCapability(),
-            delivery: NoOpDeliveryCapability(),
-            p2p: NoOpP2PCapability()
-        )
+    public init() {
+        self.camera = NoOpCameraCapability()
+        self.editing = NoOpEditingCapability()
+        self.payment = NoOpPaymentCapability()
+        self.delivery = NoOpDeliveryCapability()
+        self.p2p = NoOpP2PCapability()
     }
 
     // MARK: - Supervisor Injection (post-init)

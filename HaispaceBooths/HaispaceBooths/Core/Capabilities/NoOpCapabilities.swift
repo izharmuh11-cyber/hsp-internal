@@ -14,7 +14,7 @@ import Foundation
 // MARK: - NoOpCameraCapability
 
 public actor NoOpCameraCapability: @preconcurrency CameraCapabilityProtocol {
-    public var healthSnapshot: CameraHealth { CameraHealth(status: .unavailable) }
+    public var healthSnapshot: CameraHealth { CameraHealth(status: .healthy) }
     public var metricsSnapshot: CameraMetrics { CameraMetrics() }
 
     public func prepare(configuration: CameraConfiguration) async throws {
@@ -34,7 +34,7 @@ public actor NoOpCameraCapability: @preconcurrency CameraCapabilityProtocol {
 // MARK: - NoOpEditingCapability
 
 public actor NoOpEditingCapability: @preconcurrency EditingCapabilityProtocol {
-    public var healthSnapshot: EditingHealth { EditingHealth(status: .unavailable) }
+    public var healthSnapshot: EditingHealth { EditingHealth(status: .healthy) }
     public var metricsSnapshot: EditingMetrics { EditingMetrics() }
 
     public func prepare(sessionId: SessionID, configuration: EditingConfiguration) async throws {
@@ -56,7 +56,7 @@ public actor NoOpEditingCapability: @preconcurrency EditingCapabilityProtocol {
 // MARK: - NoOpPaymentCapability
 
 public actor NoOpPaymentCapability: @preconcurrency PaymentCapabilityProtocol {
-    public var healthSnapshot: PaymentHealth { PaymentHealth(status: .unavailable) }
+    public var healthSnapshot: PaymentHealth { PaymentHealth(status: .healthy) }
     public var metricsSnapshot: PaymentMetrics { PaymentMetrics() }
 
     public func prepare(configuration: PaymentConfiguration) async throws {
@@ -87,7 +87,7 @@ public actor NoOpPaymentCapability: @preconcurrency PaymentCapabilityProtocol {
 // MARK: - NoOpDeliveryCapability
 
 public actor NoOpDeliveryCapability: @preconcurrency DeliveryCapabilityProtocol {
-    public var healthSnapshot: DeliveryHealth { DeliveryHealth(status: .unavailable) }
+    public var healthSnapshot: DeliveryHealth { DeliveryHealth(status: .healthy) }
     public var metricsSnapshot: DeliveryMetrics { DeliveryMetrics() }
 
     public func prepare(configuration: DeliveryConfiguration) async throws {
@@ -118,7 +118,7 @@ public actor NoOpDeliveryCapability: @preconcurrency DeliveryCapabilityProtocol 
 // MARK: - NoOpP2PCapability
 
 public actor NoOpP2PCapability: @preconcurrency P2PCapabilityProtocol {
-    public var healthSnapshot: P2PHealth { P2PHealth(status: .unavailable) }
+    public var healthSnapshot: P2PHealth { P2PHealth(status: .healthy) }
     public var metricsSnapshot: P2PMetrics { P2PMetrics() }
 
     public func prepare(configuration: P2PConfiguration) async throws {

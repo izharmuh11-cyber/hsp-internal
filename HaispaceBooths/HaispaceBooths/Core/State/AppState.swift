@@ -94,10 +94,10 @@ final class AppState {
     init() {
         self.orchestrator = WorkflowOrchestrator(
             camera: NoOpCameraCapability(),
-            editing: EditingCapability(),
-            payment: PaymentCapability(),
-            delivery: DeliveryCapability(),
-            p2p: P2PCapability()
+            editing: NoOpEditingCapability(),
+            payment: NoOpPaymentCapability(),
+            delivery: NoOpDeliveryCapability(),
+            p2p: NoOpP2PCapability()
         )
     }
 
