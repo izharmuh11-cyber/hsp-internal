@@ -31,7 +31,7 @@ public struct PaymentView: View {
                 Spacer()
 
                 if isPaymentConfirmed {
-                    successStateView
+                    paymentSuccessView
                 } else {
                     qrPaymentStateView
                 }
@@ -99,7 +99,7 @@ public struct PaymentView: View {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 80))
                 .foregroundStyle(Color.green)
-                .symbolEffect(.bounce, options: .nonRepeating)
+                .symbolEffect(.pulse) // .bounce with nonRepeating is iOS 18+ only in Swift 6
                 .accessibilityIdentifier("payment.successIcon")
 
             Text("Pembayaran Berhasil")

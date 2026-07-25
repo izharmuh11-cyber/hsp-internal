@@ -156,7 +156,7 @@ public actor AnalyticsEngine: AnalyticsEngineProtocol {
     }
 
     /// Track error terjadi
-    public func trackError(_ error: HaispaceError, sessionId: String? = nil) async {
+    func trackError(_ error: HaispaceError, sessionId: String? = nil) async {
         await track(.errorOccurred, sessionId: sessionId, properties: [
             AnalyticsProp.errorType: AnyCodable(String(describing: error)),
             AnalyticsProp.errorCode: AnyCodable(error.operatorNote)
