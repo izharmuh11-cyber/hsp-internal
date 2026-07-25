@@ -31,7 +31,7 @@ public struct SessionRestoreDecision: Sendable {
     public let sessionId: String
     public let action: RestoreAction
     public let reason: String
-    public let auditSummary: AuditSummary?
+    public let auditSummary: RestoreAuditSummary?
 
     public enum RestoreAction: Sendable {
         case restoreToDelivery      // Lanjutkan ke delivery (Invariant 20)
@@ -67,7 +67,7 @@ public struct SessionRestoreEngine {
 
     private func decideAction(
         for orphan: OrphanedSessionDecision,
-        auditSummary: AuditSummary?
+        auditSummary: RestoreAuditSummary?
     ) -> SessionRestoreDecision {
 
         let sessionId = orphan.sessionId
@@ -114,12 +114,12 @@ public struct SessionRestoreEngine {
 
     // MARK: - Private: Audit Read
 
-    private func readAuditSummary(sessionId: String) -> AuditSummary? {
+    private func readAuditSummary(sessionId: String) -> RestoreAuditSummary? {
         guard let record = SessionAuditTrail.read(sessionId: sessionId) else {
             return nil
         }
 
-        return AuditSummary(
+        return RestoreAuditSummary(
             sessionId: sessionId,
             hasFinancialTransaction: record.hasFinancialTransaction,
             hasDeliveryCompleted: record.events.contains(where: { $0.eventType == .deliveryCompleted }),
