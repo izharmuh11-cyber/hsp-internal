@@ -65,8 +65,8 @@ def aws_sigv4_request(method, host, bucket, key, access_key, secret_key, query_p
 
 def main():
     account_id = "66c40e0caaaa333ca0f4977bf32be2a7"
-    access_key = "b4612a74659f3f9ce39bd5ec1ffbefbf"
-    secret_key = "388aab4ee2e7cabb97c3ac0a30a34dac2f7480628ce6afbbec6e2c730ffcbc49"
+    access_key = "ccf641ce7fee6d2f1ec4c07a927f0b9c"
+    secret_key = "abd1bc78a2c92791610e68cf4c0d253a56090740a67eec5462f667c91858eb34"
     bucket = "haispaceproject"
     host = f"{account_id}.r2.cloudflarestorage.com"
     

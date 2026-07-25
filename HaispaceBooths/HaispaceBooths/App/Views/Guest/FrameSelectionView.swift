@@ -177,9 +177,9 @@ struct FrameSelectionView: View {
                             }
                         }) {
                             HStack {
-                                Text("Mulai Sesi Foto 📸")
+                                Text("Lanjut ke Pembayaran 💳")
                                     .font(.system(size: 20, weight: .bold))
-                                Image(systemName: "camera.fill")
+                                Image(systemName: "creditcard.fill")
                                     .font(.system(size: 18))
                             }
                             .foregroundStyle(.white)

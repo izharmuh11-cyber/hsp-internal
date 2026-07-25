@@ -1,0 +1,7 @@
+[2026-07-25T17:24:45Z] [INFO] BGTask license-check scheduled untuk 7 hari ke depan
+[2026-07-25T17:24:45Z] [WARN] [OrphanedSessionDetector.swift:72] OrphanedSessionDetector: 1 orphaned session(s) ditemukan
+[2026-07-25T17:24:45Z] [INFO] AppState setup dimulai
+r.swift:87] Analyzing orphan: 029EC8C3-CB79-46AA-9017-A62ED2BFCEAE — lastStage: templateSelection — hasPayment: false
+[2026-07-25T17:24:45Z] [WARN] [AppState.swift:179] AppState: ditemukan 1 orphaned session(s) — menunggu recovery
+[2026-07-25T17:24:45Z] [INFO] Tidak ada session tersimpan — perlu login
+[2026-07-25T17:24:45Z] [INFO] AppState setup selesai — boothReady: false — orphans: 1

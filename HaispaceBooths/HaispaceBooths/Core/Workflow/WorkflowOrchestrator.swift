@@ -89,31 +89,64 @@ public actor WorkflowOrchestrator: @preconcurrency WorkflowOrchestratorProtocol 
             
         case .selectPackage(let packageId):
             let sessionId = getOrCreateActiveSession()
+            
+            // Prepare Camera Capabilities right away for photo capture
+            try await camera.prepare(configuration: CameraConfiguration())
+            try await camera.startSession(sessionId: sessionId)
+
             SessionAuditTrail.append(
                 sessionId: sessionId.rawValue,
-                stage: .templateSelection,
+                stage: .capturing,
                 eventType: .packageSelected,
                 metadata: ["packageId": packageId]
             )
-            self.currentStage = .templateSelection
+            self.currentStage = .capturing
             
         case .selectTemplate(let frameId):
-            let sessionId = getOrCreateActiveSession()
-
-            // Prepare Camera & Editing Capabilities
-            try await camera.prepare(configuration: CameraConfiguration())
-            try await camera.startSession(sessionId: sessionId)
+            guard let sessionId = activeSessionId else { throw WorkflowError.sessionNotActive }
 
             let editingConfig = EditingConfiguration(frame: FrameReference(frameId: frameId, assetPath: "frames/\(frameId).png"))
             try await editing.prepare(sessionId: sessionId, configuration: editingConfig)
 
             SessionAuditTrail.append(
                 sessionId: sessionId.rawValue,
-                stage: .capturing,
+                stage: .exporting,
                 eventType: .templateSelected,
                 metadata: ["frameId": frameId]
             )
-            self.currentStage = .capturing
+            
+            self.currentStage = .exporting
+
+            let correlationId = currentCorrelationId ?? CorrelationID()
+            let exportResult = try await editing.requestExport(photoInput: "captured_photo.jpg", correlationId: correlationId)
+            self.activePhotoId = exportResult.photoId
+            self.activeOutputReference = exportResult.outputReference
+
+            // Transition to Payment
+            do {
+                try await payment.prepare(configuration: PaymentConfiguration())
+                _ = try await payment.requestPayment(
+                    sessionId: sessionId,
+                    correlationId: correlationId,
+                    amount: PaymentAmount(amountValue: 35000, method: .localQRIS),
+                    method: .localQRIS
+                )
+            } catch {
+                SessionAuditTrail.append(
+                    sessionId: sessionId.rawValue,
+                    stage: .exporting,
+                    eventType: .paymentFailed,
+                    metadata: ["error": error.localizedDescription]
+                )
+                throw error
+            }
+
+            SessionAuditTrail.append(
+                sessionId: sessionId.rawValue,
+                stage: .paymentRequested,
+                eventType: .paymentRequested
+            )
+            self.currentStage = .paymentRequested
             
         case .triggerShutter:
             guard currentStage == .capturing, let sessionId = activeSessionId else { throw WorkflowError.invalidTransition }

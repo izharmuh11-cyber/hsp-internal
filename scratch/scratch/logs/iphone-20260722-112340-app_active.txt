@@ -1,0 +1,747 @@
+[2026-07-19T05:25:16Z] [INFO] HaiCamera launched — build: #231 (0.1.0 (#231-50ed4d9)) — model: iPhone
+[2026-07-19T05:25:17Z] [INFO] [setup] Langkah 1: battery monitoring
+[2026-07-19T05:25:17Z] [INFO] [setupPipeline] Configuring capture callbacks
+[2026-07-19T05:25:17Z] [INFO] [setup] Langkah 2: setupCameraPipeline
+[2026-07-19T05:25:17Z] [INFO] [setup] Langkah 3: register connection callback
+[2026-07-19T05:25:17Z] [INFO] [setup] Langkah 4: register data callback
+[2026-07-19T05:25:17Z] [INFO] HaiCamera setup selesai
+[2026-07-19T05:25:17Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Tampaknya koneksi internet sedang offline.
+[2026-07-19T05:25:17Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Tampaknya koneksi internet sedang offline.
+[2026-07-19T05:25:20Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T05:25:21Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-19T05:25:21Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T05:25:22Z] [INFO] Koneksi TCP Client terhubung ke iPad: 10.117.244.5:55123
+[2026-07-19T05:25:22Z] [INFO] P2P connected — switching to paired state
+[2026-07-19T05:25:22Z] [INFO] [setupSession] Langkah 4: photo output ditambahkan
+[2026-07-19T05:25:22Z] [INFO] [setupSession] Langkah 3: video output ditambahkan
+[2026-07-19T05:25:22Z] [INFO] [setupSession] Langkah 2: video input ditambahkan
+[2026-07-19T05:25:22Z] [INFO] [setupSession] maxPhotoQualityPrioritization: quality
+[2026-07-19T05:25:22Z] [INFO] [setupSession] Langkah 1: beginConfiguration
+[2026-07-19T05:25:22Z] [INFO] Video HDR diaktifkan
+[2026-07-19T05:25:22Z] [INFO] [setupSession] Langkah 5: commitConfiguration selesai
+[2026-07-19T05:25:23Z] [INFO] Camera capture session started
+[2026-07-19T05:25:23Z] [INFO] [Zoom] Cached switchOver factors: [2.0]
+[2026-07-19T05:25:23Z] [INFO] [Zoom Normal] 1.0x → Kamera Utama Wide Angle (internal: 2.0x)
+[2026-07-19T05:25:23Z] [INFO] VideoEncoderService configured: 1280x720
+[2026-07-19T05:25:23Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T05:25:27Z] [INFO] Sesi dimulai di HaiCamera: 98B7E181-D3F3-41E6-8203-E08434DFD77E
+[2026-07-19T05:25:27Z] [INFO] [Zoom Normal] 1.0x → Kamera Utama Wide Angle (internal: 2.0x)
+[2026-07-19T05:25:27Z] [INFO] [RemoteControl] Menerima sinyal setZoom(1.0x)
+[2026-07-19T05:25:39Z] [INFO] [Zoom Normal] 1.0x → Kamera Utama Wide Angle (internal: 2.0x)
+[2026-07-19T05:25:39Z] [INFO] [RemoteControl] Menerima sinyal setPortraitMode(true)
+[2026-07-19T05:25:39Z] [INFO] [PortraitMode] depth output ditambahkan
+[2026-07-19T05:25:40Z] [INFO] [PortraitMode] session committed — preset:.photo + depthOutput aktif
+[2026-07-19T05:25:40Z] [INFO] VideoEncoderService: Invalidate session lama karena resolusi berubah (1280x720 -> 1560x1170)
+[2026-07-19T05:25:40Z] [INFO] VideoEncoderService configured: 1560x1170
+[2026-07-19T05:25:41Z] [INFO] [PortraitMode] Portrait effects matte delivery: ENABLED
+[2026-07-19T05:25:42Z] [INFO] [PortraitMode] Zoom dikunci di 1.0x
+a 1.0x (internal: 2.0x)
+[2026-07-19T05:25:53Z] [INFO] Depth + matte delivery aktif untuk jepretan Portrait
+ ID: nil)
+[2026-07-19T05:25:53Z] [INFO] Portrait effects matte delivery diaktifkan untuk jepretan
+[2026-07-19T05:25:53Z] [INFO] Mengambil foto dengan prioritization: 2
+[2026-07-19T05:25:53Z] [INFO] [PortraitMode] Koneksi depthOutput dinonaktifkan sementara untuk membebaskan bandwidth saat capture
+[2026-07-19T05:25:53Z] [INFO] Memicu jepretan foto kualitas tinggi (Smart HDR/Deep Fusion)
+[2026-07-19T05:25:54Z] [INFO] [PortraitMode] Koneksi depthOutput diaktifkan kembali setelah capture selesai
+[2026-07-19T05:25:54Z] [INFO] [PortraitMatte] Variable DOF AKTIF — depth gradient diterapkan
+[2026-07-19T05:25:55Z] [INFO] [SmartGrading] Adaptive Skin — measured R:0.78 G:0.56 B:0.45 | bias R:-0.014 G:-0.004 B:-0.003
+[2026-07-19T05:25:55Z] [INFO] [SmartGrading] Haispace Cinematic 4-Layer AKTIF (Preset: original) — Adaptive Skin ✓ Film Grain ✓
+[2026-07-19T05:25:55Z] [INFO] Portrait Bokeh ✓ (Preset: original, f/2.8): 3640KB (4032×3024px)
+[2026-07-19T05:25:55Z] [INFO] Mulai dual-channel transfer untuk B24AF736-491F-4B5A-9328-1A2B7F7D4659 (order: 0)
+[2026-07-19T05:25:55Z] [INFO] Thumbnail terkirim: B24AF736-491F-4B5A-9328-1A2B7F7D4659 (94263 bytes)
+[2026-07-19T05:25:55Z] [INFO] Full quality terkirim: B24AF736-491F-4B5A-9328-1A2B7F7D4659
+[2026-07-19T05:25:57Z] [INFO] VideoEncoderService: Invalidate session lama karena resolusi berubah (1560x1170 -> 1170x1560)
+[2026-07-19T05:25:57Z] [INFO] VideoEncoderService configured: 1170x1560
+[2026-07-19T05:26:00Z] [INFO] VideoEncoderService: Invalidate session lama karena resolusi berubah (1170x1560 -> 1560x1170)
+[2026-07-19T05:26:00Z] [INFO] VideoEncoderService configured: 1560x1170
+[2026-07-19T05:26:19Z] [INFO] Menerima trigger jepret dari iPad (indeks: 1, replace ID: nil)
+[2026-07-19T05:26:19Z] [INFO] Depth + matte delivery aktif untuk jepretan Portrait
+[2026-07-19T05:26:19Z] [INFO] Portrait effects matte delivery diaktifkan untuk jepretan
+[2026-07-19T05:26:19Z] [INFO] Mengambil foto dengan prioritization: 2
+[2026-07-19T05:26:19Z] [INFO] [PortraitMode] Koneksi depthOutput dinonaktifkan sementara untuk membebaskan bandwidth saat capture
+[2026-07-19T05:26:19Z] [INFO] Memicu jepretan foto kualitas tinggi (Smart HDR/Deep Fusion)
+[2026-07-19T05:26:21Z] [INFO] [PortraitMode] Koneksi depthOutput diaktifkan kembali setelah capture selesai
+[2026-07-19T05:26:21Z] [INFO] [PortraitMatte] Variable DOF AKTIF — depth gradient diterapkan
+[2026-07-19T05:26:21Z] [INFO] [SmartGrading] Adaptive Skin — measured R:0.77 G:0.57 B:0.47 | bias R:-0.012 G:-0.005 B:-0.006
+in ✓
+[2026-07-19T05:26:21Z] [INFO] Portrait Bokeh ✓ (Preset: original, f/2.8): 3615KB (4032×3024px)
+[2026-07-19T05:26:21Z] [INFO] Mulai dual-channel transfer untuk B7AF7C16-59DE-4E7C-A403-C045B4F56118 (order: 1)
+[2026-07-19T05:26:21Z] [INFO] Thumbnail terkirim: B7AF7C16-59DE-4E7C-A403-C045B4F56118 (91196 bytes)
+[2026-07-19T05:26:22Z] [INFO] Full quality terkirim: B7AF7C16-59DE-4E7C-A403-C045B4F56118
+[2026-07-19T05:26:38Z] [INFO] Gesture 'Hai' terdeteksi! Mengirim sinyal pemicu ke iPad.
+[2026-07-19T05:26:41Z] [INFO] Mengambil foto dengan prioritization: 2
+s: 2, replace ID: nil)
+[2026-07-19T05:26:41Z] [INFO] Depth + matte delivery aktif untuk jepretan Portrait
+[2026-07-19T05:26:41Z] [INFO] Portrait effects matte delivery diaktifkan untuk jepretan
+[2026-07-19T05:26:41Z] [INFO] [PortraitMode] Koneksi depthOutput dinonaktifkan sementara untuk membebaskan bandwidth saat capture
+[2026-07-19T05:26:41Z] [INFO] Memicu jepretan foto kualitas tinggi (Smart HDR/Deep Fusion)
+[2026-07-19T05:26:42Z] [INFO] [PortraitMode] Koneksi depthOutput diaktifkan kembali setelah capture selesai
+[2026-07-19T05:26:42Z] [INFO] [PortraitMatte] Variable DOF AKTIF — depth gradient diterapkan
+[2026-07-19T05:26:43Z] [INFO] [SmartGrading] Adaptive Skin — measured R:0.69 G:0.51 B:0.42 | bias R:-0.002 G:0.001 B:0.000
+[2026-07-19T05:26:43Z] [INFO] [SmartGrading] Haispace Cinematic 4-Layer AKTIF (Preset: original) — Adaptive Skin ✓ Film Grain ✓
+[2026-07-19T05:26:43Z] [INFO] Portrait Bokeh ✓ (Preset: original, f/2.8): 3782KB (4032×3024px)
+[2026-07-19T05:26:43Z] [INFO] Mulai dual-channel transfer untuk E44EDA14-B170-4EDF-B777-D84BF3B09AA3 (order: 2)
+[2026-07-19T05:26:43Z] [INFO] Thumbnail terkirim: E44EDA14-B170-4EDF-B777-D84BF3B09AA3 (80896 bytes)
+[2026-07-19T05:26:43Z] [INFO] Full quality terkirim: E44EDA14-B170-4EDF-B777-D84BF3B09AA3
+[2026-07-19T05:26:45Z] [INFO] VideoEncoderService: Invalidate session lama karena resolusi berubah (1560x1170 -> 1170x1560)
+[2026-07-19T05:26:45Z] [INFO] VideoEncoderService configured: 1170x1560
+[2026-07-19T05:34:15Z] [INFO] HaiCamera launched — build: #232 (0.1.0 (#232-407ce40)) — model: iPhone
+[2026-07-19T05:34:15Z] [INFO] [setup] Langkah 2: setupCameraPipeline
+[2026-07-19T05:34:15Z] [INFO] [setup] Langkah 1: battery monitoring
+[2026-07-19T05:34:15Z] [INFO] [setupPipeline] Configuring capture callbacks
+[2026-07-19T05:34:15Z] [INFO] [setup] Langkah 3: register connection callback
+[2026-07-19T05:34:15Z] [INFO] [setup] Langkah 4: register data callback
+[2026-07-19T05:34:15Z] [INFO] HaiCamera setup selesai
+[2026-07-19T05:34:17Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T05:34:18Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T05:34:24Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-19T05:34:24Z] [INFO] Koneksi TCP Client terhubung ke iPad: 10.117.244.5:55123
+[2026-07-19T05:34:24Z] [INFO] P2P connected — switching to paired state
+[2026-07-19T05:34:24Z] [INFO] [setupSession] Langkah 1: beginConfiguration
+[2026-07-19T05:34:24Z] [INFO] [setupSession] Langkah 2: video input ditambahkan
+[2026-07-19T05:34:24Z] [INFO] Video HDR diaktifkan
+[2026-07-19T05:34:24Z] [INFO] [setupSession] Langkah 3: video output ditambahkan
+[2026-07-19T05:34:24Z] [INFO] [setupSession] Langkah 4: photo output ditambahkan
+[2026-07-19T05:34:24Z] [INFO] [setupSession] Langkah 5: commitConfiguration selesai
+[2026-07-19T05:34:24Z] [INFO] [setupSession] maxPhotoQualityPrioritization: quality
+[2026-07-19T05:34:24Z] [INFO] [Zoom Normal] 1.0x → Kamera Utama Wide Angle (internal: 2.0x)
+[2026-07-19T05:34:24Z] [INFO] [Zoom] Cached switchOver factors: [2.0]
+[2026-07-19T05:34:24Z] [INFO] Camera capture session started
+[2026-07-19T05:34:25Z] [INFO] VideoEncoderService configured: 1280x720
+[2026-07-19T05:34:29Z] [INFO] Sesi dimulai di HaiCamera: 378CC566-C11C-42B9-BFEB-B9FF03E78829
+[2026-07-19T05:34:29Z] [INFO] [Zoom Normal] 1.0x → Kamera Utama Wide Angle (internal: 2.0x)
+[2026-07-19T05:34:36Z] [INFO] [RemoteControl] Menerima sinyal setColorPreset(bw_noir)
+[2026-07-19T05:34:37Z] [INFO] [RemoteControl] Menerima sinyal setColorPreset(original)
+[2026-07-19T05:34:39Z] [INFO] [Zoom Normal] 1.0x → Kamera Utama Wide Angle (internal: 2.0x)
+[2026-07-19T05:34:39Z] [INFO] [RemoteControl] Menerima sinyal setPortraitMode(true)
+[2026-07-19T05:34:39Z] [INFO] [RemoteControl] Menerima sinyal setZoom(1.0x)
+[2026-07-19T05:34:39Z] [INFO] [PortraitMode] depth output ditambahkan
+[2026-07-19T05:34:40Z] [INFO] [PortraitMode] session committed — preset:.photo + depthOutput aktif
+[2026-07-19T05:34:40Z] [INFO] VideoEncoderService: Invalidate session lama karena resolusi berubah (1280x720 -> 1560x1170)
+[2026-07-19T05:34:40Z] [INFO] VideoEncoderService configured: 1560x1170
+[2026-07-19T05:34:41Z] [INFO] [PortraitMode] Portrait effects matte delivery: ENABLED
+[2026-07-19T05:34:42Z] [INFO] [PortraitMode] Zoom dikunci di 1.0x
+[2026-07-19T05:34:42Z] [INFO] [Zoom Portrait] 1.0x → Kamera Utama 1.0x (internal: 2.0x)
+[2026-07-19T05:34:48Z] [INFO] Gesture 'Hai' terdeteksi! Mengirim sinyal pemicu ke iPad.
+[2026-07-19T05:34:52Z] [INFO] Depth + matte delivery aktif untuk jepretan Portrait
+ ID: nil)
+[2026-07-19T05:34:52Z] [INFO] Portrait effects matte delivery diaktifkan untuk jepretan
+[2026-07-19T05:34:52Z] [INFO] [PortraitMode] Koneksi depthOutput dinonaktifkan sementara untuk membebaskan bandwidth saat capture
+[2026-07-19T05:34:52Z] [INFO] Memicu jepretan foto kualitas tinggi (Smart HDR/Deep Fusion)
+[2026-07-19T05:34:53Z] [INFO] [PortraitMode] Koneksi depthOutput diaktifkan kembali setelah capture selesai
+[2026-07-19T05:34:53Z] [INFO] [PortraitMatte] Variable DOF AKTIF — depth gradient diterapkan
+[2026-07-19T05:34:53Z] [INFO] [SmartGrading] Haispace Cinematic 4-Layer AKTIF (Preset: original) — Adaptive Skin ✓
+:0.001
+[2026-07-19T05:34:54Z] [INFO] Portrait Bokeh ✓ (Preset: original, f/2.8): 1482KB (4032×3024px)
+[2026-07-19T05:34:54Z] [INFO] Mulai dual-channel transfer untuk 6973D124-021E-40CA-9342-B7C22CD54B5C (order: 0)
+[2026-07-19T05:34:54Z] [INFO] Thumbnail terkirim: 6973D124-021E-40CA-9342-B7C22CD54B5C (80248 bytes)
+[2026-07-19T05:34:54Z] [INFO] Full quality terkirim: 6973D124-021E-40CA-9342-B7C22CD54B5C
+[2026-07-19T05:35:18Z] [INFO] [RemoteControl] Menerima sinyal setPortraitMode(false)
+[2026-07-19T05:35:19Z] [INFO] [PortraitMode] dinonaktifkan, preset kembali ke hd1280x720
+[2026-07-19T05:35:20Z] [INFO] [PortraitMode OFF] Zoom dikembalikan ke 1.0x
+[2026-07-19T05:35:20Z] [INFO] [Zoom Normal] 1.0x → Kamera Utama Wide Angle (internal: 2.0x)
+[2026-07-19T05:35:20Z] [INFO] VideoEncoderService: Invalidate session lama karena resolusi berubah (1560x1170 -> 1280x720)
+[2026-07-19T05:35:20Z] [INFO] VideoEncoderService configured: 1280x720
+[2026-07-19T05:35:26Z] [INFO] Mengambil foto dengan prioritization: 3
+[2026-07-19T05:35:26Z] [INFO] Menerima trigger jepret dari iPad (indeks: 1, replace ID: nil)
+[2026-07-19T05:35:26Z] [INFO] Memicu jepretan foto kualitas tinggi (Smart HDR/Deep Fusion)
+[2026-07-19T05:35:26Z] [INFO] Mulai dual-channel transfer untuk C453F08F-A978-4A0F-AAF1-6F6A19C67B16 (order: 1)
+[2026-07-19T05:35:26Z] [INFO] Thumbnail terkirim: C453F08F-A978-4A0F-AAF1-6F6A19C67B16 (51171 bytes)
+[2026-07-19T05:35:26Z] [INFO] Full quality terkirim: C453F08F-A978-4A0F-AAF1-6F6A19C67B16
+[2026-07-19T05:35:56Z] [INFO] [RemoteControl] Menerima sinyal setZoom(1.0x)
+[2026-07-19T05:35:56Z] [INFO] [RemoteControl] Menerima sinyal setPortraitMode(true)
+[2026-07-19T05:35:56Z] [INFO] [Zoom Normal] 1.0x → Kamera Utama Wide Angle (internal: 2.0x)
+[2026-07-19T05:35:57Z] [INFO] [PortraitMode] depth output ditambahkan
+[2026-07-19T05:35:57Z] [INFO] [PortraitMode] session committed — preset:.photo + depthOutput aktif
+[2026-07-19T05:35:57Z] [INFO] VideoEncoderService: Invalidate session lama karena resolusi berubah (1280x720 -> 1560x1170)
+[2026-07-19T05:35:57Z] [INFO] VideoEncoderService configured: 1560x1170
+[2026-07-19T05:35:59Z] [INFO] [PortraitMode] Portrait effects matte delivery: ENABLED
+[2026-07-19T05:36:00Z] [INFO] [Zoom Portrait] 1.0x → Kamera Utama 1.0x (internal: 2.0x)
+[2026-07-19T05:36:03Z] [INFO] Gesture 'Hai' terdeteksi! Mengirim sinyal pemicu ke iPad.
+[2026-07-19T05:36:06Z] [INFO] Depth + matte delivery aktif untuk jepretan Portrait
+[2026-07-19T05:36:06Z] [INFO] Menerima trigger jepret dari iPad (indeks: 2, replace ID: nil)
+[2026-07-19T05:36:06Z] [INFO] Mengambil foto dengan prioritization: 2
+an untuk jepretan
+[2026-07-19T05:36:06Z] [INFO] [PortraitMode] Koneksi depthOutput dinonaktifkan sementara untuk membebaskan bandwidth saat capture
+[2026-07-19T05:36:06Z] [INFO] Memicu jepretan foto kualitas tinggi (Smart HDR/Deep Fusion)
+[2026-07-19T05:36:07Z] [INFO] [PortraitMode] Koneksi depthOutput diaktifkan kembali setelah capture selesai
+[2026-07-19T05:36:07Z] [INFO] [PortraitMatte] Variable DOF AKTIF — depth gradient diterapkan
+[2026-07-19T05:36:08Z] [INFO] [SmartGrading] Adaptive Skin — measured R:0.72 G:0.45 B:0.32 | bias R:-0.006 G:0.007 B:0.012
+[2026-07-19T05:36:08Z] [INFO] [SmartGrading] Haispace Cinematic 4-Layer AKTIF (Preset: original) — Adaptive Skin ✓
+[2026-07-19T05:36:08Z] [INFO] Portrait Bokeh ✓ (Preset: original, f/2.8): 1256KB (4032×3024px)
+[2026-07-19T05:36:08Z] [INFO] Mulai dual-channel transfer untuk 9A33648B-A89A-449B-BF86-4B7B7965F3CE (order: 2)
+[2026-07-19T05:36:08Z] [INFO] Thumbnail terkirim: 9A33648B-A89A-449B-BF86-4B7B7965F3CE (64979 bytes)
+[2026-07-19T05:36:08Z] [INFO] Full quality terkirim: 9A33648B-A89A-449B-BF86-4B7B7965F3CE
+[2026-07-19T05:36:35Z] [INFO] Gesture 'Hai' terdeteksi! Mengirim sinyal pemicu ke iPad.
+[2026-07-19T05:36:38Z] [INFO] Depth + matte delivery aktif untuk jepretan Portrait
+[2026-07-19T05:36:38Z] [INFO] Menerima trigger jepret dari iPad (indeks: 3, replace ID: nil)
+[2026-07-19T05:36:38Z] [INFO] Portrait effects matte delivery diaktifkan untuk jepretan
+[2026-07-19T05:36:38Z] [INFO] Mengambil foto dengan prioritization: 2
+[2026-07-19T05:36:38Z] [INFO] [PortraitMode] Koneksi depthOutput dinonaktifkan sementara untuk membebaskan bandwidth saat capture
+[2026-07-19T05:36:38Z] [INFO] Memicu jepretan foto kualitas tinggi (Smart HDR/Deep Fusion)
+[2026-07-19T05:36:40Z] [INFO] [PortraitMode] Koneksi depthOutput diaktifkan kembali setelah capture selesai
+[2026-07-19T05:36:40Z] [INFO] [PortraitMatte] Variable DOF AKTIF — depth gradient diterapkan
+[2026-07-19T05:36:40Z] [INFO] [SmartGrading] Haispace Cinematic 4-Layer AKTIF (Preset: original) — Adaptive Skin ✓
+[2026-07-19T05:36:40Z] [INFO] [SmartGrading] Adaptive Skin — measured R:0.70 G:0.42 B:0.25 | bias R:-0.003 G:0.010 B:0.021
+[2026-07-19T05:36:41Z] [INFO] Portrait Bokeh ✓ (Preset: original, f/2.8): 1081KB (4032×3024px)
+[2026-07-19T05:36:41Z] [INFO] Mulai dual-channel transfer untuk 001F12CC-E4E5-4A08-81FE-889E81BEE2EF (order: 3)
+[2026-07-19T05:36:41Z] [INFO] Thumbnail terkirim: 001F12CC-E4E5-4A08-81FE-889E81BEE2EF (58627 bytes)
+[2026-07-19T05:36:41Z] [INFO] Full quality terkirim: 001F12CC-E4E5-4A08-81FE-889E81BEE2EF
+[2026-07-19T05:37:03Z] [INFO] Gesture 'Hai' terdeteksi! Mengirim sinyal pemicu ke iPad.
+[2026-07-19T05:37:06Z] [INFO] Depth + matte delivery aktif untuk jepretan Portrait
+[2026-07-19T05:37:06Z] [INFO] Portrait effects matte delivery diaktifkan untuk jepretan
+nil)
+[2026-07-19T05:37:06Z] [INFO] Mengambil foto dengan prioritization: 2
+[2026-07-19T05:37:06Z] [INFO] [PortraitMode] Koneksi depthOutput dinonaktifkan sementara untuk membebaskan bandwidth saat capture
+[2026-07-19T05:37:06Z] [INFO] Memicu jepretan foto kualitas tinggi (Smart HDR/Deep Fusion)
+[2026-07-19T05:37:08Z] [INFO] [PortraitMode] Koneksi depthOutput diaktifkan kembali setelah capture selesai
+[2026-07-19T05:37:08Z] [INFO] [PortraitMatte] Variable DOF AKTIF — depth gradient diterapkan
+[2026-07-19T05:37:08Z] [INFO] [SmartGrading] Haispace Cinematic 4-Layer AKTIF (Preset: original) — Adaptive Skin ✓
+0.002
+[2026-07-19T05:37:09Z] [INFO] Portrait Bokeh ✓ (Preset: original, f/2.8): 1113KB (4032×3024px)
+[2026-07-19T05:37:09Z] [INFO] Mulai dual-channel transfer untuk 3D448C48-4698-4401-9572-F832EB130782 (order: 4)
+[2026-07-19T05:37:09Z] [INFO] Thumbnail terkirim: 3D448C48-4698-4401-9572-F832EB130782 (59725 bytes)
+[2026-07-19T05:37:09Z] [INFO] Full quality terkirim: 3D448C48-4698-4401-9572-F832EB130782
+[2026-07-19T05:37:27Z] [INFO] VideoEncoderService: Invalidate session lama karena resolusi berubah (1560x1170 -> 1170x1560)
+[2026-07-19T05:37:27Z] [INFO] VideoEncoderService configured: 1170x1560
+[2026-07-19T05:45:37Z] [INFO] HaiCamera launched — build: #233 (0.1.0 (#233-53261e0)) — model: iPhone
+[2026-07-19T05:45:37Z] [INFO] [setupPipeline] Configuring capture callbacks
+[2026-07-19T05:45:37Z] [INFO] [setup] Langkah 1: battery monitoring
+[2026-07-19T05:45:37Z] [INFO] [setup] Langkah 3: register connection callback
+[2026-07-19T05:45:37Z] [INFO] [setup] Langkah 4: register data callback
+[2026-07-19T05:45:37Z] [INFO] HaiCamera setup selesai
+[2026-07-19T05:45:39Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T05:45:39Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-19T05:45:39Z] [INFO] P2P connected — switching to paired state
+[2026-07-19T05:45:39Z] [INFO] Koneksi TCP Client terhubung ke iPad: 10.117.244.5:55123
+[2026-07-19T05:45:39Z] [INFO] [setupSession] Langkah 1: beginConfiguration
+[2026-07-19T05:45:39Z] [INFO] Video HDR diaktifkan
+[2026-07-19T05:45:39Z] [INFO] [setupSession] Langkah 2: video input ditambahkan
+[2026-07-19T05:45:39Z] [INFO] [setupSession] Langkah 4: photo output ditambahkan
+[2026-07-19T05:45:39Z] [INFO] [setupSession] Langkah 5: commitConfiguration selesai
+[2026-07-19T05:45:39Z] [INFO] [setupSession] maxPhotoQualityPrioritization: quality
+[2026-07-19T05:45:39Z] [INFO] [setupSession] Langkah 3: video output ditambahkan
+[2026-07-19T05:45:40Z] [INFO] [Zoom Normal] 1.0x → Kamera Utama Wide Angle (internal: 2.0x)
+[2026-07-19T05:45:40Z] [INFO] [Zoom] Cached switchOver factors: [2.0]
+[2026-07-19T05:45:40Z] [INFO] Camera capture session started
+[2026-07-19T05:45:40Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T05:45:40Z] [INFO] VideoEncoderService configured: 1280x720
+[2026-07-19T05:45:45Z] [INFO] Sesi dimulai di HaiCamera: 5092DE43-1101-4DEC-9C54-6BABD0DF4F2C
+[2026-07-19T05:45:45Z] [INFO] [RemoteControl] Menerima sinyal setZoom(1.0x)
+[2026-07-19T05:45:45Z] [INFO] [Zoom Normal] 1.0x → Kamera Utama Wide Angle (internal: 2.0x)
+[2026-07-19T05:45:55Z] [INFO] [RemoteControl] Menerima sinyal setZoom(1.0x)
+[2026-07-19T05:45:55Z] [INFO] [Zoom Normal] 1.0x → Kamera Utama Wide Angle (internal: 2.0x)
+[2026-07-19T05:45:55Z] [INFO] [RemoteControl] Menerima sinyal setPortraitMode(true)
+[2026-07-19T05:45:55Z] [INFO] [PortraitMode] depth output ditambahkan
+[2026-07-19T05:45:56Z] [INFO] [PortraitMode] session committed — preset:.photo + depthOutput aktif
+[2026-07-19T05:45:56Z] [INFO] VideoEncoderService: Invalidate session lama karena resolusi berubah (1280x720 -> 1560x1170)
+[2026-07-19T05:45:56Z] [INFO] VideoEncoderService configured: 1560x1170
+[2026-07-19T05:45:58Z] [INFO] [PortraitMode] Portrait effects matte delivery: ENABLED
+[2026-07-19T05:45:59Z] [INFO] [Zoom Portrait] 1.0x → Kamera Utama 1.0x (internal: 2.0x)
+[2026-07-19T05:45:59Z] [INFO] [PortraitMode] Zoom dikunci di 1.0x
+[2026-07-19T05:46:03Z] [INFO] Gesture 'Hai' terdeteksi! Mengirim sinyal pemicu ke iPad.
+[2026-07-19T05:46:06Z] [INFO] Depth + matte delivery aktif untuk jepretan Portrait
+[2026-07-19T05:46:06Z] [INFO] Menerima trigger jepret dari iPad (indeks: 0, replace ID: nil)
+[2026-07-19T05:46:06Z] [INFO] Portrait effects matte delivery diaktifkan untuk jepretan
+[2026-07-19T05:46:06Z] [INFO] [PortraitMode] Koneksi depthOutput dinonaktifkan sementara untuk membebaskan bandwidth saat capture
+[2026-07-19T05:46:06Z] [INFO] Memicu jepretan foto kualitas tinggi (Smart HDR/Deep Fusion)
+[2026-07-19T05:46:07Z] [INFO] [PortraitMode] Koneksi depthOutput diaktifkan kembali setelah capture selesai
+[2026-07-19T05:46:07Z] [INFO] [PortraitMatte] Variable Depth Blur mask AKTIF
+[2026-07-19T05:46:07Z] [INFO] [SmartGrading] Haispace Cinematic Grading AKTIF (Preset: original)
+[2026-07-19T05:46:07Z] [INFO] Portrait Bokeh ✓ (Preset: original, f/2.8): 1360KB (4032×3024px)
+[2026-07-19T05:46:07Z] [INFO] Mulai dual-channel transfer untuk FF3B35AE-6CF9-4CD3-9737-FA79F51AD12A (order: 0)
+[2026-07-19T05:46:07Z] [INFO] Thumbnail terkirim: FF3B35AE-6CF9-4CD3-9737-FA79F51AD12A (75072 bytes)
+[2026-07-19T05:46:07Z] [INFO] Full quality terkirim: FF3B35AE-6CF9-4CD3-9737-FA79F51AD12A
+[2026-07-19T05:46:22Z] [INFO] Gesture 'Hai' terdeteksi! Mengirim sinyal pemicu ke iPad.
+[2026-07-19T05:46:25Z] [INFO] Mengambil foto dengan prioritization: 2
+[2026-07-19T05:46:25Z] [INFO] Menerima trigger jepret dari iPad (indeks: 1, replace ID: nil)
+[2026-07-19T05:46:25Z] [INFO] Portrait effects matte delivery diaktifkan untuk jepretan
+[2026-07-19T05:46:25Z] [INFO] Memicu jepretan foto kualitas tinggi (Smart HDR/Deep Fusion)
+[2026-07-19T05:46:25Z] [INFO] [PortraitMode] Koneksi depthOutput dinonaktifkan sementara untuk membebaskan bandwidth saat capture
+[2026-07-19T05:46:26Z] [INFO] [PortraitMode] Koneksi depthOutput diaktifkan kembali setelah capture selesai
+[2026-07-19T05:46:26Z] [INFO] [SmartGrading] Haispace Cinematic Grading AKTIF (Preset: original)
+[2026-07-19T05:46:26Z] [INFO] Mulai dual-channel transfer untuk 2D84719D-9764-4654-A472-01AA5945B9C6 (order: 1)
+[2026-07-19T05:46:26Z] [INFO] Thumbnail terkirim: 2D84719D-9764-4654-A472-01AA5945B9C6 (74890 bytes)
+[2026-07-19T05:46:26Z] [INFO] Full quality terkirim: 2D84719D-9764-4654-A472-01AA5945B9C6
+[2026-07-19T05:46:28Z] [INFO] [RemoteControl] Menerima sinyal setPortraitMode(false)
+[2026-07-19T05:46:29Z] [INFO] [PortraitMode] dinonaktifkan, preset kembali ke hd1280x720
+[2026-07-19T05:46:30Z] [INFO] [PortraitMode OFF] Zoom dikembalikan ke 1.0x
+[2026-07-19T05:46:30Z] [INFO] [Zoom Normal] 1.0x → Kamera Utama Wide Angle (internal: 2.0x)
+[2026-07-19T05:46:30Z] [INFO] VideoEncoderService: Invalidate session lama karena resolusi berubah (1560x1170 -> 1280x720)
+[2026-07-19T05:46:30Z] [INFO] VideoEncoderService configured: 1280x720
+[2026-07-19T05:46:31Z] [INFO] Gesture 'Hai' terdeteksi! Mengirim sinyal pemicu ke iPad.
+[2026-07-19T05:46:35Z] [INFO] Mengambil foto dengan prioritization: 3
+[2026-07-19T05:46:35Z] [INFO] Memicu jepretan foto kualitas tinggi (Smart HDR/Deep Fusion)
+[2026-07-19T05:46:35Z] [INFO] Menerima trigger jepret dari iPad (indeks: 2, replace ID: nil)
+[2026-07-19T05:46:35Z] [INFO] Mulai dual-channel transfer untuk 0C44F27A-573F-407D-8FFE-7B20E64429DD (order: 2)
+[2026-07-19T05:46:35Z] [INFO] Thumbnail terkirim: 0C44F27A-573F-407D-8FFE-7B20E64429DD (55473 bytes)
+[2026-07-19T05:46:35Z] [INFO] Full quality terkirim: 0C44F27A-573F-407D-8FFE-7B20E64429DD
+[2026-07-19T05:47:17Z] [INFO] [RemoteControl] Menerima sinyal setZoom(2.0x)
+[2026-07-19T05:47:17Z] [INFO] [Zoom Normal] 2.0x → Digital Crop Kamera Utama (internal: 4.0x)
+[2026-07-19T05:47:26Z] [INFO] [Zoom Normal] 0.5x → Ultra Wide (internal: 1.0x)
+[2026-07-19T05:47:26Z] [INFO] [RemoteControl] Menerima sinyal setZoom(0.5x)
+[2026-07-19T05:47:30Z] [INFO] Gesture 'Hai' terdeteksi! Mengirim sinyal pemicu ke iPad.
+[2026-07-19T05:47:33Z] [INFO] Menerima trigger jepret dari iPad (indeks: 3, replace ID: nil)
+[2026-07-19T05:47:33Z] [INFO] Mengambil foto dengan prioritization: 3
+[2026-07-19T05:47:33Z] [INFO] Memicu jepretan foto kualitas tinggi (Smart HDR/Deep Fusion)
+[2026-07-19T05:47:34Z] [INFO] Mulai dual-channel transfer untuk 3C4F1E4E-C7AD-4B3E-B6BD-F92FDD320A08 (order: 3)
+[2026-07-19T05:47:34Z] [INFO] Thumbnail terkirim: 3C4F1E4E-C7AD-4B3E-B6BD-F92FDD320A08 (89019 bytes)
+[2026-07-19T05:47:34Z] [INFO] Full quality terkirim: 3C4F1E4E-C7AD-4B3E-B6BD-F92FDD320A08
+[2026-07-19T05:47:51Z] [INFO] VideoEncoderService: Invalidate session lama karena resolusi berubah (1280x720 -> 720x1280)
+[2026-07-19T05:47:51Z] [INFO] VideoEncoderService configured: 720x1280
+[2026-07-19T07:14:48Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Waktu permintaan habis.
+[2026-07-19T07:14:48Z] [WARN] [P2PClientService.swift:193] TCP Stream terhenti dari iPad atau error: POSIXErrorCode(rawValue: 53): Software caused connection abort
+[2026-07-19T07:14:48Z] [WARN] [CameraP2PStore.swift:101] Auto-reconnect dibatalkan: QR Payload sudah expired. Perlu scan ulang.
+[2026-07-19T07:14:49Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-19T07:14:49Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T07:14:49Z] [INFO] P2P connected — switching to paired state
+[2026-07-19T07:14:49Z] [INFO] Koneksi TCP Client terhubung ke iPad: 10.117.244.5:55123
+[2026-07-19T07:14:50Z] [INFO] Camera capture session started (re-use)
+[2026-07-19T07:14:50Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T07:14:59Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T07:15:45Z] [INFO] Mencoba auto-reconnect pertama kali...
+[2026-07-19T07:15:45Z] [WARN] [P2PClientService.swift:193] TCP Stream terhenti dari iPad atau error: POSIXErrorCode(rawValue: 53): Software caused connection abort
+[2026-07-19T07:15:45Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-19T07:15:46Z] [INFO] Koneksi TCP Client terhubung ke iPad: 10.117.244.5:55123
+[2026-07-19T07:15:46Z] [INFO] P2P connected — switching to paired state
+[2026-07-19T07:15:46Z] [INFO] Camera capture session started (re-use)
+[2026-07-19T07:15:47Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T07:15:47Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T07:15:48Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T08:10:17Z] [INFO] HaiCamera launched — build: #233 (0.1.0 (#233-53261e0)) — model: iPhone
+[2026-07-19T08:10:17Z] [INFO] [setup] Langkah 1: battery monitoring
+[2026-07-19T08:10:17Z] [INFO] [setupPipeline] Configuring capture callbacks
+[2026-07-19T08:10:17Z] [INFO] [setup] Langkah 3: register connection callback
+[2026-07-19T08:10:17Z] [INFO] [setup] Langkah 4: register data callback
+[2026-07-19T08:10:17Z] [INFO] HaiCamera setup selesai
+[2026-07-19T08:10:18Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T08:10:18Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-19T08:10:19Z] [INFO] P2P connected — switching to paired state
+[2026-07-19T08:10:19Z] [INFO] Koneksi TCP Client terhubung ke iPad: 10.117.244.5:55123
+[2026-07-19T08:10:19Z] [INFO] [setupSession] Langkah 2: video input ditambahkan
+[2026-07-19T08:10:19Z] [INFO] [setupSession] Langkah 1: beginConfiguration
+[2026-07-19T08:10:19Z] [INFO] Video HDR diaktifkan
+[2026-07-19T08:10:19Z] [INFO] [setupSession] Langkah 3: video output ditambahkan
+[2026-07-19T08:10:19Z] [INFO] [setupSession] maxPhotoQualityPrioritization: quality
+[2026-07-19T08:10:19Z] [INFO] [setupSession] Langkah 4: photo output ditambahkan
+[2026-07-19T08:10:19Z] [INFO] [setupSession] Langkah 5: commitConfiguration selesai
+[2026-07-19T08:10:19Z] [INFO] Camera capture session started
+[2026-07-19T08:10:19Z] [INFO] [Zoom] Cached switchOver factors: [2.0]
+ Angle (internal: 2.0x)
+[2026-07-19T08:10:19Z] [INFO] VideoEncoderService configured: 1280x720
+[2026-07-19T08:10:19Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T08:10:21Z] [INFO] VideoEncoderService: Invalidate session lama karena resolusi berubah (1280x720 -> 720x1280)
+[2026-07-19T08:10:21Z] [INFO] VideoEncoderService configured: 720x1280
+[2026-07-19T08:10:24Z] [WARN] [P2PClientService.swift:193] TCP Stream terhenti dari iPad atau error: POSIXErrorCode(rawValue: 53): Software caused connection abort
+[2026-07-19T08:10:24Z] [INFO] Mencoba auto-reconnect pertama kali...
+[2026-07-19T08:10:25Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-19T08:10:25Z] [INFO] Koneksi TCP Client terhubung ke iPad: 10.117.244.5:55123
+[2026-07-19T08:10:25Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Kehilangan jaringan koneksi.
+[2026-07-19T08:10:25Z] [INFO] P2P connected — switching to paired state
+[2026-07-19T08:10:25Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Kehilangan jaringan koneksi.
+[2026-07-19T08:10:25Z] [INFO] Camera capture session started (re-use)
+[2026-07-19T08:10:26Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T09:04:45Z] [WARN] [P2PClientService.swift:193] TCP Stream terhenti dari iPad atau error: POSIXErrorCode(rawValue: 53): Software caused connection abort
+[2026-07-19T09:04:45Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Waktu permintaan habis.
+[2026-07-19T09:04:45Z] [WARN] [CameraP2PStore.swift:101] Auto-reconnect dibatalkan: QR Payload sudah expired. Perlu scan ulang.
+[2026-07-19T09:04:46Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T09:04:46Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-19T09:04:46Z] [INFO] P2P connected — switching to paired state
+[2026-07-19T09:04:46Z] [INFO] Koneksi TCP Client terhubung ke iPad: 10.117.244.5:55123
+[2026-07-19T09:04:47Z] [INFO] Camera capture session started (re-use)
+[2026-07-19T09:04:47Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T09:05:34Z] [WARN] [P2PClientService.swift:193] TCP Stream terhenti dari iPad atau error: POSIXErrorCode(rawValue: 53): Software caused connection abort
+[2026-07-19T09:05:34Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Kehilangan jaringan koneksi.
+[2026-07-19T09:05:34Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-19T09:05:34Z] [INFO] Mencoba auto-reconnect pertama kali...
+[2026-07-19T09:05:34Z] [INFO] P2P connected — switching to paired state
+[2026-07-19T09:05:34Z] [INFO] Koneksi TCP Client terhubung ke iPad: 10.117.244.5:55123
+[2026-07-19T09:05:35Z] [INFO] Camera capture session started (re-use)
+[2026-07-19T09:05:36Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T09:05:36Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T09:05:47Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T09:06:35Z] [WARN] [P2PClientService.swift:193] TCP Stream terhenti dari iPad atau error: Error Domain=P2PClientService Code=-1 "Connection closed" UserInfo={NSLocalizedDescription=Connection closed}
+[2026-07-19T09:06:35Z] [INFO] Camera capture session stopped
+[2026-07-19T09:06:35Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-19T09:06:35Z] [INFO] Mencoba auto-reconnect pertama kali...
+[2026-07-19T09:06:37Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T09:06:38Z] [WARN] [P2PClientService.swift:145] Koneksi TCP gagal atau timeout. Fallback ke MPC.
+[2026-07-19T09:06:38Z] [INFO] Mulai browse P2P (MPC Fallback) untuk service: haibooth dengan eventId: evt-default
+[2026-07-19T09:06:39Z] [INFO] Ditemukan iPad host: HaiBooth iPad, discoveryInfo: Optional(["booth": "7E7B6F35-E0BA-471A-83E7-1D61AE0F9D08", "eventId": "evt-ung"])
+[2026-07-19T09:06:39Z] [WARN] [P2PClientService.swift:403] Abaikan iPad host karena eventId tidak cocok (Info: evt-ung, Target: evt-default)
+[2026-07-19T09:06:40Z] [INFO] Auto reconnect attempt 2 ke iPad...
+[2026-07-19T09:06:40Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-19T09:06:40Z] [INFO] Koneksi TCP Client terhubung ke iPad: 10.117.244.5:55123
+[2026-07-19T09:06:40Z] [INFO] P2P connected — switching to paired state
+[2026-07-19T09:06:40Z] [INFO] Camera capture session started (re-use)
+[2026-07-19T09:06:48Z] [WARN] [P2PClientService.swift:193] TCP Stream terhenti dari iPad atau error: Error Domain=P2PClientService Code=-1 "Connection closed" UserInfo={NSLocalizedDescription=Connection closed}
+[2026-07-19T09:06:48Z] [INFO] Camera capture session stopped
+[2026-07-19T09:06:48Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-19T09:06:49Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T09:18:23Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Kehilangan jaringan koneksi.
+[2026-07-19T09:18:23Z] [WARN] [P2PClientService.swift:145] Koneksi TCP gagal atau timeout. Fallback ke MPC.
+[2026-07-19T09:18:23Z] [WARN] [CameraP2PStore.swift:122] QR Payload expired saat auto-reconnect. Hentikan dan minta scan ulang.
+[2026-07-19T09:18:23Z] [INFO] Mulai browse P2P (MPC Fallback) untuk service: haibooth dengan eventId: evt-default
+[2026-07-19T09:18:23Z] [WARN] [P2PClientService.swift:403] Abaikan iPad host karena eventId tidak cocok (Info: evt-ung, Target: evt-default)
+[2026-07-19T09:18:23Z] [WARN] [P2PClientService.swift:403] Abaikan iPad host karena eventId tidak cocok (Info: evt-ung, Target: evt-default)
+[2026-07-19T09:18:23Z] [INFO] Ditemukan iPad host: HaiBooth iPad, discoveryInfo: Optional(["booth": "5BCA7988-5C88-4F72-B08A-C75784D99906", "eventId": "evt-ung"])
+[2026-07-19T09:18:23Z] [INFO] Ditemukan iPad host: HaiBooth iPad, discoveryInfo: Optional(["booth": "5BCA7988-5C88-4F72-B08A-C75784D99906", "eventId": "evt-ung"])
+[2026-07-19T09:18:25Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T09:18:26Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-19T09:18:27Z] [INFO] P2P connected — switching to paired state
+[2026-07-19T09:18:27Z] [INFO] Koneksi TCP Client terhubung ke iPad: 10.117.244.5:55123
+[2026-07-19T09:18:27Z] [INFO] Camera capture session started (re-use)
+[2026-07-19T11:12:34Z] [WARN] [P2PClientService.swift:193] TCP Stream terhenti dari iPad atau error: POSIXErrorCode(rawValue: 53): Software caused connection abort
+[2026-07-19T11:12:34Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Waktu permintaan habis.
+[2026-07-19T11:12:34Z] [WARN] [CameraP2PStore.swift:101] Auto-reconnect dibatalkan: QR Payload sudah expired. Perlu scan ulang.
+[2026-07-19T11:12:34Z] [INFO] Ditemukan iPad host: HaiBooth iPad, discoveryInfo: Optional(["booth": "ED9D9CBD-949D-428F-9E98-75DE063F6C94", "eventId": "evt-ung"])
+[2026-07-19T11:12:36Z] [INFO] MPC terhubung ke: HaiBooth iPad
+[2026-07-19T11:12:36Z] [INFO] P2P connected — switching to paired state
+[2026-07-19T11:12:36Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T11:12:36Z] [INFO] Camera capture session started (re-use)
+[2026-07-19T11:12:37Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T11:12:57Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Kehilangan jaringan koneksi.
+[2026-07-19T11:12:57Z] [INFO] Ditemukan iPad host: HaiBooth iPad, discoveryInfo: Optional(["eventId": "evt-ung", "booth": "ED9D9CBD-949D-428F-9E98-75DE063F6C94"])
+[2026-07-19T11:14:29Z] [INFO] HaiCamera launched — build: #233 (0.1.0 (#233-53261e0)) — model: iPhone
+[2026-07-19T11:14:29Z] [INFO] [setup] Langkah 2: setupCameraPipeline
+[2026-07-19T11:14:29Z] [INFO] [setupPipeline] Configuring capture callbacks
+[2026-07-19T11:14:29Z] [INFO] [setup] Langkah 1: battery monitoring
+[2026-07-19T11:14:29Z] [INFO] [setup] Langkah 3: register connection callback
+[2026-07-19T11:14:29Z] [INFO] [setup] Langkah 4: register data callback
+[2026-07-19T11:14:29Z] [INFO] HaiCamera setup selesai
+[2026-07-19T11:14:31Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T11:14:32Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-19T11:14:32Z] [INFO] P2P connected — switching to paired state
+[2026-07-19T11:14:32Z] [INFO] Koneksi TCP Client terhubung ke iPad: 10.117.244.5:55123
+[2026-07-19T11:14:32Z] [INFO] [setupSession] Langkah 1: beginConfiguration
+[2026-07-19T11:14:32Z] [INFO] Video HDR diaktifkan
+[2026-07-19T11:14:32Z] [INFO] [setupSession] Langkah 2: video input ditambahkan
+[2026-07-19T11:14:32Z] [INFO] [setupSession] Langkah 4: photo output ditambahkan
+[2026-07-19T11:14:32Z] [INFO] [setupSession] Langkah 3: video output ditambahkan
+[2026-07-19T11:14:32Z] [INFO] [setupSession] Langkah 5: commitConfiguration selesai
+[2026-07-19T11:14:32Z] [INFO] [setupSession] maxPhotoQualityPrioritization: quality
+[2026-07-19T11:14:32Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T11:14:32Z] [INFO] [Zoom] Cached switchOver factors: [2.0]
+[2026-07-19T11:14:32Z] [INFO] Camera capture session started
+[2026-07-19T11:14:32Z] [INFO] [Zoom Normal] 1.0x → Kamera Utama Wide Angle (internal: 2.0x)
+[2026-07-19T11:14:33Z] [INFO] VideoEncoderService configured: 1280x720
+[2026-07-19T11:21:40Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Waktu permintaan habis.
+[2026-07-19T11:21:40Z] [WARN] [CameraP2PStore.swift:101] Auto-reconnect dibatalkan: QR Payload sudah expired. Perlu scan ulang.
+[2026-07-19T11:21:40Z] [WARN] [P2PClientService.swift:193] TCP Stream terhenti dari iPad atau error: POSIXErrorCode(rawValue: 53): Software caused connection abort
+[2026-07-19T11:21:41Z] [INFO] VideoEncoderService: Invalidate session lama karena resolusi berubah (1280x720 -> 720x1280)
+[2026-07-19T11:21:41Z] [INFO] VideoEncoderService configured: 720x1280
+[2026-07-19T11:21:42Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-19T11:21:42Z] [INFO] P2P connected — switching to paired state
+[2026-07-19T11:21:42Z] [INFO] Koneksi TCP Client terhubung ke iPad: 10.117.244.5:55123
+[2026-07-19T11:21:42Z] [INFO] Camera capture session started (re-use)
+[2026-07-19T11:21:43Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T11:21:44Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T11:30:09Z] [INFO] HaiCamera launched — build: #233 (0.1.0 (#233-53261e0)) — model: iPhone
+[2026-07-19T11:30:09Z] [INFO] [setupPipeline] Configuring capture callbacks
+[2026-07-19T11:30:09Z] [INFO] [setup] Langkah 2: setupCameraPipeline
+[2026-07-19T11:30:09Z] [INFO] [setup] Langkah 1: battery monitoring
+[2026-07-19T11:30:09Z] [INFO] [setup] Langkah 3: register connection callback
+[2026-07-19T11:30:09Z] [INFO] [setup] Langkah 4: register data callback
+[2026-07-19T11:30:09Z] [INFO] HaiCamera setup selesai
+[2026-07-19T11:30:11Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-19T11:30:11Z] [INFO] Koneksi TCP Client terhubung ke iPad: 10.117.244.5:55123
+[2026-07-19T11:30:11Z] [INFO] [setupSession] Langkah 2: video input ditambahkan
+[2026-07-19T11:30:11Z] [INFO] P2P connected — switching to paired state
+[2026-07-19T11:30:11Z] [INFO] [setupSession] Langkah 1: beginConfiguration
+[2026-07-19T11:30:11Z] [INFO] Video HDR diaktifkan
+[2026-07-19T11:30:11Z] [INFO] [setupSession] Langkah 4: photo output ditambahkan
+[2026-07-19T11:30:11Z] [INFO] [setupSession] Langkah 5: commitConfiguration selesai
+[2026-07-19T11:30:11Z] [INFO] [setupSession] maxPhotoQualityPrioritization: quality
+[2026-07-19T11:30:11Z] [INFO] [setupSession] Langkah 3: video output ditambahkan
+[2026-07-19T11:30:11Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T11:30:12Z] [INFO] Camera capture session started
+[2026-07-19T11:30:12Z] [INFO] [Zoom Normal] 1.0x → Kamera Utama Wide Angle (internal: 2.0x)
+[2026-07-19T11:30:12Z] [INFO] [Zoom] Cached switchOver factors: [2.0]
+[2026-07-19T11:30:12Z] [INFO] VideoEncoderService configured: 1280x720
+[2026-07-19T11:30:13Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T11:30:25Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T11:30:51Z] [INFO] VideoEncoderService: Invalidate session lama karena resolusi berubah (1280x720 -> 720x1280)
+[2026-07-19T11:30:51Z] [INFO] VideoEncoderService configured: 720x1280
+[2026-07-19T11:32:02Z] [WARN] [P2PClientService.swift:124] Koneksi TCP Client gagal: POSIXErrorCode(rawValue: 54): Connection reset by peer
+[2026-07-19T11:32:02Z] [WARN] [P2PClientService.swift:145] Koneksi TCP gagal atau timeout. Fallback ke MPC.
+fault
+e(rawValue: 54): Connection reset by peer
+[2026-07-19T11:32:02Z] [INFO] Camera capture session stopped
+[2026-07-19T11:32:02Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-19T11:32:02Z] [INFO] Koneksi TCP Client terhubung ke iPad: 10.117.244.5:55123
+[2026-07-19T11:32:02Z] [INFO] P2P connected — switching to paired state
+[2026-07-19T11:32:03Z] [INFO] Camera capture session started (re-use)
+[2026-07-19T11:38:29Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Waktu permintaan habis.
+[2026-07-19T11:38:29Z] [WARN] [P2PClientService.swift:193] TCP Stream terhenti dari iPad atau error: POSIXErrorCode(rawValue: 53): Software caused connection abort
+[2026-07-19T11:38:29Z] [WARN] [CameraP2PStore.swift:101] Auto-reconnect dibatalkan: QR Payload sudah expired. Perlu scan ulang.
+mintaan habis.
+[2026-07-19T11:38:29Z] [INFO] Ditemukan iPad host: HaiBooth iPad, discoveryInfo: Optional(["eventId": "evt-default", "booth": "186C5899-3FA9-4B89-8361-95C2722457E7"])
+[2026-07-19T11:38:30Z] [INFO] MPC terhubung ke: HaiBooth iPad
+[2026-07-19T11:38:30Z] [INFO] P2P connected — switching to paired state
+[2026-07-19T11:38:30Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T11:38:31Z] [INFO] Camera capture session started (re-use)
+[2026-07-19T11:38:31Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T11:38:41Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T11:47:16Z] [INFO] HaiCamera launched — build: #256 (0.1.0 (#256-f25c492)) — model: iPhone
+[2026-07-19T11:47:16Z] [INFO] [setup] Langkah 2: setupCameraPipeline
+[2026-07-19T11:47:16Z] [INFO] [setupPipeline] Configuring capture callbacks
+[2026-07-19T11:47:16Z] [INFO] [setup] Langkah 1: battery monitoring
+[2026-07-19T11:47:16Z] [INFO] [setup] Langkah 3: register connection callback
+[2026-07-19T11:47:16Z] [INFO] [setup] Langkah 4: register data callback
+[2026-07-19T11:47:16Z] [INFO] HaiCamera setup selesai
+[2026-07-19T11:47:19Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T11:47:20Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T11:47:27Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-19T11:47:27Z] [INFO] [setupSession] Langkah 1: beginConfiguration
+[2026-07-19T11:47:27Z] [INFO] Koneksi TCP Client terhubung ke iPad: 10.117.244.5:55123
+[2026-07-19T11:47:27Z] [INFO] P2P connected — switching to paired state
+[2026-07-19T11:47:27Z] [INFO] [setupSession] Langkah 2: video input ditambahkan
+[2026-07-19T11:47:27Z] [INFO] Video HDR diaktifkan
+[2026-07-19T11:47:27Z] [INFO] [setupSession] Langkah 3: video output ditambahkan
+[2026-07-19T11:47:27Z] [INFO] [setupSession] Langkah 4: photo output ditambahkan
+[2026-07-19T11:47:27Z] [INFO] [setupSession] Langkah 5: commitConfiguration selesai
+[2026-07-19T11:47:27Z] [INFO] [setupSession] maxPhotoQualityPrioritization: balanced
+[2026-07-19T11:47:27Z] [INFO] Pesan cameraStatus terkirim ke iPad (Battery: 100%)
+[2026-07-19T11:47:27Z] [INFO] [Zoom] Cached switchOver factors: [2.0]
+[2026-07-19T11:47:27Z] [INFO] Camera capture session started
+[2026-07-19T11:47:27Z] [INFO] [Zoom Normal] 1.0x → Kamera Utama Wide Angle (internal: 2.0x)
+[2026-07-19T11:47:28Z] [INFO] VideoEncoderService configured: 1560x1170
+[2026-07-19T11:47:33Z] [INFO] VideoEncoderService: Invalidate session lama karena resolusi berubah (1560x1170 -> 1170x1560)
+[2026-07-19T11:47:33Z] [INFO] VideoEncoderService configured: 1170x1560
+[2026-07-19T12:25:01Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Waktu permintaan habis.
+[2026-07-19T12:25:01Z] [WARN] [P2PClientService.swift:193] TCP Stream terhenti dari iPad atau error: POSIXErrorCode(rawValue: 53): Software caused connection abort
+[2026-07-19T12:25:01Z] [WARN] [CameraP2PStore.swift:101] Auto-reconnect dibatalkan: QR Payload sudah expired. Perlu scan ulang.
+[2026-07-19T12:25:03Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T12:25:03Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-19T12:25:03Z] [INFO] P2P connected — switching to paired state
+[2026-07-19T12:25:03Z] [INFO] Koneksi TCP Client terhubung ke iPad: 10.117.244.5:55123
+[2026-07-19T12:25:03Z] [INFO] Pesan cameraStatus terkirim ke iPad (Battery: 100%)
+[2026-07-19T12:25:03Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T12:25:04Z] [INFO] Camera capture session started (re-use)
+[2026-07-19T14:45:06Z] [INFO] HaiCamera launched — build: #256 (0.1.0 (#256-f25c492)) — model: iPhone
+[2026-07-19T14:45:06Z] [INFO] [setup] Langkah 1: battery monitoring
+[2026-07-19T14:45:06Z] [INFO] [setup] Langkah 2: setupCameraPipeline
+[2026-07-19T14:45:06Z] [INFO] [setupPipeline] Configuring capture callbacks
+[2026-07-19T14:45:06Z] [INFO] [setup] Langkah 3: register connection callback
+[2026-07-19T14:45:06Z] [INFO] [setup] Langkah 4: register data callback
+[2026-07-19T14:45:06Z] [INFO] HaiCamera setup selesai
+[2026-07-19T14:45:08Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T14:45:09Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-19T14:45:29Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-19T14:45:29Z] [INFO] Koneksi TCP Client terhubung ke iPad: 10.117.244.5:55123
+[2026-07-19T14:45:29Z] [INFO] P2P connected — switching to paired state
+[2026-07-19T14:45:29Z] [INFO] [setupSession] Langkah 1: beginConfiguration
+[2026-07-19T14:45:29Z] [INFO] [setupSession] Langkah 2: video input ditambahkan
+[2026-07-19T14:45:29Z] [INFO] Video HDR diaktifkan
+[2026-07-19T14:45:29Z] [INFO] [setupSession] Langkah 3: video output ditambahkan
+[2026-07-19T14:45:29Z] [INFO] [setupSession] Langkah 4: photo output ditambahkan
+[2026-07-19T14:45:29Z] [INFO] [setupSession] Langkah 5: commitConfiguration selesai
+[2026-07-19T14:45:29Z] [INFO] [setupSession] maxPhotoQualityPrioritization: balanced
+[2026-07-19T14:45:29Z] [INFO] Pesan cameraStatus terkirim ke iPad (Battery: 100%)
+[2026-07-19T14:45:30Z] [INFO] [Zoom Normal] 1.0x → Kamera Utama Wide Angle (internal: 2.0x)
+[2026-07-19T14:45:30Z] [INFO] Camera capture session started
+[2026-07-19T14:45:30Z] [INFO] [Zoom] Cached switchOver factors: [2.0]
+[2026-07-19T14:45:30Z] [INFO] VideoEncoderService configured: 1560x1170
+[2026-07-19T14:45:41Z] [INFO] Sesi dimulai di HaiCamera: 62FDA02E-8BE7-4111-83B9-E0858D968F00
+[2026-07-19T14:45:41Z] [INFO] [Zoom Normal] 1.0x → Kamera Utama Wide Angle (internal: 2.0x)
+[2026-07-19T14:45:41Z] [INFO] [RemoteControl] Menerima sinyal setZoom(1.0x)
+[2026-07-19T14:45:51Z] [INFO] [RemoteControl] Menerima sinyal setPortraitMode(true)
+al: 2.0x)
+[2026-07-19T14:45:51Z] [INFO] [PortraitMode] depth output ditambahkan
+[2026-07-19T14:45:52Z] [INFO] [PortraitMode] session committed — preset:.photo + depthOutput aktif
+[2026-07-19T14:45:53Z] [INFO] [PortraitMode] Zoom dikunci di 1.0x
+[2026-07-19T14:45:53Z] [INFO] [PortraitMode] Portrait effects matte delivery: ENABLED
+[2026-07-19T14:45:53Z] [INFO] [Zoom Portrait] 1.0x → Kamera Utama 1.0x (internal: 2.0x)
+[2026-07-19T14:46:04Z] [INFO] Gesture 'Hai' terdeteksi! Mengirim sinyal pemicu ke iPad.
+[2026-07-19T14:46:07Z] [INFO] Menerima trigger jepret dari iPad (indeks: 0, replace ID: nil)
+[2026-07-19T14:46:07Z] [INFO] Portrait effects matte delivery diaktifkan untuk jepretan
+[2026-07-19T14:46:07Z] [INFO] Mengambil foto dengan prioritization: 2
+[2026-07-19T14:46:07Z] [INFO] Depth + matte delivery aktif untuk jepretan Portrait
+[2026-07-19T14:46:07Z] [INFO] [PortraitMode] Koneksi depthOutput dinonaktifkan sementara untuk membebaskan bandwidth saat capture
+[2026-07-19T14:46:07Z] [INFO] Memicu jepretan foto kualitas tinggi (Smart HDR/Deep Fusion)
+[2026-07-19T14:46:08Z] [INFO] [PortraitMode] Koneksi depthOutput diaktifkan kembali setelah capture selesai
+[2026-07-19T14:46:08Z] [INFO] [PortraitMatte] Variable Depth Blur mask AKTIF
+[2026-07-19T14:46:08Z] [INFO] [SmartGrading] Haispace Cinematic Grading AKTIF (Preset: original)
+[2026-07-19T14:46:09Z] [INFO] Portrait Bokeh ✓ (Preset: original, f/2.8): 1627KB (4032×3024px)
+[2026-07-19T14:46:09Z] [INFO] Mulai dual-channel transfer untuk 6EEEDCB9-218E-466D-8C93-EB93D6ADE391 (order: 0)
+[2026-07-19T14:46:09Z] [INFO] Thumbnail terkirim: 6EEEDCB9-218E-466D-8C93-EB93D6ADE391 (77503 bytes)
+[2026-07-19T14:46:09Z] [INFO] Full quality terkirim: 6EEEDCB9-218E-466D-8C93-EB93D6ADE391
+[2026-07-19T14:46:11Z] [INFO] [Focus] Continuous focus & exposure set at: (0.9140625, 0.22526738)
+[2026-07-19T14:46:23Z] [INFO] Menerima trigger jepret dari iPad (indeks: 0, replace ID: Optional("6EEEDCB9-218E-466D-8C93-EB93D6ADE391"))
+[2026-07-19T14:46:23Z] [INFO] Mengambil foto dengan prioritization: 2
+[2026-07-19T14:46:23Z] [INFO] Memicu jepretan foto kualitas tinggi (Smart HDR/Deep Fusion)
+[2026-07-19T14:46:23Z] [INFO] [PortraitMode] Koneksi depthOutput dinonaktifkan sementara untuk membebaskan bandwidth saat capture
+[2026-07-19T14:46:24Z] [INFO] [PortraitMode] Koneksi depthOutput diaktifkan kembali setelah capture selesai
+[2026-07-19T14:46:24Z] [INFO] [SmartGrading] Haispace Cinematic Grading AKTIF (Preset: original)
+[2026-07-19T14:46:24Z] [INFO] [PortraitMatte] Variable Depth Blur mask AKTIF
+[2026-07-19T14:46:24Z] [INFO] Portrait Bokeh ✓ (Preset: original, f/2.8): 1651KB (4032×3024px)
+[2026-07-19T14:46:24Z] [INFO] Mulai dual-channel transfer untuk 6EEEDCB9-218E-466D-8C93-EB93D6ADE391 (order: 0)
+[2026-07-19T14:46:24Z] [INFO] Thumbnail terkirim: 6EEEDCB9-218E-466D-8C93-EB93D6ADE391 (76778 bytes)
+[2026-07-19T14:46:24Z] [INFO] Full quality terkirim: 6EEEDCB9-218E-466D-8C93-EB93D6ADE391
+[2026-07-19T14:46:30Z] [INFO] Gesture 'Hai' terdeteksi! Mengirim sinyal pemicu ke iPad.
+[2026-07-19T14:46:33Z] [INFO] Portrait effects matte delivery diaktifkan untuk jepretan
+nil)
+[2026-07-19T14:46:33Z] [INFO] Depth + matte delivery aktif untuk jepretan Portrait
+[2026-07-19T14:46:33Z] [INFO] Mengambil foto dengan prioritization: 2
+[2026-07-19T14:46:33Z] [INFO] [PortraitMode] Koneksi depthOutput dinonaktifkan sementara untuk membebaskan bandwidth saat capture
+[2026-07-19T14:46:33Z] [INFO] Memicu jepretan foto kualitas tinggi (Smart HDR/Deep Fusion)
+[2026-07-19T14:46:34Z] [INFO] [PortraitMode] Koneksi depthOutput diaktifkan kembali setelah capture selesai
+[2026-07-19T14:46:34Z] [INFO] [PortraitMatte] Variable Depth Blur mask AKTIF
+[2026-07-19T14:46:34Z] [INFO] [SmartGrading] Haispace Cinematic Grading AKTIF (Preset: original)
+[2026-07-19T14:46:34Z] [INFO] Mulai dual-channel transfer untuk 4D0E5563-51D7-42CB-9830-53726145B21C (order: 1)
+[2026-07-19T14:46:34Z] [INFO] Thumbnail terkirim: 4D0E5563-51D7-42CB-9830-53726145B21C (78600 bytes)
+[2026-07-19T14:46:34Z] [INFO] Full quality terkirim: 4D0E5563-51D7-42CB-9830-53726145B21C
+[2026-07-19T14:46:44Z] [INFO] Gesture 'Hai' terdeteksi! Mengirim sinyal pemicu ke iPad.
+[2026-07-19T14:46:47Z] [INFO] Mengambil foto dengan prioritization: 2
+[2026-07-19T14:46:47Z] [INFO] Menerima trigger jepret dari iPad (indeks: 2, replace ID: nil)
+[2026-07-19T14:46:47Z] [INFO] [PortraitMode] Koneksi depthOutput dinonaktifkan sementara untuk membebaskan bandwidth saat capture
+[2026-07-19T14:46:47Z] [INFO] Memicu jepretan foto kualitas tinggi (Smart HDR/Deep Fusion)
+[2026-07-19T14:46:49Z] [INFO] [PortraitMode] Koneksi depthOutput diaktifkan kembali setelah capture selesai
+[2026-07-19T14:46:49Z] [INFO] [SmartGrading] Haispace Cinematic Grading AKTIF (Preset: original)
+[2026-07-19T14:46:49Z] [INFO] Portrait Bokeh ✓ (Preset: original, f/2.8): 1319KB (4032×3024px)
+[2026-07-19T14:46:49Z] [INFO] Mulai dual-channel transfer untuk B3643B26-8A4D-4908-9202-24433937F149 (order: 2)
+[2026-07-19T14:46:49Z] [INFO] Thumbnail terkirim: B3643B26-8A4D-4908-9202-24433937F149 (58938 bytes)
+[2026-07-19T14:46:49Z] [INFO] Full quality terkirim: B3643B26-8A4D-4908-9202-24433937F149
+[2026-07-19T14:46:57Z] [INFO] [RemoteControl] Menerima sinyal setPortraitMode(false)
+[2026-07-19T14:46:57Z] [INFO] [PortraitMode] dinonaktifkan, depth dilepas
+[2026-07-19T14:46:57Z] [INFO] [Zoom Normal] 1.0x → Kamera Utama Wide Angle (internal: 2.0x)
+[2026-07-19T14:46:57Z] [INFO] [PortraitMode OFF] Zoom dikembalikan ke 1.0x
+[2026-07-19T14:46:59Z] [INFO] [Zoom Normal] 2.0x → Digital Crop Kamera Utama (internal: 4.0x)
+[2026-07-19T14:46:59Z] [INFO] [RemoteControl] Menerima sinyal setZoom(2.0x)
+[2026-07-19T14:47:01Z] [INFO] [RemoteControl] Menerima sinyal setZoom(1.0x)
+[2026-07-19T14:47:01Z] [INFO] [Zoom Normal] 1.0x → Kamera Utama Wide Angle (internal: 2.0x)
+[2026-07-19T14:47:02Z] [INFO] [Zoom Normal] 0.5x → Ultra Wide (internal: 1.0x)
+[2026-07-19T14:47:02Z] [INFO] [RemoteControl] Menerima sinyal setZoom(0.5x)
+[2026-07-19T14:47:04Z] [INFO] [RemoteControl] Menerima sinyal setZoom(1.0x)
+[2026-07-19T14:47:04Z] [INFO] [Zoom Normal] 1.0x → Kamera Utama Wide Angle (internal: 2.0x)
+[2026-07-19T14:47:06Z] [INFO] [Focus] Continuous focus & exposure set at: (0.46240234, 0.565508)
+[2026-07-19T14:47:07Z] [INFO] [Focus] Continuous focus & exposure set at: (0.49267578, 0.34893048)
+[2026-07-19T14:47:08Z] [INFO] [Focus] Continuous focus & exposure set at: (0.38623047, 0.59090906)
+[2026-07-19T14:47:13Z] [INFO] [Filter] Color preset diubah ke: bw_noir
+[2026-07-19T14:47:13Z] [INFO] [RemoteControl] Menerima sinyal setColorPreset(bw_noir)
+[2026-07-19T14:47:15Z] [INFO] [Filter] Color preset diubah ke: soft_bw
+[2026-07-19T14:47:15Z] [INFO] [RemoteControl] Menerima sinyal setColorPreset(soft_bw)
+[2026-07-19T14:47:21Z] [INFO] Gesture 'Hai' terdeteksi! Mengirim sinyal pemicu ke iPad.
+[2026-07-19T14:47:24Z] [INFO] Menerima trigger jepret dari iPad (indeks: 3, replace ID: nil)
+[2026-07-19T14:47:24Z] [INFO] Memicu jepretan foto kualitas tinggi (Smart HDR/Deep Fusion)
+[2026-07-19T14:47:25Z] [INFO] Normal Photo Color Filter ✓ (Preset: soft_bw): 1949KB
+[2026-07-19T14:47:25Z] [INFO] Mulai dual-channel transfer untuk 6FCE689A-4106-41F9-B225-81D9A32360C6 (order: 3)
+[2026-07-19T14:47:25Z] [INFO] Thumbnail terkirim: 6FCE689A-4106-41F9-B225-81D9A32360C6 (71971 bytes)
+[2026-07-19T14:47:25Z] [INFO] Full quality terkirim: 6FCE689A-4106-41F9-B225-81D9A32360C6
+[2026-07-19T14:47:29Z] [INFO] [Filter] Color preset diubah ke: original
+[2026-07-19T14:47:29Z] [INFO] [RemoteControl] Menerima sinyal setColorPreset(original)
+[2026-07-19T14:47:32Z] [INFO] VideoEncoderService: Invalidate session lama karena resolusi berubah (1560x1170 -> 1170x1560)
+[2026-07-19T14:47:32Z] [INFO] VideoEncoderService configured: 1170x1560
+[2026-07-19T14:47:33Z] [INFO] VideoEncoderService: Invalidate session lama karena resolusi berubah (1170x1560 -> 1560x1170)
+[2026-07-19T14:47:33Z] [INFO] VideoEncoderService configured: 1560x1170
+[2026-07-19T14:47:35Z] [INFO] VideoEncoderService: Invalidate session lama karena resolusi berubah (1560x1170 -> 1170x1560)
+[2026-07-19T14:47:35Z] [INFO] VideoEncoderService configured: 1170x1560
+[2026-07-19T14:47:44Z] [INFO] [Zoom Normal] 0.5x → Ultra Wide (internal: 1.0x)
+[2026-07-19T14:47:44Z] [INFO] [RemoteControl] Menerima sinyal setZoom(0.5x)
+[2026-07-19T14:47:46Z] [INFO] [RemoteControl] Menerima sinyal setZoom(1.0x)
+[2026-07-19T14:47:46Z] [INFO] [Zoom Normal] 1.0x → Kamera Utama Wide Angle (internal: 2.0x)
+[2026-07-19T14:47:47Z] [INFO] [Zoom Normal] 2.0x → Digital Crop Kamera Utama (internal: 4.0x)
+[2026-07-19T14:47:49Z] [INFO] [Zoom Normal] 1.0x → Kamera Utama Wide Angle (internal: 2.0x)
+[2026-07-19T14:47:49Z] [INFO] [RemoteControl] Menerima sinyal setZoom(1.0x)
+[2026-07-19T14:47:51Z] [INFO] VideoEncoderService: Invalidate session lama karena resolusi berubah (1170x1560 -> 1560x1170)
+[2026-07-19T14:47:51Z] [INFO] VideoEncoderService configured: 1560x1170
+[2026-07-19T14:47:54Z] [INFO] [RemoteControl] Menerima sinyal setZoom(2.0x)
+[2026-07-19T14:47:54Z] [INFO] [Zoom Normal] 2.0x → Digital Crop Kamera Utama (internal: 4.0x)
+[2026-07-19T14:48:04Z] [INFO] [RemoteControl] Menerima sinyal setZoom(0.5x)
+[2026-07-19T14:48:04Z] [INFO] [Zoom Normal] 0.5x → Ultra Wide (internal: 1.0x)
+[2026-07-19T14:48:05Z] [INFO] [Zoom Normal] 1.0x → Kamera Utama Wide Angle (internal: 2.0x)
+[2026-07-19T14:48:05Z] [INFO] [RemoteControl] Menerima sinyal setZoom(1.0x)
+[2026-07-19T14:48:11Z] [INFO] VideoEncoderService: Invalidate session lama karena resolusi berubah (1560x1170 -> 1170x1560)
+[2026-07-19T14:48:11Z] [INFO] VideoEncoderService configured: 1170x1560
+[2026-07-19T14:48:11Z] [WARN] [P2PClientService.swift:124] Koneksi TCP Client gagal: POSIXErrorCode(rawValue: 54): Connection reset by peer
+[2026-07-19T14:48:11Z] [WARN] [P2PClientService.swift:193] TCP Stream terhenti dari iPad atau error: POSIXErrorCode(rawValue: 54): Connection reset by peer
+[2026-07-19T14:48:12Z] [INFO] Mulai browse P2P (MPC Fallback) untuk service: haibooth dengan eventId: evt-default
+[2026-07-19T14:48:12Z] [INFO] Camera capture session stopped
+[2026-07-19T14:48:12Z] [INFO] Mencoba auto-reconnect pertama kali...
+[2026-07-19T14:48:12Z] [INFO] Mencoba koneksi P2P (Prioritas: TCP -> MPC fallback)
+[2026-07-19T14:48:12Z] [INFO] Koneksi TCP Client terhubung ke iPad: 10.117.244.5:55123
+[2026-07-19T14:48:12Z] [INFO] P2P connected — switching to paired state
+[2026-07-19T14:48:12Z] [INFO] Pesan cameraStatus terkirim ke iPad (Battery: 100%)
+[2026-07-20T01:31:20Z] [INFO] Camera capture session started (re-use)
+[2026-07-20T01:31:20Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Waktu permintaan habis.
+[2026-07-20T01:31:20Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Waktu permintaan habis.
+[2026-07-20T01:31:20Z] [WARN] [P2PClientService.swift:193] TCP Stream terhenti dari iPad atau error: POSIXErrorCode(rawValue: 53): Software caused connection abort
+[2026-07-20T01:31:20Z] [WARN] [CameraP2PStore.swift:101] Auto-reconnect dibatalkan: QR Payload sudah expired. Perlu scan ulang.
+[2026-07-20T01:31:21Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-20T01:31:22Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-21T00:11:36Z] [ERROR] [CameraLogger.swift:203 uploadLatestLog(eventName:completion:)] R2 upload latest gagal: Waktu permintaan habis.
+[2026-07-21T00:11:36Z] [INFO] Ditemukan iPad host: HaiBooth iPad, discoveryInfo: Optional(["eventId": "evt-default", "booth": "2B274A85-CE89-44C5-AF71-83F87108FA21"])
+[2026-07-21T00:11:37Z] [INFO] P2P connected — switching to paired state
+[2026-07-21T00:11:37Z] [INFO] MPC terhubung ke: HaiBooth iPad
+[2026-07-21T00:11:37Z] [INFO] Pesan cameraStatus terkirim ke iPad (Battery: 50%)
+[2026-07-21T00:11:38Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/iphone-latest.txt
+[2026-07-21T00:11:38Z] [INFO] Camera capture session started (re-use)
+[2026-07-21T00:11:40Z] [INFO] VideoEncoderService: Invalidate session lama karena resolusi berubah (1170x1560 -> 1560x1170)
+[2026-07-21T00:11:40Z] [INFO] VideoEncoderService configured: 1560x1170
+[2026-07-21T00:11:50Z] [INFO] Sesi dimulai di HaiCamera: 1C37020B-201C-420A-A873-EE0CAE6E1EBD
+[2026-07-21T00:11:50Z] [INFO] [RemoteControl] Menerima sinyal setZoom(1.0x)
+[2026-07-21T00:11:50Z] [INFO] [Zoom Normal] 1.0x → Kamera Utama Wide Angle (internal: 2.0x)
+[2026-07-21T00:12:05Z] [INFO] [RemoteControl] Menerima sinyal setZoom(0.5x)
+.0x)
+[2026-07-21T00:12:07Z] [INFO] [RemoteControl] Menerima sinyal setZoom(2.0x)
+ma (internal: 4.0x)
+[2026-07-21T00:12:20Z] [INFO] [RemoteControl] Menerima sinyal setZoom(1.0x)
+[2026-07-21T00:12:20Z] [INFO] [Zoom Normal] 1.0x → Kamera Utama Wide Angle (internal: 2.0x)
+[2026-07-21T00:12:26Z] [INFO] [RemoteControl] Menerima sinyal setZoom(1.0x)
+[2026-07-21T00:12:26Z] [INFO] [Zoom Normal] 1.0x → Kamera Utama Wide Angle (internal: 2.0x)
+[2026-07-21T00:12:26Z] [INFO] [RemoteControl] Menerima sinyal setPortraitMode(true)
+[2026-07-21T00:12:26Z] [INFO] [PortraitMode] depth output ditambahkan
+[2026-07-21T00:12:26Z] [INFO] [PortraitMode] session committed — preset:.photo + depthOutput aktif
+[2026-07-21T00:12:28Z] [INFO] [Zoom Portrait] 1.0x → Kamera Utama 1.0x (internal: 2.0x)
+[2026-07-21T00:12:28Z] [INFO] [PortraitMode] Portrait effects matte delivery: ENABLED
+[2026-07-21T00:12:33Z] [INFO] Gesture 'Hai' terdeteksi! Mengirim sinyal pemicu ke iPad.
+[2026-07-21T00:12:36Z] [INFO] Menerima trigger jepret dari iPad (indeks: 0, replace ID: nil)
+[2026-07-21T00:12:36Z] [INFO] Portrait effects matte delivery diaktifkan untuk jepretan
+[2026-07-21T00:12:36Z] [INFO] Depth + matte delivery aktif untuk jepretan Portrait
+[2026-07-21T00:12:36Z] [INFO] Mengambil foto dengan prioritization: 2
+[2026-07-21T00:12:36Z] [INFO] [PortraitMode] Koneksi depthOutput dinonaktifkan sementara untuk membebaskan bandwidth saat capture
+[2026-07-21T00:12:36Z] [INFO] Memicu jepretan foto kualitas tinggi (Smart HDR/Deep Fusion)
+[2026-07-21T00:12:37Z] [INFO] [PortraitMode] Koneksi depthOutput diaktifkan kembali setelah capture selesai
+[2026-07-21T00:12:37Z] [INFO] [PortraitMatte] Variable Depth Blur mask AKTIF
+[2026-07-21T00:12:37Z] [INFO] [SmartGrading] Haispace Cinematic Grading AKTIF (Preset: original)
+[2026-07-21T00:12:37Z] [INFO] Portrait Bokeh ✓ (Preset: original, f/2.8): 1757KB (4032×3024px)
+[2026-07-21T00:12:37Z] [INFO] Mulai dual-channel transfer untuk 22B97E88-7334-4C76-84E2-51678FE1CAC3 (order: 0)
+[2026-07-21T00:12:37Z] [INFO] Thumbnail terkirim: 22B97E88-7334-4C76-84E2-51678FE1CAC3 (60766 bytes)
+[2026-07-21T00:12:37Z] [INFO] Full quality terkirim: 22B97E88-7334-4C76-84E2-51678FE1CAC3
+[2026-07-21T00:12:39Z] [INFO] Resource MPC terkirim: 22B97E88-7334-4C76-84E2-51678FE1CAC3
+[2026-07-21T00:12:51Z] [INFO] Gesture 'Hai' terdeteksi! Mengirim sinyal pemicu ke iPad.
+[2026-07-21T00:12:54Z] [INFO] Portrait effects matte delivery diaktifkan untuk jepretan
+[2026-07-21T00:12:54Z] [INFO] Mengambil foto dengan prioritization: 2
+[2026-07-21T00:12:54Z] [INFO] Menerima trigger jepret dari iPad (indeks: 1, replace ID: nil)
+[2026-07-21T00:12:54Z] [INFO] [PortraitMode] Koneksi depthOutput dinonaktifkan sementara untuk membebaskan bandwidth saat capture
+[2026-07-21T00:12:54Z] [INFO] Memicu jepretan foto kualitas tinggi (Smart HDR/Deep Fusion)
+[2026-07-21T00:12:55Z] [INFO] [PortraitMode] Koneksi depthOutput diaktifkan kembali setelah capture selesai
+[2026-07-21T00:12:55Z] [INFO] [SmartGrading] Haispace Cinematic Grading AKTIF (Preset: original)
+[2026-07-21T00:12:56Z] [INFO] Portrait Bokeh ✓ (Preset: original, f/2.8): 1876KB (4032×3024px)
+[2026-07-21T00:12:56Z] [INFO] Mulai dual-channel transfer untuk 8AA2AC82-41F0-40AC-8625-6C6CC9B6D575 (order: 1)
+[2026-07-21T00:12:56Z] [INFO] Thumbnail terkirim: 8AA2AC82-41F0-40AC-8625-6C6CC9B6D575 (67060 bytes)
+[2026-07-21T00:12:56Z] [INFO] Full quality terkirim: 8AA2AC82-41F0-40AC-8625-6C6CC9B6D575
+[2026-07-21T00:12:57Z] [INFO] Resource MPC terkirim: 8AA2AC82-41F0-40AC-8625-6C6CC9B6D575
+[2026-07-21T00:13:14Z] [INFO] [RemoteControl] Menerima sinyal setPortraitMode(false)
+[2026-07-21T00:13:14Z] [INFO] [PortraitMode OFF] Zoom dikembalikan ke 1.0x
+[2026-07-21T00:13:14Z] [INFO] [Zoom Normal] 1.0x → Kamera Utama Wide Angle (internal: 2.0x)
+[2026-07-21T00:13:14Z] [INFO] [PortraitMode] dinonaktifkan, depth dilepas
+[2026-07-21T00:13:19Z] [INFO] Memicu jepretan foto kualitas tinggi (Smart HDR/Deep Fusion)
+[2026-07-21T00:13:19Z] [INFO] Mengambil foto dengan prioritization: 2
+[2026-07-21T00:13:19Z] [INFO] Menerima trigger jepret dari iPad (indeks: 2, replace ID: nil)
+[2026-07-21T00:13:20Z] [INFO] Mulai dual-channel transfer untuk 8A7FC365-B295-47D3-BBB5-F40FDB690B92 (order: 2)
+[2026-07-21T00:13:20Z] [INFO] Full quality terkirim: 8A7FC365-B295-47D3-BBB5-F40FDB690B92
+[2026-07-21T00:13:20Z] [INFO] Thumbnail terkirim: 8A7FC365-B295-47D3-BBB5-F40FDB690B92 (68938 bytes)
+[2026-07-21T00:13:21Z] [INFO] Resource MPC terkirim: 8A7FC365-B295-47D3-BBB5-F40FDB690B92
+[2026-07-21T00:13:37Z] [INFO] [Focus] Continuous focus & exposure set at: (0.52685547, 0.16109626)
+[2026-07-21T00:13:38Z] [INFO] [Focus] Continuous focus & exposure set at: (0.48291016, 0.5681818)
+[2026-07-21T00:14:27Z] [INFO] VideoEncoderService: Invalidate session lama karena resolusi berubah (1560x1170 -> 1170x1560)
+[2026-07-21T00:14:27Z] [INFO] VideoEncoderService configured: 1170x1560
+[2026-07-21T00:14:27Z] [WARN] [P2PClientService.swift:415] Kehilangan sinyal host: HaiBooth iPad
+[2026-07-21T02:07:35Z] [WARN] [P2PClientService.swift:373] MPC terputus dari: HaiBooth iPad
+[2026-07-22T03:23:39Z] [INFO] HaiCamera launched — build: #256 (0.1.0 (#256-f25c492)) — model: iPhone
+[2026-07-22T03:23:40Z] [INFO] [setup] Langkah 2: setupCameraPipeline
+[2026-07-22T03:23:40Z] [INFO] [setupPipeline] Configuring capture callbacks
+[2026-07-22T03:23:40Z] [INFO] [setup] Langkah 1: battery monitoring
+[2026-07-22T03:23:40Z] [INFO] [setup] Langkah 3: register connection callback
+[2026-07-22T03:23:40Z] [INFO] [setup] Langkah 4: register data callback
