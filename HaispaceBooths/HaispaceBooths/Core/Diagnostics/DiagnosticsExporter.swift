@@ -29,6 +29,7 @@
 // Ref: docs/design/ADR-003_platform_reliability.md — Pilar: Diagnostics
 
 import Foundation
+import UIKit
 import CryptoKit
 
 // MARK: - DiagnosticsBundle

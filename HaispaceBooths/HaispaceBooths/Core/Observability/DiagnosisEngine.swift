@@ -229,11 +229,11 @@ public enum DiagnosisEngine {
                 operatorAction: .reconnectCamera
             )]
 
-        case .error(let msg):
+        case .error:
             return [DiagnosisEntry(
                 severity: .critical, domain: "camera",
                 title: "Error Kamera",
-                description: "Error: \(msg)",
+                description: "Terjadi kesalahan pada modul kamera.",
                 recommendedAction: "Restart HaispaceCamera di iPhone, lalu reconnect.",
                 operatorAction: .reconnectCamera
             )]
@@ -251,24 +251,15 @@ public enum DiagnosisEngine {
 
     private static func analyzeP2P(_ health: P2PHealth) -> [DiagnosisEntry] {
         switch health.status {
-        case .connected:
-            if let latency = health.latencyMs, latency > 100 {
-                return [DiagnosisEntry(
-                    severity: .warning, domain: "p2p",
-                    title: "Koneksi P2P Lambat (\(Int(latency))ms)",
-                    description: "Latensi di atas normal. Transfer foto mungkin lebih lambat.",
-                    recommendedAction: "Dekatkan iPhone ke iPad atau cek interferensi WiFi.",
-                    operatorAction: .reconnectP2P
-                )]
-            }
+        case .healthy:
             return []
 
-        case .disconnected:
+        case .degraded:
             return [DiagnosisEntry(
-                severity: .critical, domain: "p2p",
-                title: "Koneksi P2P Terputus",
-                description: "iPad tidak bisa berkomunikasi dengan iPhone.",
-                recommendedAction: "Pastikan kedua perangkat aktif dan dalam jangkauan.",
+                severity: .warning, domain: "p2p",
+                title: "Koneksi P2P Degradasi",
+                description: "Latensi tinggi atau performa jaringan di bawah normal.",
+                recommendedAction: "Dekatkan iPhone ke iPad atau cek interferensi WiFi.",
                 operatorAction: .reconnectP2P
             )]
 
