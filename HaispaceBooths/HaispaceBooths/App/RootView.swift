@@ -170,6 +170,7 @@ private struct BoothSetupPlaceholderView: View {
 private struct KioskRouterView: View {
     @Environment(AppState.self) private var appState
 
+    @ViewBuilder
     var body: some View {
         Group {
             switch appState.currentRoute {

@@ -85,12 +85,28 @@ public struct DiagnosisEntry: Identifiable, Sendable {
 
 // MARK: - CameraHealth (Booths domain representation)
 
+public enum CameraHealthLevel: String, Codable, Sendable {
+    case ready
+    case healthy
+    case degraded
+    case error
+    case unavailable
+
+    public var displayLabel: String {
+        switch self {
+        case .ready, .healthy: return "Sehat"
+        case .degraded: return "Degradasi"
+        case .error, .unavailable: return "Error"
+        }
+    }
+}
+
 public struct CameraHealth: Codable, Sendable {
-    public let status: String
+    public let status: CameraHealthLevel
     public let fps: Double
     public let isConnected: Bool
 
-    public init(status: String = "healthy", fps: Double = 30.0, isConnected: Bool = true) {
+    public init(status: CameraHealthLevel = .ready, fps: Double = 30.0, isConnected: Bool = true) {
         self.status = status
         self.fps = fps
         self.isConnected = isConnected
