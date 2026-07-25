@@ -215,8 +215,10 @@ public actor DeliveryQueue {
                 entries[index].status = .permanentlyFailed
                 let failedEntry = entries[index]
                 // Eskalasi ke MissionControl
-                Task { @MainActor in
-                    self.onPermanentFailure?(failedEntry)
+                if let callback = self.onPermanentFailure {
+                    Task { @MainActor in
+                        callback(failedEntry)
+                    }
                 }
             } else {
                 entries[index].status = .failed
