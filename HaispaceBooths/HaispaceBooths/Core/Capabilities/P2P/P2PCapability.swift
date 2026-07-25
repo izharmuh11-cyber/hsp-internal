@@ -8,7 +8,7 @@
 
 import Foundation
 
-public actor P2PCapability: P2PCapabilityProtocol {
+public actor P2PCapability: @preconcurrency P2PCapabilityProtocol {
     
     // MARK: - Associated Value State Machine (Single Source of Truth)
     private enum InternalState: Sendable {

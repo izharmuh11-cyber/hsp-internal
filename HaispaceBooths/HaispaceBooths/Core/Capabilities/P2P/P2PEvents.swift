@@ -63,6 +63,14 @@ public enum P2PHealthLevel: String, Codable, Sendable {
     case healthy
     case degraded
     case unavailable
+
+    public var displayLabel: String {
+        switch self {
+        case .healthy: return "Sehat"
+        case .degraded: return "Degradasi"
+        case .unavailable: return "Error"
+        }
+    }
 }
 
 /// Snapshot Kesehatan Domain P2P Communication

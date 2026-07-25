@@ -8,7 +8,7 @@
 
 import Foundation
 
-public actor DeliveryCapability: DeliveryCapabilityProtocol {
+public actor DeliveryCapability: @preconcurrency DeliveryCapabilityProtocol {
     
     // MARK: - Associated Value State Machine (Single Source of Truth)
     private enum InternalState: Sendable {

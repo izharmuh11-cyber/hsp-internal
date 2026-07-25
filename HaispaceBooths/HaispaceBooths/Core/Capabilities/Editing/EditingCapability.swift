@@ -8,7 +8,7 @@
 
 import Foundation
 
-public actor EditingCapability: EditingCapabilityProtocol {
+public actor EditingCapability: @preconcurrency EditingCapabilityProtocol {
     
     // MARK: - Associated Value State Machine (Single Source of Truth)
     private enum InternalState: Sendable {

@@ -8,7 +8,7 @@
 
 import Foundation
 
-public actor PaymentCapability: PaymentCapabilityProtocol {
+public actor PaymentCapability: @preconcurrency PaymentCapabilityProtocol {
     
     // MARK: - Associated Value State Machine (Single Source of Truth)
     private enum InternalState: Sendable {

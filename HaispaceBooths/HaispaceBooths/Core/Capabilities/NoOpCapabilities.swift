@@ -13,7 +13,7 @@ import Foundation
 
 // MARK: - NoOpCameraCapability
 
-public actor NoOpCameraCapability: CameraCapabilityProtocol {
+public actor NoOpCameraCapability: @preconcurrency CameraCapabilityProtocol {
     public var healthSnapshot: CameraHealth { CameraHealth(status: .unavailable) }
     public var metricsSnapshot: CameraMetrics { CameraMetrics() }
 
@@ -33,7 +33,7 @@ public actor NoOpCameraCapability: CameraCapabilityProtocol {
 
 // MARK: - NoOpEditingCapability
 
-public actor NoOpEditingCapability: EditingCapabilityProtocol {
+public actor NoOpEditingCapability: @preconcurrency EditingCapabilityProtocol {
     public var healthSnapshot: EditingHealth { EditingHealth(status: .unavailable) }
     public var metricsSnapshot: EditingMetrics { EditingMetrics() }
 
@@ -55,7 +55,7 @@ public actor NoOpEditingCapability: EditingCapabilityProtocol {
 
 // MARK: - NoOpPaymentCapability
 
-public actor NoOpPaymentCapability: PaymentCapabilityProtocol {
+public actor NoOpPaymentCapability: @preconcurrency PaymentCapabilityProtocol {
     public var healthSnapshot: PaymentHealth { PaymentHealth(status: .unavailable) }
     public var metricsSnapshot: PaymentMetrics { PaymentMetrics() }
 
@@ -85,7 +85,7 @@ public actor NoOpPaymentCapability: PaymentCapabilityProtocol {
 
 // MARK: - NoOpDeliveryCapability
 
-public actor NoOpDeliveryCapability: DeliveryCapabilityProtocol {
+public actor NoOpDeliveryCapability: @preconcurrency DeliveryCapabilityProtocol {
     public var healthSnapshot: DeliveryHealth { DeliveryHealth(status: .unavailable) }
     public var metricsSnapshot: DeliveryMetrics { DeliveryMetrics() }
 
@@ -116,7 +116,7 @@ public actor NoOpDeliveryCapability: DeliveryCapabilityProtocol {
 
 // MARK: - NoOpP2PCapability
 
-public actor NoOpP2PCapability: P2PCapabilityProtocol {
+public actor NoOpP2PCapability: @preconcurrency P2PCapabilityProtocol {
     public var healthSnapshot: P2PHealth { P2PHealth(status: .unavailable) }
     public var metricsSnapshot: P2PMetrics { P2PMetrics() }
 
