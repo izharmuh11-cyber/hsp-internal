@@ -173,14 +173,15 @@ struct LogViewerSheet: View {
     private func uploadLog() {
         isUploading = true
         lastUploadURL = nil
-        R2LogUploader.uploadLatestLog(eventName: "manual_upload") { url in
+        R2LogUploader.uploadLatestLog(eventName: "manual_upload") { result in
             isUploading = false
-            if let url = url {
+            switch result {
+            case .success(let url):
                 lastUploadURL = url
                 // Otomatis copy URL ke clipboard
                 UIPasteboard.general.string = url
-            } else {
-                uploadMessage = "Gagal upload. Pastikan koneksi internet tersedia."
+            case .failure(let errorMsg):
+                uploadMessage = "Gagal upload: \(errorMsg)"
                 showUploadAlert = true
             }
         }
