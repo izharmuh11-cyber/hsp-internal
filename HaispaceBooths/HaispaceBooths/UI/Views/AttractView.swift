@@ -63,7 +63,7 @@ public struct AttractView: View {
                     Text("Smile. Pose. Remember.")
                         .font(.system(size: 20, weight: .medium, design: .rounded))
                         .foregroundColor(.white.opacity(0.75))
-                        .letterSpacing(1.5)
+                        .tracking(1.5)
                     
                     Spacer().frame(height: 36)
                 }

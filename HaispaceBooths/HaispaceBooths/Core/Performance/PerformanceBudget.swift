@@ -45,7 +45,7 @@ public enum PerformanceBudget {
     public static let memoryLimit: UInt64 = 200 * 1024 * 1024
 
     /// Nama metric yang dipakai di AnalyticsEngine
-    public enum MetricName: String {
+    public enum MetricName: String, Sendable {
         case appLaunch          = "app_launch"
         case screenTransition   = "screen_transition"
         case cameraReady        = "camera_ready"

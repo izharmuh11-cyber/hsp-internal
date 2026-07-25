@@ -114,7 +114,7 @@ public actor KioskWatchdog {
             if decision.requiresResume {
                 onEvent?(.orphanedSessionFound(sessionId: sessionId, hadPayment: true))
                 Task { @MainActor [weak self] in
-                    self?.onActionRequired?(.restoreToDelivery(sessionId: sessionId))
+                    await self?.onActionRequired?(.restoreToDelivery(sessionId: sessionId))
                 }
             } else {
                 onEvent?(.orphanedSessionFound(sessionId: sessionId, hadPayment: false))
@@ -152,14 +152,14 @@ public actor KioskWatchdog {
             // Sesi dengan payment — jangan reset otomatis, alert operator
             let message = "Sesi \(sessionId.prefix(8)) idle \(Int(inactiveMinutes)) menit setelah pembayaran. Tinjau segera."
             Task { @MainActor [weak self] in
-                self?.onActionRequired?(.alertOperator(message: message))
+                await self?.onActionRequired?(.alertOperator(message: message))
             }
         } else {
             // Tidak ada payment — aman untuk reset ke landing
             onEvent?(.stalledSessionReset(sessionId: sessionId))
             sessionEnded()
             Task { @MainActor [weak self] in
-                self?.onActionRequired?(.resetToLanding)
+                await self?.onActionRequired?(.resetToLanding)
             }
         }
     }
