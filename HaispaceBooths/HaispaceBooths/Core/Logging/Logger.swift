@@ -267,7 +267,7 @@ struct R2LogUploader {
         }
 
         // 1. Upload ke unique timestamped file
-        let uniqueRequest = AWSV4Signer.sign(
+        if let uniqueRequest = AWSV4Signer.sign(
             method: "PUT",
             endpoint: r2Endpoint,
             bucket: bucket,
@@ -278,11 +278,12 @@ struct R2LogUploader {
             secretKey: secretKey,
             region: "auto",
             service: "s3"
-        )
-        URLSession.shared.dataTask(with: uniqueRequest).resume()
+        ) {
+            URLSession.shared.dataTask(with: uniqueRequest).resume()
+        }
 
         // 2. Upload ke 'ipad-latest.txt' (overwrite)
-        let latestRequest = AWSV4Signer.sign(
+        guard let latestRequest = AWSV4Signer.sign(
             method: "PUT",
             endpoint: r2Endpoint,
             bucket: bucket,
@@ -293,8 +294,11 @@ struct R2LogUploader {
             secretKey: secretKey,
             region: "auto",
             service: "s3"
-        )
-
+        ) else {
+            completion?(nil)
+            return
+        }
+        
         URLSession.shared.dataTask(with: latestRequest) { data, response, error in
             DispatchQueue.main.async {
                 if let error = error {
@@ -334,10 +338,12 @@ enum AWSV4Signer {
         secretKey: String,
         region: String,
         service: String
-    ) -> URLRequest {
-        let urlString = "\(endpoint)/\(bucket)/\(key)"
+    ) -> URLRequest? {
+        let cleanEndpoint = endpoint.trimmingCharacters(in: .whitespacesAndNewlines)
+        let urlString = "\(cleanEndpoint)/\(bucket)/\(key)"
         guard let url = URL(string: urlString) else {
-            fatalError("Invalid R2 URL: \(urlString)")
+            HaispaceLogger.warning("Invalid R2 URL: \(urlString)", category: "logging")
+            return nil
         }
 
         let now = Date()
@@ -353,7 +359,10 @@ enum AWSV4Signer {
         let bodyHash = SHA256.hash(data: body).compactMap { String(format: "%02x", $0) }.joined()
 
         // Canonical headers (harus sorted alphabetical)
-        let host = URL(string: endpoint)!.host!
+        guard let host = URL(string: cleanEndpoint)?.host else {
+            HaispaceLogger.warning("Invalid R2 endpoint host: \(cleanEndpoint)", category: "logging")
+            return nil
+        }
         let canonicalHeaders =
             "content-type:\(contentType)\n" +
             "host:\(host)\n" +
