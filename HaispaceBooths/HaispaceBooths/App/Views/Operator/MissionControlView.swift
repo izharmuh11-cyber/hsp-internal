@@ -339,7 +339,7 @@ struct HealthOverviewView: View {
             Section(header: Text("Perangkat")) {
                 VStack(spacing: 0) {
                     HealthRow(label: "Kamera",      status: snapshot.cameraHealth.status.displayLabel,  isHealthy: snapshot.cameraHealth.status == .ready || snapshot.cameraHealth.status == .healthy,   icon: "camera.fill")
-                    HealthRow(label: "Koneksi P2P", status: snapshot.p2pHealth.status.displayLabel,     isHealthy: snapshot.p2pHealth.status == .connected,  icon: "wifi")
+                    HealthRow(label: "Koneksi P2P", status: snapshot.p2pHealth.status.rawValue.capitalized, isHealthy: snapshot.p2pHealth.status == .healthy,  icon: "wifi")
                 }
             }
             Section(header: Text("Layanan")) {

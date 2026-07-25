@@ -57,3 +57,10 @@ public struct WorkflowHealth: Codable, Sendable {
         self.recoveryCount = recoveryCount
     }
 }
+
+// MARK: - Global Identifiers (Typealiases)
+
+public typealias SessionID = String
+public typealias CorrelationID = String
+public typealias PhotoID = String
+public typealias TransferID = String
