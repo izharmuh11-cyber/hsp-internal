@@ -25,6 +25,21 @@ struct RootView: View {
         ZStack {
             mainContent
             operatorOverlay
+            
+            #if DEBUG
+            if appState.isKioskModeActive || appState.isOperatorActive {
+                VStack {
+                    HStack {
+                        Spacer()
+                        LiveEventTimelineView()
+                            .padding(.top, 40)
+                            .padding(.trailing, 20)
+                    }
+                    Spacer()
+                }
+                .zIndex(100) // Always visible in debug mode
+            }
+            #endif
         }
         .animation(.easeInOut(duration: 0.3), value: appState.auth.isLoggedIn)
         .animation(.easeInOut(duration: 0.3), value: appState.isAppReady)

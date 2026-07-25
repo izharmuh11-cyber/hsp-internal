@@ -59,6 +59,26 @@ def sync_project(project_path, source_dir, target_name)
   else
     puts "No new files to add."
   end
+
+  # Link .xcconfig
+  # The project is in HaispaceBooths/HaispaceBooths.xcodeproj
+  # The secrets are in HaispaceBooths/Secrets/HaispaceBooths.xcconfig
+  # Relative to the project root (HaispaceBooths/), it is "Secrets/#{target_name}.xcconfig"
+  xcconfig_path = "Secrets/#{target_name}.xcconfig"
+  xcconfig_ref = project.files.find { |f| f.path == xcconfig_path || f.path&.end_with?(xcconfig_path) }
+  if xcconfig_ref.nil?
+    xcconfig_ref = project.main_group.new_file("../#{xcconfig_path}")
+  end
+  
+  target.build_configurations.each do |config|
+    config.base_configuration_reference = xcconfig_ref
+  end
+  project.build_configurations.each do |config|
+    config.base_configuration_reference = xcconfig_ref
+  end
+  
+  project.save
+  puts "Linked #{xcconfig_path} to build configurations."
 end
 
 sync_project('HaispaceBooths/HaispaceBooths.xcodeproj', 'HaispaceBooths/HaispaceBooths', 'HaispaceBooths')

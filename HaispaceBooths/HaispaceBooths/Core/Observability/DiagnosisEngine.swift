@@ -181,15 +181,17 @@ public struct DiagnosisReport: Sendable {
     public let generatedAt: Date
     public let entries: [DiagnosisEntry]    // sudah diurutkan: critical → warning → info
     public let snapshotTimestamp: Date
+    public let overallHealth: BoothHealth
 
     public var hasCritical: Bool { entries.contains { $0.severity == .critical } }
     public var criticalCount: Int { entries.filter { $0.severity == .critical }.count }
     public var warningCount: Int { entries.filter { $0.severity == .warning }.count }
 
-    public init(entries: [DiagnosisEntry], snapshotTimestamp: Date) {
+    public init(entries: [DiagnosisEntry], snapshotTimestamp: Date, overallHealth: BoothHealth) {
         self.generatedAt = Date()
         self.entries = entries.sorted { $0.severity > $1.severity }
         self.snapshotTimestamp = snapshotTimestamp
+        self.overallHealth = overallHealth
     }
 }
 
@@ -211,7 +213,28 @@ public enum DiagnosisEngine {
         entries += analyzeActiveSession(snapshot.activeSessionRecord)
         entries += analyzeSupervisors(snapshot.supervisorHealth)
 
-        return DiagnosisReport(entries: entries, snapshotTimestamp: snapshot.timestamp)
+        let overallHealth = computeOverallHealth(snapshot: snapshot, entries: entries)
+
+        return DiagnosisReport(entries: entries, snapshotTimestamp: snapshot.timestamp, overallHealth: overallHealth)
+    }
+
+    private static func computeOverallHealth(snapshot: PlatformHealthSnapshot, entries: [DiagnosisEntry]) -> BoothHealth {
+        // Jika ada komponen yang statusnya belum jelas
+        // (Bisa ditambahkan pengecekan spesifik dari snapshot jika perlu)
+        
+        if entries.contains(where: { $0.severity == .critical && $0.domain == "session" }) {
+            return BoothHealth(state: .unhealthy, summary: "Sesi macet. Intervensi operator diperlukan.")
+        }
+        
+        if entries.contains(where: { $0.severity == .critical }) {
+            return BoothHealth(state: .unhealthy, summary: "Komponen kritis gagal. Booth tidak bisa melayani tamu berikutnya.")
+        }
+        
+        if entries.contains(where: { $0.severity == .warning }) {
+            return BoothHealth(state: .degraded, summary: "Booth berjalan dengan fallback atau performa menurun.")
+        }
+        
+        return BoothHealth(state: .healthy, summary: "Booth siap menerima tamu berikutnya.")
     }
 
     // MARK: - Domain Analyzers (pure functions)
@@ -333,13 +356,13 @@ public enum DiagnosisEngine {
     private static func analyzeActiveSession(_ record: AuditTrailRecord?) -> [DiagnosisEntry] {
         guard let record = record, let lastEvent = record.events.last else { return [] }
 
-        let ageMinutes = Date().timeIntervalSince(lastEvent.timestamp) / 60
-        guard ageMinutes > 5 else { return [] }
+        let ageSeconds = Date().timeIntervalSince(lastEvent.timestamp)
+        guard ageSeconds > 30 else { return [] } // Sesi dianggap macet jika > 30 detik tanpa progres
 
         return [DiagnosisEntry(
-            severity: .warning, domain: "session",
-            title: "Sesi Aktif Tidak Bergerak (\(Int(ageMinutes)) menit)",
-            description: "Sesi di tahap '\(record.lastStage.rawValue)' selama \(Int(ageMinutes)) menit.",
+            severity: .critical, domain: "session",
+            title: "Sesi Aktif Macet (\(Int(ageSeconds)) detik)",
+            description: "Sesi tertahan di tahap '\(record.lastStage.rawValue)' tanpa progres. Tamu berikutnya terblokir.",
             recommendedAction: "Tanyakan ke tamu atau gunakan Force Reset.",
             operatorAction: .forceResetToLanding,
             relatedSessionId: record.sessionId

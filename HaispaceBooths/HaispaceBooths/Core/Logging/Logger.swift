@@ -151,6 +151,9 @@ struct LocalLogWriter {
                     let size = attr[.size] as? Int64 ?? 0
                     if size > maxLogFileSizeBytes {
                         rotateLog(at: logURL)
+                        // Sesudah dirotasi, buat file baru
+                        try data.write(to: logURL, options: .atomic)
+                        return
                     }
                     // Append ke file yang ada
                     let handle = try FileHandle(forWritingTo: logURL)
@@ -162,17 +165,27 @@ struct LocalLogWriter {
                     try data.write(to: logURL, options: .atomic)
                 }
             } catch {
+                #if DEBUG
+                fatalError("Gagal menulis log ke disk: \(error.localizedDescription)")
+                #endif
                 // Tidak bisa log error dari logger itu sendiri — silent
             }
         }
     }
+
+    // Nama file log yang dibuat unik untuk setiap sesi aplikasi
+    private static let currentLogFilename: String = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
+        return "haispace-booth_\(formatter.string(from: Date())).log"
+    }()
 
     /// URL file log aktif
     static func logFileURL() -> URL? {
         guard let docsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
             return nil
         }
-        return docsDir.appendingPathComponent("haispace_booth.log")
+        return docsDir.appendingPathComponent(currentLogFilename)
     }
 
     /// Ambil isi log sebagai string (untuk dikirim ke support/debugging)
@@ -225,15 +238,11 @@ struct R2LogUploader {
         }
 
         // Baca credentials dari AppSecretConfig (xcconfig → Info.plist → runtime)
-        guard let accessKeyID = AppSecretConfig.R2.accessKeyID,
-              let secretKey = AppSecretConfig.R2.secretKey,
-              let bucket = AppSecretConfig.R2.bucket,
-              let publicBaseURL = AppSecretConfig.R2.publicBaseURL,
-              let r2Endpoint = AppSecretConfig.R2.endpoint else {
-            HaispaceLogger.warning("R2LogUploader SKIPPED — credentials belum diisi di xcconfig", category: "upload")
-            completion?(nil)
-            return
-        }
+        let accessKeyID = AppSecretConfig.R2.accessKeyID
+        let secretKey = AppSecretConfig.R2.secretKey
+        let bucket = AppSecretConfig.R2.bucket
+        let publicBaseURL = AppSecretConfig.R2.publicBaseURL
+        let r2Endpoint = AppSecretConfig.R2.endpoint
 
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyyMMdd-HHmmss"
@@ -280,7 +289,7 @@ struct R2LogUploader {
             service: "s3"
         )
 
-        URLSession.shared.dataTask(with: latestRequest) { _, response, error in
+        URLSession.shared.dataTask(with: latestRequest) { data, response, error in
             DispatchQueue.main.async {
                 if let error = error {
                     HaispaceLogger.warning("R2 upload latest gagal: \(error.localizedDescription)", category: "logging")
@@ -290,7 +299,8 @@ struct R2LogUploader {
                         HaispaceLogger.info("R2 upload latest sukses → \(publicLatestURL)", category: "logging")
                         completion?(publicLatestURL)
                     } else {
-                        HaispaceLogger.warning("R2 upload latest gagal HTTP \(http.statusCode)", category: "logging")
+                        let bodyString = String(data: data ?? Data(), encoding: .utf8) ?? "no response body"
+                        HaispaceLogger.warning("R2 upload latest gagal HTTP \(http.statusCode). Body: \(bodyString)", category: "logging")
                         completion?(nil)
                     }
                 }
