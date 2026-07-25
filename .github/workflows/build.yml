@@ -13,6 +13,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Prepare Secrets Config
+        run: |
+          mkdir -p HaispaceCamera/Secrets
+          cp HaispaceCamera/Secrets/HaispaceCamera.xcconfig.template HaispaceCamera/Secrets/HaispaceCamera.xcconfig || true
+
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 
@@ -67,6 +72,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Prepare Secrets Config
+        run: |
+          mkdir -p HaispaceBooths/Secrets
+          cp HaispaceBooths/Secrets/HaispaceBooths.xcconfig.template HaispaceBooths/Secrets/HaispaceBooths.xcconfig || true
 
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
