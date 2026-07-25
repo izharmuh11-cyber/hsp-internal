@@ -1304,3 +1304,5 @@ o penuh: 8A7FC365-B295-47D3-BBB5-F40FDB690B92
 [2026-07-21T00:14:22Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
 [2026-07-21T00:14:23Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
 [2026-07-21T00:14:23Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
+[2026-07-21T00:47:43Z] [WARN] [Logger.swift:281] R2 upload latest gagal: Waktu permintaan habis.
+[2026-07-21T00:47:43Z] [WARN] [MultipeerService.swift:92] MPC terputus dari: HaispaceCamera-D6E5

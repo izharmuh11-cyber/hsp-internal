@@ -223,15 +223,16 @@ struct RegistrationView: View {
         generator.impactOccurred()
         
         let finalName = guestName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let guestNameValue = finalName.isEmpty ? "Guest" : finalName
         appState.pendingGuest = GuestInfo(
-            name: finalName.isEmpty ? "Guest" : finalName,
+            name: guestNameValue,
             instagram: instagramHandle.isEmpty ? nil : instagramHandle,
             phoneNumber: nil,
             queueNumber: Int.random(in: 100...999)
         )
         
-        withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
-            appState.navigateTo(.packageSelection)
+        Task {
+            try? await appState.send(.guestSubmittedInfo(name: guestNameValue, email: instagramHandle))
         }
     }
 }

@@ -744,5 +744,3 @@ ma (internal: 4.0x)
 [2026-07-22T03:23:40Z] [INFO] [setupPipeline] Configuring capture callbacks
 [2026-07-22T03:23:40Z] [INFO] [setup] Langkah 1: battery monitoring
 [2026-07-22T03:23:40Z] [INFO] [setup] Langkah 3: register connection callback
-[2026-07-22T03:23:40Z] [INFO] [setup] Langkah 4: register data callback
-[2026-07-22T03:23:40Z] [INFO] HaiCamera setup selesai

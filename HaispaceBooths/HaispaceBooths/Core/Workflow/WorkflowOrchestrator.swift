@@ -78,7 +78,7 @@ public actor WorkflowOrchestrator: @preconcurrency WorkflowOrchestratorProtocol 
             self.currentStage = .guestRegistration
             
         case .guestSubmittedInfo(let name, let email):
-            guard let sessionId = activeSessionId else { throw WorkflowError.sessionNotActive }
+            let sessionId = getOrCreateActiveSession()
             SessionAuditTrail.append(
                 sessionId: sessionId.rawValue,
                 stage: .packageSelection,
@@ -88,7 +88,7 @@ public actor WorkflowOrchestrator: @preconcurrency WorkflowOrchestratorProtocol 
             self.currentStage = .packageSelection
             
         case .selectPackage(let packageId):
-            guard let sessionId = activeSessionId else { throw WorkflowError.sessionNotActive }
+            let sessionId = getOrCreateActiveSession()
             SessionAuditTrail.append(
                 sessionId: sessionId.rawValue,
                 stage: .templateSelection,
@@ -98,7 +98,7 @@ public actor WorkflowOrchestrator: @preconcurrency WorkflowOrchestratorProtocol 
             self.currentStage = .templateSelection
             
         case .selectTemplate(let frameId):
-            guard let sessionId = activeSessionId else { throw WorkflowError.sessionNotActive }
+            let sessionId = getOrCreateActiveSession()
 
             // Prepare Camera & Editing Capabilities
             try await camera.prepare(configuration: CameraConfiguration())
@@ -292,6 +292,21 @@ public actor WorkflowOrchestrator: @preconcurrency WorkflowOrchestratorProtocol 
         self.activePhotoId = nil
         self.activeOutputReference = nil
         self.currentStage = .landing
+    }
+
+    private func getOrCreateActiveSession() -> SessionID {
+        if let existing = activeSessionId {
+            return existing
+        }
+        let newSession = SessionID()
+        self.activeSessionId = newSession
+        SessionAuditTrail.create(sessionId: newSession.rawValue)
+        SessionAuditTrail.append(
+            sessionId: newSession.rawValue,
+            stage: currentStage,
+            eventType: .sessionStarted
+        )
+        return newSession
     }
 }
 

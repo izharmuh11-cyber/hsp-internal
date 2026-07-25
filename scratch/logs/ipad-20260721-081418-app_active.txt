@@ -1289,18 +1289,3 @@ o penuh: 8A7FC365-B295-47D3-BBB5-F40FDB690B92
 [2026-07-21T00:14:15Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
 [2026-07-21T00:14:17Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
 [2026-07-21T00:14:17Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
-[2026-07-21T00:14:17Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
-[2026-07-21T00:14:18Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
-[2026-07-21T00:14:18Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
-[2026-07-21T00:14:18Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
-[2026-07-21T00:14:19Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
-[2026-07-21T00:14:19Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
-[2026-07-21T00:14:20Z] [INFO] R2 upload latest sukses → https://api.haispaceproject.my.id/r2-media/haispace-logs/ipad-latest.txt
-[2026-07-21T00:14:20Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
-[2026-07-21T00:14:20Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
-[2026-07-21T00:14:21Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
-[2026-07-21T00:14:21Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
-[2026-07-21T00:14:22Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
-[2026-07-21T00:14:22Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
-[2026-07-21T00:14:23Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
-[2026-07-21T00:14:23Z] [INFO] H.264 VideoFormatDescription berhasil dibuat
