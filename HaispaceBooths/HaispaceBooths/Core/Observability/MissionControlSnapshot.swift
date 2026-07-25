@@ -158,7 +158,7 @@ public struct MissionControlSnapshot: Sendable {
                 deliveryHealth: DeliveryHealth(status: .unavailable),
                 p2pHealth: P2PHealth(status: .unavailable)
             ),
-            diagnosis: DiagnosisReport(entries: [], snapshotTimestamp: Date()),
+            diagnosis: DiagnosisReport(entries: [], snapshotTimestamp: Date(), overallHealth: .unknown),
             incidents: .empty,
             auditSummary: AuditSummary(
                 generatedAt: Date(),

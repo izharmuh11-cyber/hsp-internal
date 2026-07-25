@@ -150,7 +150,7 @@ public final class MissionControlViewModel {
     private func filterDismissed(_ report: DiagnosisReport) -> DiagnosisReport {
         guard !dismissedDiagnosisIds.isEmpty else { return report }
         let filtered = report.entries.filter { !dismissedDiagnosisIds.contains($0.id) }
-        return DiagnosisReport(entries: filtered, snapshotTimestamp: report.snapshotTimestamp)
+        return DiagnosisReport(entries: filtered, snapshotTimestamp: report.snapshotTimestamp, overallHealth: report.overallHealth)
     }
 
     private func rebuildSnapshotWithIncidents(_ incidents: [Incident]) {

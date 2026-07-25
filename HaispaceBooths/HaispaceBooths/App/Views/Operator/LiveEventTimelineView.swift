@@ -93,15 +93,15 @@ private struct EventRowView: View {
                 .font(.caption2.monospacedDigit())
                 .foregroundColor(.gray)
             
-            statusIcon(for: event.type)
+            statusIcon(for: event.eventType)
                 .font(.caption2)
             
             VStack(alignment: .leading, spacing: 2) {
-                Text(event.description)
+                Text(event.eventType.rawValue)
                     .font(.caption)
                     .foregroundColor(.white)
                 
-                if let details = event.metadata?["details"] as? String {
+                if let details = event.metadata["details"] {
                     Text(details)
                         .font(.caption2)
                         .foregroundColor(.red)
@@ -119,14 +119,12 @@ private struct EventRowView: View {
     @ViewBuilder
     private func statusIcon(for type: AuditEventType) -> some View {
         switch type {
-        case .stageChanged:
-            Image(systemName: "arrow.right.circle.fill").foregroundColor(.blue)
-        case .actionTriggered:
-            Image(systemName: "bolt.fill").foregroundColor(.yellow)
-        case .errorOccurred:
+        case .cameraFailure, .paymentTimeout, .paymentFailed, .deliveryFailure, .uploadFailure:
             Image(systemName: "xmark.circle.fill").foregroundColor(.red)
-        case .capabilityResult:
+        case .sessionStarted, .photoCaptured, .paymentConfirmed, .deliveryCompleted, .sessionCompleted:
             Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
+        case .operatorCancel, .operatorRetry, .operatorReset:
+            Image(systemName: "exclamationmark.triangle.fill").foregroundColor(.yellow)
         default:
             Image(systemName: "circle.fill").foregroundColor(.gray)
         }
