@@ -77,6 +77,15 @@ jobs:
         run: |
           mkdir -p HaispaceBooths/Secrets
           cp HaispaceBooths/Secrets/HaispaceBooths.xcconfig.template HaispaceBooths/Secrets/HaispaceBooths.xcconfig || true
+          
+          # Inject real credentials from GitHub Secrets if available
+          if [ -n "${{ secrets.R2_ACCESS_KEY_ID }}" ]; then
+            sed -i '' "s/R2_ACCESS_KEY_ID = .*/R2_ACCESS_KEY_ID = ${{ secrets.R2_ACCESS_KEY_ID }}/" HaispaceBooths/Secrets/HaispaceBooths.xcconfig
+            sed -i '' "s/R2_SECRET_KEY = .*/R2_SECRET_KEY = ${{ secrets.R2_SECRET_KEY }}/" HaispaceBooths/Secrets/HaispaceBooths.xcconfig
+            echo "✅ Injected real R2 credentials from GitHub Secrets"
+          else
+            echo "⚠️ GitHub Secrets for R2 not found. Using dummy template credentials."
+          fi
 
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
