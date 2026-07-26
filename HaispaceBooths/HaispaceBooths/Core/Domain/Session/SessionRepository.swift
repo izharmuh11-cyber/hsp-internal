@@ -45,6 +45,16 @@ public protocol SessionRepositoryProtocol: Sendable {
     func exists(sessionId: String) async -> Bool
 }
 
+// MARK: - NoOpSessionRepository (Testing & Fallback)
+
+public actor NoOpSessionRepository: SessionRepositoryProtocol {
+    public init() {}
+    public func save(_ snapshot: SessionSnapshot) async throws {}
+    public func load(sessionId: String) async -> SessionSnapshot? { nil }
+    public func delete(sessionId: String) async throws {}
+    public func exists(sessionId: String) async -> Bool { false }
+}
+
 // MARK: - SessionRepositoryError
 
 public enum SessionRepositoryError: Error, Sendable {

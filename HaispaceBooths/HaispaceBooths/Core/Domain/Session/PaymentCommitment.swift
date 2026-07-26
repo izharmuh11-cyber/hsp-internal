@@ -16,6 +16,35 @@
 
 import Foundation
 
+// MARK: - PaymentMetadata
+
+/// Metadata domain lengkap transaksi pembayaran.
+/// Bebas dari nama vendor/gateway spesifik.
+public struct PaymentMetadata: Codable, Sendable, Equatable {
+    public let currency: String           // Default "IDR"
+    public let localReference: String      // Identifikasi unik di Booth (misal: UUID)
+    public let providerReference: String?  // Identifikasi dari provider/cloud (misal: Ref QRIS/Bank)
+    public let requestedAt: Date
+    public let acceptedAt: Date?
+    public let verifiedAt: Date?
+
+    public init(
+        currency: String = "IDR",
+        localReference: String,
+        providerReference: String? = nil,
+        requestedAt: Date = Date(),
+        acceptedAt: Date? = nil,
+        verifiedAt: Date? = nil
+    ) {
+        self.currency = currency
+        self.localReference = localReference
+        self.providerReference = providerReference
+        self.requestedAt = requestedAt
+        self.acceptedAt = acceptedAt
+        self.verifiedAt = verifiedAt
+    }
+}
+
 // MARK: - PaymentCommitment
 
 /// Komitmen pembayaran dalam sebuah Session.
@@ -23,25 +52,25 @@ import Foundation
 public enum PaymentCommitment: Codable, Sendable, Equatable {
 
     /// Proses pembayaran sedang berlangsung — belum ada konfirmasi.
-    case pending(method: PaymentCommitmentMethod, requestedAt: Date)
+    case pending(
+        method: PaymentCommitmentMethod,
+        metadata: PaymentMetadata
+    )
 
     /// Booth memiliki alasan cukup untuk melanjutkan Workflow.
     /// Ini adalah point-of-no-return — Workflow tidak dapat dibatalkan
     /// oleh network failure atau Cloud timeout setelah state ini.
     case accepted(
         method: PaymentCommitmentMethod,
-        localTransactionId: String,
         amount: Int,           // dalam Rupiah (Int, bukan Double)
-        acceptedAt: Date
+        metadata: PaymentMetadata
     )
 
     /// Cloud sudah mengkonfirmasi pembayaran (async — tidak memblokir Workflow).
     case verified(
         method: PaymentCommitmentMethod,
-        localTransactionId: String,
-        serverId: String,
         amount: Int,
-        verifiedAt: Date
+        metadata: PaymentMetadata
     )
 
     /// Pembayaran ditolak — bukan Abort Session.
@@ -54,7 +83,7 @@ public enum PaymentCommitment: Codable, Sendable, Equatable {
         rejectedAt: Date
     )
 
-    // MARK: - Convenience
+    // MARK: - Convenience Accessors
 
     /// Apakah Workflow boleh dilanjutkan?
     /// Hanya perlu Accepted — tidak perlu menunggu Verified.
@@ -77,24 +106,35 @@ public enum PaymentCommitment: Codable, Sendable, Equatable {
     public var amount: Int {
         switch self {
         case .pending, .rejected: return 0
-        case .accepted(_, _, let amount, _): return amount
-        case .verified(_, _, _, let amount, _): return amount
+        case .accepted(_, let amount, _): return amount
+        case .verified(_, let amount, _): return amount
         }
     }
 
     public var localTransactionId: String? {
         switch self {
-        case .pending: return nil
-        case .accepted(_, let id, _, _): return id
-        case .verified(_, let id, _, _, _): return id
+        case .pending(_, let meta): return meta.localReference
+        case .accepted(_, _, let meta): return meta.localReference
+        case .verified(_, _, let meta): return meta.localReference
+        case .rejected: return nil
+        }
+    }
+
+    public var providerReference: String? {
+        switch self {
+        case .pending(_, let meta): return meta.providerReference
+        case .accepted(_, _, let meta): return meta.providerReference
+        case .verified(_, _, let meta): return meta.providerReference
+        case .rejected: return nil
         }
     }
 
     public var method: PaymentCommitmentMethod {
         switch self {
         case .pending(let method, _): return method
-        case .accepted(let method, _, _, _): return method
-        case .verified(let method, _, _, _, _): return method
+        case .accepted(let method, _, _): return method
+        case .verified(let method, _, _): return method
+        case .rejected(let method, _, _): return method
         }
     }
 }

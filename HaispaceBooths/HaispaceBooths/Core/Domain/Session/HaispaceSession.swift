@@ -258,23 +258,40 @@ public actor HaispaceSession {
     }
 
     /// Booth memulai proses pembayaran.
-    public func requestPayment(method: PaymentCommitmentMethod) {
-        paymentCommitment = .pending(method: method, requestedAt: Date())
+    public func requestPayment(method: PaymentCommitmentMethod, localTransactionId: String = UUID().uuidString) {
+        let meta = PaymentMetadata(
+            currency: "IDR",
+            localReference: localTransactionId,
+            requestedAt: Date()
+        )
+        paymentCommitment = .pending(method: method, metadata: meta)
         currentStage = .paymentRequested
         emit(.paymentRequested(sessionId: sessionId, method: method))
     }
 
     /// Booth menerima konfirmasi pembayaran lokal — point of no return.
     /// - Throws: SessionError.invalidTransition jika tidak dalam state pending.
-    public func acceptPayment(localTransactionId: String, amount: Int, method: PaymentCommitmentMethod) throws {
-        guard case .pending = paymentCommitment else {
+    public func acceptPayment(
+        localTransactionId: String,
+        amount: Int,
+        method: PaymentCommitmentMethod,
+        providerReference: String? = nil
+    ) throws {
+        guard case .pending(_, let currentMeta) = paymentCommitment else {
             throw SessionError.invalidTransition("acceptPayment requires pending state")
         }
+        let updatedMeta = PaymentMetadata(
+            currency: currentMeta.currency,
+            localReference: localTransactionId,
+            providerReference: providerReference ?? currentMeta.providerReference,
+            requestedAt: currentMeta.requestedAt,
+            acceptedAt: Date(),
+            verifiedAt: nil
+        )
         paymentCommitment = .accepted(
             method: method,
-            localTransactionId: localTransactionId,
             amount: amount,
-            acceptedAt: Date()
+            metadata: updatedMeta
         )
         currentStage = .paymentConfirmed
         emit(.paymentAccepted(
@@ -299,15 +316,21 @@ public actor HaispaceSession {
 
     /// Cloud mengkonfirmasi pembayaran (async — tidak memblokir Workflow).
     public func verifyPayment(serverId: String) throws {
-        guard case .accepted(let method, let localId, let amount, _) = paymentCommitment else {
+        guard case .accepted(let method, let amount, let meta) = paymentCommitment else {
             throw SessionError.invalidTransition("verifyPayment requires accepted state")
         }
+        let verifiedMeta = PaymentMetadata(
+            currency: meta.currency,
+            localReference: meta.localReference,
+            providerReference: serverId,
+            requestedAt: meta.requestedAt,
+            acceptedAt: meta.acceptedAt,
+            verifiedAt: Date()
+        )
         paymentCommitment = .verified(
             method: method,
-            localTransactionId: localId,
-            serverId: serverId,
             amount: amount,
-            verifiedAt: Date()
+            metadata: verifiedMeta
         )
         emit(.paymentVerified(sessionId: sessionId, serverId: serverId))
     }

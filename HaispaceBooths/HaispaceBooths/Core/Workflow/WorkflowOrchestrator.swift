@@ -24,6 +24,10 @@ public actor WorkflowOrchestrator: @preconcurrency WorkflowOrchestratorProtocol 
     public let delivery: DeliveryCapabilityProtocol
     public let p2p: P2PCapabilityProtocol
     
+    // Repository Layer (Phase B)
+    public let sessionRepository: SessionRepositoryProtocol
+    private(set) public var activeSession: HaispaceSession?
+    
     // Health Monitor
     private var health: WorkflowHealth = WorkflowHealth()
     
@@ -51,13 +55,15 @@ public actor WorkflowOrchestrator: @preconcurrency WorkflowOrchestratorProtocol 
         editing: EditingCapabilityProtocol,
         payment: PaymentCapabilityProtocol,
         delivery: DeliveryCapabilityProtocol,
-        p2p: P2PCapabilityProtocol
+        p2p: P2PCapabilityProtocol,
+        sessionRepository: SessionRepositoryProtocol? = nil
     ) {
         self.camera = camera
         self.editing = editing
         self.payment = payment
         self.delivery = delivery
         self.p2p = p2p
+        self.sessionRepository = sessionRepository ?? (try? LocalSessionRepository()) ?? NoOpSessionRepository()
     }
     
     // MARK: - Intent Handling (From SwiftUI UI Layer)
@@ -230,15 +236,31 @@ public actor WorkflowOrchestrator: @preconcurrency WorkflowOrchestratorProtocol 
                   let photoId = activePhotoId,
                   let outputRef = activeOutputReference else { return }
 
-            // POIN KRITIS: Payment confirmed — tulis audit SEBELUM delivery dimulai
-            // Invariant 20: trail ini yang dipakai untuk recovery jika crash terjadi setelah ini
+            // MARK: - PR-01 Step 1: Shadow Write to Session Aggregate & Repository
+            let txnId = UUID().uuidString
+            if let aggregate = activeSession {
+                try? await aggregate.acceptPayment(
+                    localTransactionId: txnId,
+                    amount: 35000,
+                    method: .qris
+                )
+                let snap = await aggregate.snapshot()
+                try? await sessionRepository.save(snap)
+                HaispaceLogger.info(
+                    "PR-01 Shadow Write: Payment accepted & snapshot persisted via SessionRepository (\(sessionId.rawValue))",
+                    category: "workflow"
+                )
+            }
+
+            // POIN KRITIS: Payment confirmed — tulis audit SEBELUM delivery dimulai (Compatibility Mode)
             SessionAuditTrail.append(
                 sessionId: sessionId.rawValue,
                 stage: .paymentConfirmed,
                 eventType: .paymentConfirmed,
                 metadata: [
                     "photoId": photoId.rawValue,
-                    "outputRef": outputRef
+                    "outputRef": outputRef,
+                    "localTransactionId": txnId
                 ]
             )
             self.currentStage = .paymentConfirmed
@@ -327,12 +349,24 @@ public actor WorkflowOrchestrator: @preconcurrency WorkflowOrchestratorProtocol 
         self.currentStage = .landing
     }
 
-    private func getOrCreateActiveSession() -> SessionID {
+    private func getOrCreateActiveSession(guestName: String = "Guest") -> SessionID {
         if let existing = activeSessionId {
             return existing
         }
         let newSession = SessionID()
         self.activeSessionId = newSession
+
+        // MARK: - PR-01: Instantiate HaispaceSession Aggregate via SessionFactory
+        let guest = SessionGuest(name: guestName)
+        let pkg = BoothPackage.mockStandard
+        if let aggregate = try? SessionFactory.createSession(guest: guest, package: pkg) {
+            self.activeSession = aggregate
+            Task {
+                let snap = await aggregate.snapshot()
+                try? await self.sessionRepository.save(snap)
+            }
+        }
+
         SessionAuditTrail.create(sessionId: newSession.rawValue)
         SessionAuditTrail.append(
             sessionId: newSession.rawValue,
