@@ -35,8 +35,7 @@ public enum PaymentCommitment: Codable, Sendable, Equatable {
         acceptedAt: Date
     )
 
-    /// Cloud sudah mengkonfirmasi pembayaran.
-    /// Diterima secara asinkron — tidak memblokir Workflow.
+    /// Cloud sudah mengkonfirmasi pembayaran (async — tidak memblokir Workflow).
     case verified(
         method: PaymentCommitmentMethod,
         localTransactionId: String,
@@ -45,20 +44,39 @@ public enum PaymentCommitment: Codable, Sendable, Equatable {
         verifiedAt: Date
     )
 
+    /// Pembayaran ditolak — bukan Abort Session.
+    /// Session tetap ada. Tamu bisa mencoba lagi atau operator intervensi.
+    ///
+    /// Contoh: QR expired, user cancel, payment timeout.
+    case rejected(
+        method: PaymentCommitmentMethod,
+        reason: PaymentRejectionReason,
+        rejectedAt: Date
+    )
+
     // MARK: - Convenience
 
     /// Apakah Workflow boleh dilanjutkan?
     /// Hanya perlu Accepted — tidak perlu menunggu Verified.
     public var isWorkflowAllowed: Bool {
         switch self {
-        case .pending: return false
+        case .pending, .rejected: return false
         case .accepted, .verified: return true
+        }
+    }
+
+    /// Apakah tamu bisa mencoba bayar lagi?
+    public var canRetry: Bool {
+        switch self {
+        case .rejected(_, let reason, _):
+            return reason.isRetryable
+        default: return false
         }
     }
 
     public var amount: Int {
         switch self {
-        case .pending: return 0
+        case .pending, .rejected: return 0
         case .accepted(_, _, let amount, _): return amount
         case .verified(_, _, _, let amount, _): return amount
         }
@@ -92,6 +110,26 @@ public enum PaymentCommitmentMethod: String, Codable, Sendable, Equatable {
     case midtrans     // Gateway online (future)
 }
 
+// MARK: - PaymentRejectionReason
+
+public enum PaymentRejectionReason: String, Codable, Sendable {
+    case qrExpired          // QR Code sudah melewati TTL 3 menit
+    case userCancelled      // Tamu membatalkan secara eksplisit
+    case timeout            // Operator timeout (tidak ada aksi dalam batas waktu)
+    case insufficientFunds  // Saldo tidak cukup (dari gateway)
+    case gatewayError       // Error dari payment gateway
+    case operatorVoid       // Operator membatalkan transaksi
+
+    /// Apakah tamu boleh mencoba membayar lagi setelah rejection ini?
+    public var isRetryable: Bool {
+        switch self {
+        case .qrExpired, .timeout: return true
+        case .userCancelled, .operatorVoid: return false
+        case .insufficientFunds, .gatewayError: return true
+        }
+    }
+}
+
 // MARK: - PaymentCommitmentError
 
 public enum PaymentCommitmentError: Error, Sendable {
@@ -99,4 +137,5 @@ public enum PaymentCommitmentError: Error, Sendable {
     case alreadyVerified
     case cannotVerifyWithoutAcceptance
     case transactionIdMismatch(expected: String, got: String)
+    case cannotRejectAfterAcceptance  // Session sudah lewat point-of-no-return
 }

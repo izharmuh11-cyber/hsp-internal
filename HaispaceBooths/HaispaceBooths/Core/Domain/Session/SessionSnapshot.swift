@@ -24,7 +24,10 @@ import Foundation
 public struct SessionSnapshot: Codable, Sendable {
 
     // MARK: Schema
-    public let version: Int                  // Schema version untuk forward migration
+    /// Versi schema snapshot — berbeda dari Runtime Version dan Manifest Version.
+    /// Diincrement setiap kali struktur SessionSnapshot berubah secara breaking.
+    /// Digunakan oleh SessionRepository untuk memutuskan apakah perlu migration.
+    public let snapshotSchemaVersion: Int  // Saat ini: 1
 
     // MARK: Identity
     public let sessionId: String

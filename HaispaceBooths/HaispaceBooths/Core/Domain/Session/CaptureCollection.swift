@@ -136,7 +136,10 @@ public struct CapturePolicy: Codable, Sendable {
 // MARK: - CaptureCollection
 
 /// Koleksi semua Capture dalam satu Session.
-/// Hanya Session (Aggregate Root) yang boleh memodifikasi ini.
+///
+/// PRINSIP: CaptureCollection hanya menjaga data.
+/// Keputusan (apakah boleh pilih, apakah boleh retake) ada di HaispaceSession.
+/// Collection tidak memiliki business logic.
 public struct CaptureCollection: Codable, Sendable {
 
     // MARK: State
@@ -148,9 +151,10 @@ public struct CaptureCollection: Codable, Sendable {
 
     public init() {}
 
-    // MARK: - Queries
+    // MARK: - Queries (pure, no side effects)
 
     public var capturedCount: Int { records.count }
+    public var selectedCount: Int { selectedIds.count }
 
     public var selectedRecords: [CaptureRecord] {
         records
@@ -162,15 +166,19 @@ public struct CaptureCollection: Codable, Sendable {
         records.contains { !$0.isFullQuality }
     }
 
-    public func canProceed(with policy: CapturePolicy) -> Bool {
-        selectedIds.count >= policy.minSelectionCount
+    public func record(id: String) -> CaptureRecord? {
+        records.first { $0.id == id }
     }
 
-    // MARK: - Mutations (package-internal — only Session calls these)
+    public func isSelected(_ id: String) -> Bool {
+        selectedIds.contains(id)
+    }
+
+    // MARK: - Mutations (internal — only HaispaceSession calls these)
 
     mutating func append(_ record: CaptureRecord) {
         if let idx = records.firstIndex(where: { $0.id == record.id }) {
-            records[idx] = record // retake
+            records[idx] = record // retake replaces
         } else {
             records.append(record)
             records.sort { $0.sortOrder < $1.sortOrder }
@@ -182,12 +190,14 @@ public struct CaptureCollection: Codable, Sendable {
         records[idx] = records[idx].markingAsFullQuality(filePath: filePath)
     }
 
-    mutating func toggleSelection(id: String, policy: CapturePolicy) {
-        if selectedIds.contains(id) {
-            selectedIds.remove(id)
-        } else if selectedIds.count < policy.maxSelectionCount {
-            selectedIds.insert(id)
-        }
+    /// Dipanggil oleh Session setelah memvalidasi business rules.
+    mutating func addToSelection(_ id: String) {
+        selectedIds.insert(id)
+    }
+
+    /// Dipanggil oleh Session setelah memvalidasi business rules.
+    mutating func removeFromSelection(_ id: String) {
+        selectedIds.remove(id)
     }
 
     mutating func setFrame(_ frameId: String?) {

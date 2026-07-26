@@ -123,8 +123,16 @@ public struct DeliveryQueueReference: Codable, Sendable {
 
 /// Session Aggregate Root.
 ///
-/// Ini adalah satu-satunya objek yang merepresentasikan sebuah Session secara lengkap.
-/// Semua mutasi state Session terjadi melalui methods di sini.
+/// **Aturan DDD:**
+/// "Workflow knows what happens next. Aggregate decides whether it is allowed."
+///
+/// Tidak ada object di luar Aggregate yang boleh mengubah state Session langsung.
+/// Semua mutasi melalui method Session: acceptPayment, addCapture, dll.
+///
+/// **Tentang Swift Actor:**
+/// Actor adalah detail implementasi concurrency Swift, bukan bagian dari domain.
+/// Domain = HaispaceSession (konsep). Concurrency = actor (mekanisme).
+/// Jika Platform Core berjalan di server atau backend, konsep Session tetap sama.
 ///
 /// Internal state bersifat private — consumer membaca melalui computed properties.
 public actor HaispaceSession {
@@ -157,23 +165,38 @@ public actor HaispaceSession {
         self.remainingSeconds = capturePolicy.durationSeconds
     }
 
-    // MARK: - Queries
-
-    public var sessionId: String { identity.sessionId }
+    // MARK: - Business Invariant Queries
+    // Ini adalah satu-satunya tempat business rules diperiksa.
+    // WorkflowOrchestrator TIDAK boleh mengandung logika ini.
 
     public var canProceedToPayment: Bool {
-        captures.canProceed(with: capturePolicy)
+        captures.selectedCount >= capturePolicy.minSelectionCount
     }
 
-    public var isFinanciallyCommitted: Bool {
-        paymentCommitment?.isWorkflowAllowed ?? false
+    public var canBeginDelivery: Bool {
+        isFinanciallyCommitted && outputReference != nil
     }
 
-    public var hasPendingDelivery: Bool {
-        !deliveryState.isAllDelivered && isFinanciallyCommitted
+    public var canComplete: Bool {
+        isFinanciallyCommitted && deliveryState.isAllDelivered
+    }
+
+    public var canOperatorAbort: Bool {
+        // Operator boleh membatalkan HANYA jika belum ada transaksi finansial
+        // Setelah Accepted, operator harus melewati flow khusus (refund, void)
+        !isFinanciallyCommitted
+    }
+
+    public var canRetakePhoto: Bool {
+        capturePolicy.allowRetake && captures.capturedCount < capturePolicy.maxCount
+    }
+
+    public var isAtCaptureLimit: Bool {
+        captures.capturedCount >= capturePolicy.maxCount
     }
 
     // MARK: - Mutations (Workflow commands)
+    // Session memvalidasi setiap request berdasarkan business invariants.
 
     /// Tamu mulai ambil foto — transisi ke capturing stage.
     public func beginCapturing() {
@@ -182,8 +205,12 @@ public actor HaispaceSession {
         emit(.capturingBegan(sessionId: sessionId))
     }
 
-    /// Foto baru diterima dari HaiCamera — langsung persist reference.
-    public func addCapture(_ record: CaptureRecord) {
+    /// Foto baru diterima dari HaiCamera — Session memvalidasi batas maksimal.
+    /// - Throws: SessionError.captureAtLimit jika sudah mencapai batas package.
+    public func addCapture(_ record: CaptureRecord) throws {
+        guard !isAtCaptureLimit else {
+            throw SessionError.captureAtLimit(max: capturePolicy.maxCount)
+        }
         captures.append(record)
         emit(.capturePersisted(sessionId: sessionId, captureId: record.id, sortOrder: record.sortOrder))
     }
@@ -200,10 +227,17 @@ public actor HaispaceSession {
         emit(.photoSelectionBegan(sessionId: sessionId, totalCaptures: captures.capturedCount))
     }
 
-    /// Tamu toggle pilihan foto.
-    public func selectCapture(id: String) {
-        captures.toggleSelection(id: id, policy: capturePolicy)
-        emit(.captureSelectionChanged(sessionId: sessionId, selectedCount: captures.selectedIds.count))
+    /// Tamu toggle pilihan foto — Session menjaga business rule (min/max).
+    public func selectCapture(id: String) throws {
+        if captures.isSelected(id) {
+            captures.removeFromSelection(id)
+        } else {
+            guard captures.selectedCount < capturePolicy.maxSelectionCount else {
+                throw SessionError.selectionAtLimit(max: capturePolicy.maxSelectionCount)
+            }
+            captures.addToSelection(id)
+        }
+        emit(.captureSelectionChanged(sessionId: sessionId, selectedCount: captures.selectedCount))
     }
 
     /// Tamu memilih frame overlay.
@@ -225,13 +259,13 @@ public actor HaispaceSession {
 
     /// Booth memulai proses pembayaran.
     public func requestPayment(method: PaymentCommitmentMethod) {
-        let amount = capturePolicy.maxCount // placeholder — akan dari Package nanti
         paymentCommitment = .pending(method: method, requestedAt: Date())
         currentStage = .paymentRequested
         emit(.paymentRequested(sessionId: sessionId, method: method))
     }
 
     /// Booth menerima konfirmasi pembayaran lokal — point of no return.
+    /// - Throws: SessionError.invalidTransition jika tidak dalam state pending.
     public func acceptPayment(localTransactionId: String, amount: Int, method: PaymentCommitmentMethod) throws {
         guard case .pending = paymentCommitment else {
             throw SessionError.invalidTransition("acceptPayment requires pending state")
@@ -251,6 +285,18 @@ public actor HaispaceSession {
         ))
     }
 
+    /// Pembayaran ditolak — bukan Abort Session.
+    /// - Throws: SessionError.invalidTransition jika sudah Accepted (point-of-no-return).
+    public func rejectPayment(reason: PaymentRejectionReason) throws {
+        switch paymentCommitment {
+        case .accepted, .verified:
+            throw SessionError.invalidTransition("Cannot reject payment after acceptance — past point of no return")
+        default:
+            paymentCommitment = .rejected(method: paymentCommitment?.method ?? .qris, reason: reason, rejectedAt: Date())
+            emit(.paymentFailed(sessionId: sessionId, reason: reason.rawValue))
+        }
+    }
+
     /// Cloud mengkonfirmasi pembayaran (async — tidak memblokir Workflow).
     public func verifyPayment(serverId: String) throws {
         guard case .accepted(let method, let localId, let amount, _) = paymentCommitment else {
@@ -266,8 +312,12 @@ public actor HaispaceSession {
         emit(.paymentVerified(sessionId: sessionId, serverId: serverId))
     }
 
-    /// Foto siap dikirim ke tamu — masukkan ke Delivery Queue.
-    public func queueDelivery(item: DeliveryQueueReference) {
+    /// Foto siap dikirim ke tamu — Session memvalidasi bahwa payment sudah Accepted.
+    /// - Throws: SessionError.invalidTransition jika belum ada PaymentCommitment.accepted.
+    public func queueDelivery(item: DeliveryQueueReference) throws {
+        guard canBeginDelivery else {
+            throw SessionError.invalidTransition("Cannot queue delivery without accepted payment and output reference")
+        }
         deliveryState.queuedItems.append(item)
         currentStage = .deliveryDispatch
         emit(.deliveryQueued(sessionId: sessionId, channel: item.channel, priority: item.priority))
@@ -287,22 +337,35 @@ public actor HaispaceSession {
         emit(.deliveryFailed(sessionId: sessionId, itemId: itemId))
     }
 
-    /// Session selesai dengan sukses.
-    public func complete() {
-        guard isFinanciallyCommitted else { return }
+    /// Session selesai dengan sukses — Session memvalidasi invariant.
+    public func complete() throws {
+        guard canComplete else {
+            throw SessionError.invalidTransition("Session cannot complete: payment not committed or delivery not finished")
+        }
         lifecycleStatus = .completed
         currentStage = .sessionCompleted
         completedAt = Date()
         emit(.sessionCompleted(sessionId: sessionId, completedAt: completedAt!))
     }
 
-    /// Operator membatalkan Session.
-    public func abort(reason: String, byOperatorId: String) {
-        lifecycleStatus = isFinanciallyCommitted ? .abandoned : .aborted
+    /// Operator membatalkan Session — Session memvalidasi apakah cancel diizinkan.
+    public func abort(reason: String, byOperatorId: String) throws {
+        guard canOperatorAbort else {
+            throw SessionError.invalidTransition("Cannot abort session with accepted payment — use void/refund flow instead")
+        }
+        lifecycleStatus = .aborted
         currentStage = .recoveryMode
         abortedAt = Date()
         abortReason = reason
         emit(.sessionAborted(sessionId: sessionId, reason: reason, byOperatorId: byOperatorId))
+    }
+
+    /// Force-abandon — digunakan saat tamu pergi setelah payment (tidak bisa di-abort).
+    public func abandon(reason: String) {
+        lifecycleStatus = .abandoned
+        abortedAt = Date()
+        abortReason = reason
+        emit(.sessionAborted(sessionId: sessionId, reason: reason, byOperatorId: "system"))
     }
 
     /// Operator pause Session.
@@ -336,7 +399,7 @@ public actor HaispaceSession {
     /// Snapshot adalah kontrak penyimpanan — tidak tergantung implementasi internal.
     public func snapshot() -> SessionSnapshot {
         SessionSnapshot(
-            version: 1,
+            snapshotSchemaVersion: 1,
             sessionId: identity.sessionId,
             boothId: identity.boothId,
             eventId: identity.eventId,
@@ -387,6 +450,10 @@ public enum SessionError: Error, Sendable {
     case invalidTransition(String)
     case captureNotFound(String)
     case paymentAlreadyCommitted
+    case captureAtLimit(max: Int)         // Mencapai batas maxCount dari CapturePolicy
+    case selectionAtLimit(max: Int)       // Mencapai batas maxSelectionCount dari CapturePolicy
+    case deliveryNotAllowed(String)       // Payment belum Accepted
+    case completionNotAllowed(String)     // Delivery belum selesai
 }
 
 // MARK: - SessionLifecycleStatus + Codable Helper
