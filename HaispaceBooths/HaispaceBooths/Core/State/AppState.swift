@@ -1,18 +1,23 @@
 // AppState.swift
 // HaispaceBooths — Core/State
 //
-// Root Singleton — satu-satunya object yang di-inject ke seluruh app via .environment.
-// Semua sub-stores diakses melalui AppState ini.
+// Root Observable — di-inject ke seluruh app via .environment.
 //
-// ATURAN KRITIS (ADR-001):
-// - Hanya ada SATU AppState di seluruh app
-// - Di-inject dari HaispaceBoothsApp ke RootView via .environment(appState)
-// - Sub-store tidak boleh di-inject terpisah lebih dari 2 level ke bawah
-// - currentRoute adalah COMPUTED dari WorkflowOrchestrator — tidak boleh di-set langsung
-// - Gunakan send(_ intent:) untuk mengubah workflow, bukan navigateTo()
+// TANGGUNG JAWAB (tepat tiga — tidak boleh lebih):
+//   1. UI Navigation  — currentRoute, KioskRoute
+//   2. App Lifecycle  — setup(), handleAppBecomeActive()
+//   3. Runtime Bridge — meneruskan intent ke RuntimeContainer.orchestrator
 //
-// Ref: docs/design/39_state_architecture.md — AppState Root Singleton
-// Ref: docs/design/ADR-001_workflow_ownership.md — Workflow Ownership
+// YANG TIDAK BOLEH ADA DI SINI (GPT Architecture Review):
+//   - Business logic (itu urusan Session Aggregate)
+//   - Dependency creation (itu urusan RuntimeContainer)
+//   - PaymentStore, SessionStore, DeliveryStore, PhotoStore reference
+//   - Keputusan tentang "apakah payment valid" atau "berapa foto yang boleh dipilih"
+//
+// AppState hanya meneruskan intent dan memantulkan state.
+//
+// Ref: haispace-platform/constitution/PLATFORM_RUNTIME_V1.md
+// Ref: haispace-platform/adr/ADR-011-platform-runtime-freeze.md
 
 import Foundation
 import Observation
@@ -24,34 +29,38 @@ import UIKit
 @MainActor
 final class AppState {
 
-    // MARK: - Sub-Stores
+    // MARK: - Runtime (single source of truth)
+
+    /// RuntimeContainer adalah satu-satunya komponen yang AppState ketahui.
+    /// AppState tidak pernah menyentuh dependency di dalam container secara langsung.
+    let runtime: RuntimeContainer
+
+    // MARK: - Non-Runtime Stores (belum dimigrasikan ke Runtime)
+    //
+    // CATATAN MIGRASI:
+    //   Auth, License, P2P, BoothConfig, OperatorState bukan bagian dari Session Aggregate.
+    //   Mereka adalah platform-level state yang saat ini masih di-hold oleh AppState.
+    //   PR-13 (Session Root) akan menentukan apakah ini perlu masuk ke RuntimeModule baru.
+    //
     let auth = AuthStore()
     let license = LicenseStore()
     let p2p = P2PStore()
     let boothConfig = BoothConfigStore()
-    let operatorState = OperatorStore()    // `operator` adalah reserved keyword
+    let operatorState = OperatorStore()
 
-    // MARK: - WorkflowOrchestrator (ADR-001: Source of Truth untuk business workflow)
-    //
-    // Orchestrator adalah satu-satunya komponen yang boleh mengubah workflow stage.
-    // Di-inject dengan NoOp capabilities sebagai safe default sebelum setup() selesai.
-    let orchestrator: WorkflowOrchestrator
+    // MARK: - Pending Guest (UI-level transient state)
 
-    // MARK: - Session State
-    /// Sesi foto yang sedang aktif — nil jika tidak ada sesi
-    /// ATURAN: ini adalah SATU-SATUNYA sumber kebenaran sesi aktif
-    var currentSession: SessionStore?
-
-    /// Tamu yang sedang registrasi tapi belum memilih paket
+    /// Tamu yang sedang registrasi tapi belum memilih paket.
+    /// Ini adalah UI transient state — bukan Session state.
     var pendingGuest: GuestInfo?
 
     // MARK: - App-Level State
+
     var isAppReady: Bool = false
     var isOnline: Bool = false
     var isKioskModeActive: Bool = false
 
-    /// Orphaned sessions yang ditemukan saat launch — RootView akan handle routing-nya
-    /// Invariant 20: sesi dengan paymentConfirmed WAJIB di-resume
+    /// Orphaned sessions yang ditemukan saat launch — ditangani oleh Recovery Engine (Phase C).
     var orphanedSessionDecisions: [OrphanedSessionDecision] = []
 
     // MARK: - Computed
@@ -66,11 +75,7 @@ final class AppState {
         auth.isLoggedIn && operatorState.isOperatorActive
     }
 
-    var hasActiveSession: Bool {
-        currentSession != nil
-    }
-
-    // MARK: - Navigation State (ADR-001)
+    // MARK: - Navigation State (tanggung jawab 1 dari 3)
 
     enum KioskRoute: Hashable {
         case landing
@@ -86,111 +91,58 @@ final class AppState {
 
     /// Route saat ini untuk SwiftUI View — di-sync dari WorkflowOrchestrator via send().
     /// TIDAK boleh di-set langsung dari View. Gunakan send(_ intent:).
-    /// Ref: ADR-001 — currentRoute adalah projected state, bukan source of truth.
     private(set) var currentRoute: KioskRoute = .landing
 
-    // MARK: - Initializer
+    // MARK: - Initializer (tanggung jawab 2 dari 3)
 
-    init() {
-        self.orchestrator = WorkflowOrchestrator(
-            camera: NoOpCameraCapability(),
-            editing: NoOpEditingCapability(),
-            payment: NoOpPaymentCapability(),
-            delivery: NoOpDeliveryCapability(),
-            p2p: NoOpP2PCapability()
-        )
+    /// AppState menerima RuntimeContainer dari luar — tidak pernah membuatnya sendiri.
+    /// Di-inject dari HaispaceBoothsApp setelah RuntimeContainer.build() selesai.
+    init(runtime: RuntimeContainer) {
+        self.runtime = runtime
     }
 
-    // MARK: - Intent Dispatch (ADR-001)
+    // MARK: - Intent Dispatch (tanggung jawab 3 dari 3)
 
     /// Satu-satunya cara yang benar untuk mengubah workflow dari View.
-    /// View hanya memanggil ini — tidak pernah memodifikasi currentRoute langsung.
-    /// Ref: ADR-001 — "View hanya mengirim intent"
+    /// AppState meneruskan ke Runtime — tidak membuat keputusan sendiri.
     func send(_ intent: WorkflowIntent) async throws {
-        try await orchestrator.handleIntent(intent)
-        // Sync currentRoute dari Orchestrator setelah intent diproses
-        let newStage = await orchestrator.currentStage
-
-        // Ensure currentSession is initialized if workflow moves beyond landing
-        if newStage != .landing && currentSession == nil {
-            let pkg = BoothPackage.mockStandard
-            let guest = pendingGuest ?? GuestInfo(name: "Guest", instagram: nil, phoneNumber: nil, queueNumber: 1)
-            startNewSession(package: pkg, guest: guest)
-        }
-
+        try await runtime.orchestrator.handleIntent(intent)
+        let newStage = await runtime.orchestrator.currentStage
         currentRoute = WorkflowRouteMapper.route(for: newStage)
+
+        // Flush domain events ke Publisher setelah setiap intent
+        await runtime.flushSessionEvents()
     }
 
-    // MARK: - Navigation (Deprecated Bridge)
-    // Dipertahankan sementara agar View lama tidak langsung break selama migrasi.
-    // AKAN DIHAPUS setelah semua View dimigrasikan ke send(intent:).
-    // Ref: ADR-001 — Migration Progress Tracker
+    // MARK: - App Lifecycle (tanggung jawab 2 dari 3)
 
-    @available(*, deprecated, message: "Gunakan send(_ intent: WorkflowIntent) sesuai ADR-001. navigateTo akan dihapus setelah migrasi selesai.")
-    func navigateTo(_ route: KioskRoute) {
-        currentRoute = route
-        if route != .landing && currentSession == nil {
-            let pkg = BoothPackage.mockStandard
-            let guest = pendingGuest ?? GuestInfo(name: "Guest", instagram: nil, phoneNumber: nil, queueNumber: 1)
-            startNewSession(package: pkg, guest: guest)
-        }
-        HaispaceLogger.warning("[DEPRECATED] navigateTo(\(route)) — migrasi ke send(intent) sesuai ADR-001", category: "workflow")
-    }
-
-    // MARK: - Session Factory
-
-    /// Buat sesi baru — SATU-SATUNYA cara membuat session baru
-    @discardableResult
-    func startNewSession(package: BoothPackage, guest: GuestInfo) -> SessionStore {
-        if let existing = currentSession {
-            HaispaceLogger.warning("Sesi baru dimulai sebelum sesi lama selesai — memfinalisasi sesi: \(existing.sessionId)", category: "session")
-            existing.finalize()
-        }
-
-        let session = SessionStore(package: package, guest: guest)
-        currentSession = session
-
-        if let eventId = boothConfig.activeEventId {
-            p2p.configureMPCServiceType(eventId: eventId)
-        }
-
-        HaispaceLogger.info("Sesi baru dibuat: \(session.sessionId) — \(guest.displayName) — \(package.name)", category: "session")
-        return session
-    }
-
-    /// Selesaikan dan hapus sesi aktif
-    func endCurrentSession() {
-        guard let session = currentSession else { return }
-        session.finalize()
-        HaispaceLogger.info("Sesi diakhiri: \(session.sessionId)", category: "session")
-        currentSession = nil
-    }
-
-    // MARK: - App Lifecycle
-
-    /// Setup awal saat app launch — validasi license, restore session
+    /// Setup awal saat app launch — validasi license, restore session, launch recovery.
     func setup() async {
         HaispaceLogger.info("AppState setup dimulai", category: "app")
 
-        // 0. Deteksi orphaned sessions dari sesi sebelumnya (Invariant 20)
-        // HARUS dijalankan sebelum isAppReady = true
+        // 0. Runtime launch recovery — cek apakah ada session in-progress di disk
+        await runtime.performLaunchRecovery()
+
+        // 1. Orphaned session detection (Legacy — akan digantikan Recovery Engine Phase C)
         let orphans = OrphanedSessionDetector.detect()
         if !orphans.isEmpty {
-            HaispaceLogger.warning("AppState: ditemukan \(orphans.count) orphaned session(s) — menunggu recovery", category: "app")
+            HaispaceLogger.warning(
+                "AppState: \(orphans.count) orphaned session(s) — pending Phase C Recovery Engine",
+                category: "app"
+            )
             orphanedSessionDecisions = orphans
         }
 
-        // 1. Validasi lisensi (offline pertama, lalu online jika perlu)
+        // 2. Validasi lisensi
         await license.validateOnLaunch()
 
-        // 2. Restore auth session dari Keychain jika ada
+        // 3. Restore auth session dari Keychain
         await auth.restoreSession()
 
-        // 3. Load booth config dari lokal CoreData
+        // 4. Load booth config dari lokal
         await boothConfig.loadFromLocal()
 
         #if DEBUG
-        // ⚠️ DEBUG ONLY — bypass untuk development tanpa server
         HaispaceLogger.warning("⚠️ DEBUG MODE: License & config di-override dengan mock data", category: "app")
         license.status = .valid
         boothConfig.activeEventId = "event-test-001"
@@ -198,18 +150,82 @@ final class AppState {
         boothConfig.activePackages = BoothPackage.mockPackages
         #endif
 
-        // 4. Housekeeping: purge audit trails lama (>30 hari, sudah completed)
+        // 5. Housekeeping
         SessionAuditTrail.purgeOldCompleted(olderThan: 30)
 
         isAppReady = true
-        HaispaceLogger.info("AppState setup selesai — boothReady: \(isBoothReady) — orphans: \(orphanedSessionDecisions.count)", category: "app")
+        HaispaceLogger.info(
+            "AppState setup selesai — boothReady: \(isBoothReady) — runtime: \(RuntimeDescriptor.current.runtimeId)",
+            category: "app"
+        )
     }
 
-    /// App menjadi aktif (dari background) — validasi lisensi jika diperlukan
+    /// App menjadi aktif (dari background) — validasi lisensi jika diperlukan.
     func handleAppBecomeActive() {
         Task {
             await license.validateIfNeeded()
         }
+    }
+
+    // MARK: - Legacy Bridge (COMPATIBILITY WINDOW — akan dihapus setelah migrasi selesai)
+    //
+    // startNewSession() masih ada untuk mendukung View yang belum dimigrasikan ke send(intent:).
+    // Akan dihapus pada PR-13 (Session Root Integration).
+    //
+    // Runtime Adoption: AppState = 30% (orchestrator via Runtime, session via Legacy SessionStore)
+
+    @available(*, deprecated, message: "Gunakan send(.startSession(guest:package:)) setelah PR-13. AppState tidak boleh membuat Session langsung.")
+    var currentSession: SessionStore? {
+        get { _legacyCurrentSession }
+        set { _legacyCurrentSession = newValue }
+    }
+
+    private var _legacyCurrentSession: SessionStore?
+
+    var hasActiveSession: Bool {
+        _legacyCurrentSession != nil
+    }
+
+    @available(*, deprecated, message: "Gunakan send(.startSession) setelah PR-13.")
+    @discardableResult
+    func startNewSession(package: BoothPackage, guest: GuestInfo) -> SessionStore {
+        if let existing = _legacyCurrentSession {
+            HaispaceLogger.warning(
+                "[Legacy] Sesi baru dimulai sebelum sesi lama selesai: \(existing.sessionId)",
+                category: "session"
+            )
+            existing.finalize()
+        }
+        let session = SessionStore(package: package, guest: guest)
+        _legacyCurrentSession = session
+
+        if let eventId = boothConfig.activeEventId {
+            p2p.configureMPCServiceType(eventId: eventId)
+        }
+
+        HaispaceLogger.info(
+            "[Legacy] SessionStore dibuat: \(session.sessionId) — migrasi ke Runtime pending PR-13",
+            category: "session"
+        )
+        return session
+    }
+
+    @available(*, deprecated, message: "Gunakan send(.endSession) setelah PR-13.")
+    func endCurrentSession() {
+        guard let session = _legacyCurrentSession else { return }
+        session.finalize()
+        _legacyCurrentSession = nil
+    }
+
+    @available(*, deprecated, message: "Gunakan send(_ intent: WorkflowIntent) sesuai ADR-001.")
+    func navigateTo(_ route: KioskRoute) {
+        currentRoute = route
+        if route != .landing && _legacyCurrentSession == nil {
+            let pkg = BoothPackage.mockStandard
+            let guest = pendingGuest ?? GuestInfo(name: "Guest", instagram: nil, phoneNumber: nil, queueNumber: 1)
+            startNewSession(package: pkg, guest: guest)
+        }
+        HaispaceLogger.warning("[DEPRECATED] navigateTo(\(route))", category: "workflow")
     }
 }
 
@@ -219,7 +235,8 @@ extension AppState {
 
     @MainActor
     static var preview: AppState {
-        let state = AppState()
+        let runtime = try! RuntimeContainer.build(for: .development)
+        let state = AppState(runtime: runtime)
 
         #if DEBUG
         state.auth.currentUser = .mockOperator
@@ -246,19 +263,16 @@ extension AppState {
     @MainActor
     static var previewWithActiveSession: AppState {
         let state = preview
-
         let session = state.startNewSession(
             package: .mockStandard,
             guest: .mockSarah
         )
         session.status = .photoSelection
         let mockPhotos = CapturedPhoto.mockPhotos(count: 5)
-        for photo in mockPhotos {
-            session.photos.addPhotoForPreview(photo)
-        }
+        for photo in mockPhotos { session.photos.addPhotoForPreview(photo) }
         session.photos.selectedPhotoIds = Set(mockPhotos.prefix(3).map { $0.id })
-
         return state
     }
 }
+
 

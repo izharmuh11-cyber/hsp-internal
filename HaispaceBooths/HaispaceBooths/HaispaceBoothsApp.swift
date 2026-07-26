@@ -2,11 +2,16 @@
 // HaispaceBooths — App
 //
 // Entry point aplikasi HaiBooth (iPad).
-// Inject AppState ke seluruh view hierarchy via .environment.
-// Setup BGProcessingTask untuk license heartbeat.
 //
-// Ref: docs/design/39_state_architecture.md — App Entry
-// Ref: docs/design/40_concurrency_strategy.md — BGProcessingTask
+// URUTAN ASSEMBLY (Platform Runtime v1.0):
+//   1. RuntimeContainer.build(.production) → merakit semua Module
+//   2. AppState(runtime: container)        → thin bridge ke SwiftUI
+//   3. .environment(appState)              → inject ke seluruh view hierarchy
+//
+// AppState TIDAK membuat dependency apapun.
+// RuntimeContainer adalah satu-satunya Composition Root.
+//
+// Ref: haispace-platform/constitution/PLATFORM_RUNTIME_V1.md
 
 import SwiftUI
 import BackgroundTasks
@@ -18,7 +23,24 @@ import UIKit
 struct HaispaceBoothsApp: App {
 
     // MARK: State
-    @State private var appState = AppState()
+    @State private var appState: AppState = {
+        // RuntimeContainer dibangun pertama — SEBELUM AppState.
+        // Jika build gagal (hanya bisa terjadi di konfigurasi tidak valid),
+        // fallback ke .development agar app tidak crash saat launch.
+        let container: RuntimeContainer
+        do {
+            container = try RuntimeContainer.build(for: .production)
+        } catch {
+            HaispaceLogger.warning(
+                "RuntimeContainer.build(.production) failed: \(error.localizedDescription) — falling back to .development",
+                category: "runtime"
+            )
+            container = (try? RuntimeContainer.build(for: .development)) ?? {
+                fatalError("RuntimeContainer: tidak dapat dibuat bahkan untuk .development — periksa environment konfigurasi.")
+            }()
+        }
+        return AppState(runtime: container)
+    }()
 
     // MARK: UIKit Delegate for Background Tasks
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
@@ -28,15 +50,12 @@ struct HaispaceBoothsApp: App {
             RootView()
                 .environment(appState)
                 .onAppear {
-                    // Kirim reference AppState ke AppDelegate untuk background task handling
                     AppDelegate.appState = appState
                 }
                 .task {
-                    // Setup awal saat app launch
                     await appState.setup()
                     R2LogUploader.uploadLatestLog(eventName: "app_launch")
                 }
-                // Saat app menjadi aktif — validasi lisensi jika diperlukan
                 .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
                     appState.handleAppBecomeActive()
                     R2LogUploader.uploadLatestLog(eventName: "app_active")
