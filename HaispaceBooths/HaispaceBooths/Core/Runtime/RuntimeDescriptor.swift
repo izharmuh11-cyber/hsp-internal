@@ -24,13 +24,29 @@ import Foundation
 /// Dikirimkan ke Mission Control dan Cloud saat handshake.
 public struct RuntimeDescriptor: Codable, Sendable {
 
-    // MARK: - Identity
+// MARK: - Runtime Identity
+
+    /// ID unik runtime ini — dipakai Mission Control dan Cloud untuk handshake.
+    /// Format: "{product}-runtime-{platform-lowercase}"
+    /// Contoh: "booth-runtime-ios", "camera-runtime-ios", "admin-runtime-macos"
+    public let runtimeId: String
+
+    /// Platform yang menjalankan runtime ini.
+    public let platform: RuntimePlatform
+
+    /// Kelas device (menentukan capability profile yang tersedia).
+    public let deviceClass: RuntimeDeviceClass
+
+    /// Region deployment (kosong untuk local runtime).
+    public let region: String?
+
+    // MARK: - Version
 
     /// Versi arsitektur (semver) — dibekukan pada v1.0.0.
     /// Hanya berubah setelah ADR baru disetujui oleh Architecture Review.
     public let architectureVersion: String
 
-    /// Versi runtime build (bisa berubah setiap rilis).
+    /// Versi runtime build (bisa berubah setiap rilis app).
     public let runtimeVersion: String
 
     /// Build number dari sistem CI.
@@ -81,6 +97,8 @@ public struct RuntimeDescriptor: Codable, Sendable {
     public func describe() -> String {
         """
         === Haispace Platform Runtime ===
+        Runtime ID   : \(runtimeId)
+        Platform     : \(platform.rawValue) / \(deviceClass.rawValue)
         Architecture : v\(architectureVersion) (Frozen \(frozenAt))
         Runtime      : v\(runtimeVersion) [\(buildNumber)]
         Snapshot     : schema v\(supportedSnapshotVersion)
@@ -92,6 +110,27 @@ public struct RuntimeDescriptor: Codable, Sendable {
         =================================
         """
     }
+}
+
+// MARK: - RuntimePlatform
+
+public enum RuntimePlatform: String, Codable, Sendable {
+    case iOS    = "iOS"
+    case macOS  = "macOS"
+    case tvOS   = "tvOS"
+}
+
+// MARK: - RuntimeDeviceClass
+
+/// Kelas device yang menentukan capability profile runtime ini.
+/// Booth → full capabilities (camera, printer, payment, delivery, p2p)
+/// Camera → capture-only capabilities
+/// Admin  → management capabilities (no camera, no printer)
+public enum RuntimeDeviceClass: String, Codable, Sendable {
+    case booth   = "Booth"
+    case camera  = "Camera"
+    case admin   = "Admin"
+    case unknown = "Unknown"
 }
 
 // MARK: - RuntimeGuarantee
@@ -124,6 +163,10 @@ public extension RuntimeDescriptor {
 
     /// Descriptor Platform Runtime v1.0.0 yang dibekukan.
     static let current = RuntimeDescriptor(
+        runtimeId: "booth-runtime-ios",
+        platform: .iOS,
+        deviceClass: .booth,
+        region: nil,
         architectureVersion: "1.0.0",
         runtimeVersion: "0.1.0",
         buildNumber: Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "dev",
@@ -132,7 +175,7 @@ public extension RuntimeDescriptor {
         maximumManifestVersion: 1,
         supportedSnapshotVersion: 1,
         domainEventVersion: "1.0",
-        compatibleCloudContracts: [], // Cloud Contract v1 akan ditambahkan saat Cloud milestone
+        compatibleCloudContracts: [],
         declaredCapabilities: ["camera", "printer", "payment", "editing", "delivery", "p2p"],
         guarantees: RuntimeDescriptor.v1Guarantees
     )
