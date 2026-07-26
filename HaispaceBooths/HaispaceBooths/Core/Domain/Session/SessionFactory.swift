@@ -6,14 +6,14 @@
 // PRINSIP (Ref: GPT Architecture Review):
 //   Session bukan sekadar dibuat via initializer biasa.
 //   Ia harus memenuhi seluruh business invariants sejak detik pertama lahir.
-//
-// TANGGUNG JAWAB FACTORY:
-//   1. Validasi keabsahan Package (durasi > 0, count valid)
-//   2. Ekstraksi CapturePolicy dari Package
-//   3. Konstruksi SessionIdentity (sessionId UUID, boothId, eventId, versions)
-//   4. Konstruksi HaispaceSession Aggregate Root yang siap pakai
+//   SessionFactory adalah satu-satunya tempat yang boleh melakukan:
+//     - create()   → Session baru dari tamu dan package
+//     - restore()  → Session yang di-recover dari SessionSnapshot (setelah crash)
+//     - migrate()  → Session dari snapshot versi lama (schema migration)
+//     - clone()    → Duplikasi session (future — untuk testing dan demo)
 //
 // WorkflowOrchestrator menerima HaispaceSession yang SUDAH VALID dari Factory ini.
+// WorkflowOrchestrator TIDAK boleh memanggil HaispaceSession() secara langsung.
 //
 // Ref: haispace-platform/adr/ADR-009-session-aggregate-repository.md
 
@@ -22,6 +22,8 @@ import Foundation
 // MARK: - SessionFactory
 
 public enum SessionFactory {
+
+    // MARK: - create()
 
     /// Buat HaispaceSession Aggregate Root baru yang valid secara domain.
     ///
@@ -82,11 +84,66 @@ public enum SessionFactory {
         )
 
         HaispaceLogger.info(
-            "SessionFactory: HaispaceSession created successfully (\(identity.sessionId)) for guest \(guest.name)",
+            "SessionFactory.create: (\(identity.sessionId)) guest: \(guest.name)",
             category: "session"
         )
 
         return session
+    }
+
+    // MARK: - restore()
+
+    /// Pulihkan HaispaceSession dari SessionSnapshot yang tersimpan di disk.
+    /// Dipanggil oleh Recovery Engine saat app launch mendeteksi in-progress session.
+    ///
+    /// - Parameter snapshot: SessionSnapshot yang diload dari SessionRepository
+    /// - Parameter package: BoothPackage aktif (diload ulang karena Policy tidak disimpan di snapshot)
+    /// - Throws: `SessionFactoryError.incompatibleSnapshot` jika schema tidak kompatibel.
+    ///
+    /// NOTE: Implementasi lengkap akan ditambahkan pada Phase C (Recovery Engine).
+    ///       API ini sudah distabilkan agar tidak breaking change saat Phase C dimulai.
+    public static func restoreSession(
+        from snapshot: SessionSnapshot,
+        package: BoothPackage
+    ) throws -> HaispaceSession {
+        // Phase C: Implementasi penuh saat Recovery Engine dibangun
+        // Saat ini hanya membuat session baru dengan identity dari snapshot
+        // sebagai placeholder agar API contract tidak berubah saat Phase C.
+
+        HaispaceLogger.warning(
+            "SessionFactory.restore: Stub implementation — Phase C belum diimplementasikan untuk sessionId: \(snapshot.sessionId)",
+            category: "session"
+        )
+
+        let guest = SessionGuest(
+            name: snapshot.guestName,
+            phoneNumber: snapshot.guestPhone,
+            queueNumber: snapshot.guestQueueNumber
+        )
+
+        return try createSession(
+            guest: guest,
+            package: package,
+            boothId: snapshot.boothId,
+            eventId: snapshot.eventId,
+            manifestVersion: snapshot.manifestVersion,
+            packageVersion: snapshot.packageVersion
+        )
+    }
+
+    // MARK: - migrate()
+
+    /// Migrasi SessionSnapshot dari versi schema lama ke versi terkini.
+    /// Dipanggil oleh SessionRepository saat load snapshot dengan snapshotSchemaVersion lama.
+    ///
+    /// - Parameter snapshot: SessionSnapshot versi lama
+    /// - Returns: SessionSnapshot versi terkini yang sudah di-migrate
+    ///
+    /// NOTE: Implementasi migration logic ditambahkan di sini saat snapshotSchemaVersion naik.
+    ///       Saat ini hanya versi 1, jadi tidak ada migration yang diperlukan.
+    public static func migrateSnapshot(_ snapshot: SessionSnapshot) -> SessionSnapshot {
+        // Delegasi ke SessionSnapshot.migrated() yang sudah ada
+        return snapshot.migrated()
     }
 }
 
@@ -95,11 +152,13 @@ public enum SessionFactory {
 public enum SessionFactoryError: Error, Sendable, LocalizedError {
     case invalidGuestData(String)
     case invalidPackage(String)
+    case incompatibleSnapshot(schemaVersion: Int, reason: String)
 
     public var errorDescription: String? {
         switch self {
         case .invalidGuestData(let msg): return "Data tamu tidak valid: \(msg)"
         case .invalidPackage(let msg): return "Paket foto tidak valid: \(msg)"
+        case .incompatibleSnapshot(let v, let r): return "Snapshot schema v\(v) tidak kompatibel: \(r)"
         }
     }
 }

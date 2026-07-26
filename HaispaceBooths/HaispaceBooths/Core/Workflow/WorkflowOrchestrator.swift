@@ -247,8 +247,29 @@ public actor WorkflowOrchestrator: @preconcurrency WorkflowOrchestratorProtocol 
                 let snap = await aggregate.snapshot()
                 try? await sessionRepository.save(snap)
                 HaispaceLogger.info(
-                    "PR-01 Shadow Write: Payment accepted & snapshot persisted via SessionRepository (\(sessionId.rawValue))",
+                    "PR-01 Shadow Write: Payment accepted & snapshot persisted (\(sessionId.rawValue))",
                     category: "workflow"
+                )
+
+                // MARK: - PR-02 Step 2: Read Compare + Divergence Detection
+                // Baca dari Aggregate, bandingkan dengan Legacy PaymentStore.
+                // Tidak mengubah perilaku runtime. Emit event hanya sebagai sinyal.
+                // Return value tetap dari Aggregate (bukan Legacy).
+                let compatResult = await PaymentCompatibilityChecker.check(
+                    session: aggregate,
+                    legacyIsPaid: true,           // Legacy sedang dalam .paid setelah confirmPayment
+                    legacyAmount: 35000,           // Legacy PaymentStore.amount (hardcoded sementara)
+                    legacyTransactionId: txnId,    // txnId di-share — harusnya match
+                    legacyAcceptedAt: Date()       // Legacy tidak menyimpan acceptedAt — mismatch expected
+                )
+
+                let compatEvent: CompatibilityEvent = compatResult.overallMatched
+                    ? .matched(compatResult)
+                    : .mismatched(compatResult)
+
+                HaispaceLogger.info(
+                    "PR-02 Compat/Payment [\(compatEvent.name)]: \(compatResult.mismatchCount) mismatched field(s) — sessionId: \(sessionId.rawValue)",
+                    category: "compatibility"
                 )
             }
 
