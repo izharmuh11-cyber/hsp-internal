@@ -52,7 +52,7 @@ public struct PaymentCompatibilityChecker: Sendable {
             field: .status,
             aggregateValue: aggregateStatusStr,
             legacyValue: legacyStatusStr,
-            matched: aggregateStatusStr == legacyStatusStr,
+            status: aggregateStatusStr == legacyStatusStr ? .matched : .mismatched,
             checkedAt: Date()
         ))
 
@@ -62,7 +62,7 @@ public struct PaymentCompatibilityChecker: Sendable {
             field: .amount,
             aggregateValue: "\(aggregateAmount)",
             legacyValue: "\(legacyAmount)",
-            matched: aggregateAmount == legacyAmount,
+            status: aggregateAmount == legacyAmount ? .matched : .mismatched,
             checkedAt: Date()
         ))
 
@@ -73,7 +73,7 @@ public struct PaymentCompatibilityChecker: Sendable {
             field: .localReference,
             aggregateValue: aggregateTxnId,
             legacyValue: legacyTxnId,
-            matched: aggregateTxnId == legacyTxnId,
+            status: aggregateTxnId == legacyTxnId ? .matched : .mismatched,
             checkedAt: Date()
         ))
 
@@ -84,22 +84,26 @@ public struct PaymentCompatibilityChecker: Sendable {
             return abs(a.timeIntervalSince(b))
         }()
         // Toleransi 1 detik — write ke aggregate + write ke store terjadi dalam satu loop
-        let timestampMatched = timeDelta >= 0 && timeDelta < 1.0
+        // Legacy tidak selalu menyimpan acceptedAt — jika nil maka .unknown (bukan .mismatched)
+        let timestampStatus: CompatibilityFieldStatus = {
+            if legacyAcceptedAt == nil { return .unknown }  // Field tidak ada di Legacy
+            return (timeDelta >= 0 && timeDelta < 1.0) ? .matched : .mismatched
+        }()
         fields.append(CompatibilityFieldResult(
             field: .acceptedAt,
             aggregateValue: aggregateAcceptedAt.map { ISO8601DateFormatter().string(from: $0) } ?? "nil",
-            legacyValue: legacyAcceptedAt.map { ISO8601DateFormatter().string(from: $0) } ?? "nil",
-            matched: timestampMatched,
+            legacyValue: legacyAcceptedAt.map { ISO8601DateFormatter().string(from: $0) } ?? "<unknown>",
+            status: timestampStatus,
             checkedAt: Date()
         ))
 
-        // MARK: Field 5 — Method
-        let aggregateMethodStr = commitment?.method.rawValue ?? "nil"
+        // MARK: Field 5 — ProviderReference (NEW in Aggregate — Legacy doesn't have this)
+        let aggregateProviderRef = commitment?.providerReference ?? "nil"
         fields.append(CompatibilityFieldResult(
-            field: .method,
-            aggregateValue: aggregateMethodStr,
-            legacyValue: "qris", // Legacy PaymentStore selalu QRIS dalam current impl
-            matched: true, // skip method check for now — legacy doesn't expose this cleanly
+            field: .method,  // using method slot as providerReference proxy for now
+            aggregateValue: aggregateProviderRef,
+            legacyValue: "<unknown>",  // PaymentStore doesn't have providerReference
+            status: .unknown,  // Unknown: field baru di Aggregate, belum ada di Legacy
             checkedAt: Date()
         ))
 
@@ -112,17 +116,23 @@ public struct PaymentCompatibilityChecker: Sendable {
         // MARK: Log
         if result.overallMatched {
             HaispaceLogger.info(
-                "✅ [Compat/Payment] Match — sessionId: \(sessionId)",
+                "✅ [Compat/Payment] Match (\(result.unknownCount) unknown) — sessionId: \(sessionId)",
                 category: "compatibility"
             )
         } else {
             HaispaceLogger.warning(
-                "⚠️ [Compat/Payment] MISMATCH — sessionId: \(sessionId) — fields: \(result.mismatchedFields.map { $0.field.rawValue }.joined(separator: ", "))",
+                "⚠️ [Compat/Payment] MISMATCH — \(result.mismatchCount) mismatch(es), \(result.unknownCount) unknown(s) — sessionId: \(sessionId)",
                 category: "compatibility"
             )
             for field in result.mismatchedFields {
                 HaispaceLogger.warning(
-                    "   ↳ [\(field.field.rawValue)] aggregate=\(field.aggregateValue) legacy=\(field.legacyValue)",
+                    "   ↳ [mismatch] [\(field.field.rawValue)] \(field.delta ?? "")",
+                    category: "compatibility"
+                )
+            }
+            for field in result.unknownFields {
+                HaispaceLogger.info(
+                    "   ↳ [unknown] [\(field.field.rawValue)] aggregate=\(field.aggregateValue) (not in legacy)",
                     category: "compatibility"
                 )
             }

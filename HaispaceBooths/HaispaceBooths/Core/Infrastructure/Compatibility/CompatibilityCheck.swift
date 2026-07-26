@@ -28,20 +28,40 @@ public enum CompatibilityCheckField: String, Codable, Sendable {
     case method          // Metode pembayaran
 }
 
+// MARK: - CompatibilityFieldStatus
+
+/// Status perbandingan satu field.
+///
+/// PENTING: Unknown berbeda dari Mismatch.
+/// Unknown berarti Legacy tidak memiliki field tersebut (field baru di Aggregate).
+/// Ini bukan error — ini adalah sinyal bahwa Legacy masih tertinggal.
+/// Contoh: PaymentMetadata.providerReference tidak ada di PaymentStore.
+public enum CompatibilityFieldStatus: String, Codable, Sendable {
+    case matched      // Kedua nilai cocok
+    case mismatched   // Kedua nilai ada, tapi berbeda
+    case unknown      // Legacy tidak memiliki field ini (field baru di Aggregate)
+}
+
 // MARK: - CompatibilityFieldResult
 
 /// Hasil perbandingan satu field antara Aggregate dan Legacy.
 public struct CompatibilityFieldResult: Codable, Sendable {
     public let field: CompatibilityCheckField
     public let aggregateValue: String    // String representation untuk logging
-    public let legacyValue: String
-    public let matched: Bool
+    public let legacyValue: String       // "<unknown>" jika field tidak ada di Legacy
+    public let status: CompatibilityFieldStatus
     public let checkedAt: Date
 
+    /// Shorthand untuk backward compat
+    public var matched: Bool { status == .matched }
+    public var isUnknown: Bool { status == .unknown }
+
     public var delta: String? {
-        // Khusus untuk timestamp, hitung selisih jika keduanya parseable sebagai Date
-        guard !matched else { return nil }
-        return "aggregate=\(aggregateValue) legacy=\(legacyValue)"
+        switch status {
+        case .matched: return nil
+        case .mismatched: return "aggregate=\(aggregateValue) legacy=\(legacyValue)"
+        case .unknown: return "aggregate=\(aggregateValue) legacy=<not available in legacy>"
+        }
     }
 }
 
@@ -59,12 +79,18 @@ public struct CompatibilityCheckResult: Codable, Sendable {
     public let overallMatched: Bool          // True hanya jika SEMUA field matched
 
     public var mismatchedFields: [CompatibilityFieldResult] {
-        fieldResults.filter { !$0.matched }
+        fieldResults.filter { $0.status == .mismatched }
     }
 
-    public var mismatchCount: Int {
-        mismatchedFields.count
+    public var unknownFields: [CompatibilityFieldResult] {
+        fieldResults.filter { $0.status == .unknown }
     }
+
+    public var mismatchCount: Int { mismatchedFields.count }
+    public var unknownCount: Int { unknownFields.count }
+
+    /// True hanya jika semua field matched (tidak ada mismatch, unknown dikecualikan).
+    public var hasAnyMismatch: Bool { !mismatchedFields.isEmpty }
 
     // MARK: - Factory
 
@@ -79,7 +105,7 @@ public struct CompatibilityCheckResult: Codable, Sendable {
             context: context,
             checkedAt: Date(),
             fieldResults: fields,
-            overallMatched: fields.allSatisfy { $0.matched }
+            overallMatched: fields.allSatisfy { $0.status == .matched || $0.status == .unknown }
         )
     }
 }
